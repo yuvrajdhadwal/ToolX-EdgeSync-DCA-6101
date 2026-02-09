@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
+import bcrypt  
 from models import User
 from database import SessionLocal, engine
 from pydantic import BaseModel
@@ -14,7 +15,7 @@ app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 origins = [ 
-    "http://localhost:5173/", ## Add the link if we deploy
+    "http://localhost:5173", ## Add the link if we deploy
 ]
 
 app.add_middleware( 
@@ -34,7 +35,7 @@ def get_db():
         db.close()
 
 # Hashing password
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+#pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT Secret and Algorithm
 SECRET_KEY = "sDhqAtbmrusXlnNWIqBa7i0hqQm0mIqliEWHSHEx6PB" ## used https://jwtsecretkeygenerator.com/
@@ -50,7 +51,9 @@ def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
 
 def create_user(db: Session, user: UserCreate):
-    hashed_password = pwd_context.hash(user.password)
+    #hashed_password = pwd_context.hash(user.password)
+    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
     db_user = User(username=user.username, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
@@ -69,7 +72,8 @@ def authenticate_user(username: str, password: str, db: Session):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         return False
-    if not pwd_context.verify(password, user.hashed_password):
+    #if not pwd_context.verify(password, user.hashed_password):
+    if not bcrypt.checkpw(password.encode('utf-8'), user.hashed_password.encode('utf-8')):
         return False
     return user
 
