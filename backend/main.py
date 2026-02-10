@@ -10,6 +10,9 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 app = FastAPI()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -112,3 +115,12 @@ def verify_token(token: str = Depends(oauth2_scheme)):
 async def verify_user_token(token: str):
     verify_token(token=token)
     return {"message": "Token is valid"}
+
+if os.path.exists("static/assets"):
+    app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    if os.path.exists("static/index.html"):
+        return FileResponse("static/index.html")
+    return {"error": "Frontend not deployed"}
