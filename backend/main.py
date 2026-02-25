@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import Figit leResponse
+from fastapi.responses import FigitleResponse
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
