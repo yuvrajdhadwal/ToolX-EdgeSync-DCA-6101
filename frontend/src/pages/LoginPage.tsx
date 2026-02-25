@@ -53,9 +53,9 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div>
-        <h1>This is LoginPage</h1>
-        <form onSubmit={handleSubmit}>
+    <div style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
+      <h1>This is LoginPage</h1>
+      <form onSubmit={handleSubmit}>
           <div>
             <label>
               Username:

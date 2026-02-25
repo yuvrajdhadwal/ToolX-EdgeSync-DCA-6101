@@ -65,7 +65,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
       <h1>Register</h1>
       {success && <p style={{color: 'green'}}>Registration successful! Redirecting to login...</p>}
       <form onSubmit={handleSubmit}>
@@ -104,9 +104,9 @@ const RegisterPage: React.FC = () => {
         </button>
         {error && <p style={{color: 'red'}}>{error}</p>}
       </form>
-      <p>
-        Already have an account? <button onClick={() => navigate('/login')}>Login here</button>
-      </p>
+        <p>
+          Already have an account? <button onClick={() => navigate('/login')}>Login here</button>
+        </p>
     </div>
   )
 }
