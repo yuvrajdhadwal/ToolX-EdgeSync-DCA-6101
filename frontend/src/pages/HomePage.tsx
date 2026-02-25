@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { COLORS } from '../constants/colors'
+import { ROUTES } from '../constants/routes'
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate()
@@ -20,7 +22,7 @@ const HomePage: React.FC = () => {
       flexDirection: 'column', 
       padding: '2rem',
       gap: '2rem',
-      backgroundColor: '#0d1117',
+      backgroundColor: COLORS.backgroundPrimary,
     }}>
       {/* Header with SLB and Logout */}
       <header
@@ -32,15 +34,15 @@ const HomePage: React.FC = () => {
       >
         <button 
           type="button" 
-          onClick={() => navigate('/home')}
+          onClick={() => navigate(ROUTES.HOME)}
           style={{
             padding: '0.5rem 1.5rem',
             fontSize: '1rem',
             cursor: 'pointer',
             borderRadius: '6px',
             border: 'none',
-            backgroundColor: '#238636',
-            color: '#ffffff',
+            backgroundColor: COLORS.success,
+            color: COLORS.white,
             fontWeight: 500,
             transition: 'background-color 0.2s',
           }}
@@ -49,15 +51,15 @@ const HomePage: React.FC = () => {
         </button>
         <button 
           type="button" 
-          onClick={() => navigate('/login')}
+          onClick={() => navigate(ROUTES.LOGIN)}
           style={{
             padding: '0.5rem 1.5rem',
             fontSize: '1rem',
             cursor: 'pointer',
             borderRadius: '6px',
-            border: '1px solid #da3633',
+            border: `1px solid ${COLORS.danger}`,
             backgroundColor: 'transparent',
-            color: '#f85149',
+            color: COLORS.dangerText,
             fontWeight: 500,
             transition: 'all 0.2s',
           }}
@@ -67,7 +69,7 @@ const HomePage: React.FC = () => {
       </header>
 
       {/* Tab Navigation */}
-      <nav style={{ display: 'flex', gap: '4px', borderBottom: '3px solid #30363d' }}>
+      <nav style={{ display: 'flex', gap: '4px', borderBottom: `3px solid ${COLORS.borderPrimary}` }}>
         {tabs.map((tab, index) => (
           <button
             key={tab}
@@ -77,11 +79,11 @@ const HomePage: React.FC = () => {
               padding: '0.75rem 2rem',
               fontSize: '1rem',
               cursor: 'pointer',
-              border: '2px solid #30363d',
+              border: `2px solid ${COLORS.borderPrimary}`,
               borderBottom: 'none',
               borderRadius: '8px 8px 0 0',
-              backgroundColor: activeTab === index ? '#161b22' : '#21262d',
-              color: activeTab === index ? '#58a6ff' : '#8b949e',
+              backgroundColor: activeTab === index ? COLORS.backgroundSecondary : COLORS.backgroundTertiary,
+              color: activeTab === index ? COLORS.accentPrimary : COLORS.textMuted,
               fontWeight: activeTab === index ? 600 : 400,
               position: 'relative',
               top: activeTab === index ? '3px' : '0',
@@ -102,18 +104,18 @@ const HomePage: React.FC = () => {
           flexDirection: 'column',
           gap: '1.5rem',
           padding: '2rem',
-          backgroundColor: '#161b22',
+          backgroundColor: COLORS.backgroundSecondary,
           borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
+          boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
         }}
       >
-        <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#c9d1d9' }}>{tabs[activeTab]}</h2>
+        <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>{tabs[activeTab]}</h2>
         
         <div style={{ overflow: 'auto' }}>
           <table style={{ 
             borderCollapse: 'collapse',
             width: '100%',
-            backgroundColor: '#161b22',
+            backgroundColor: COLORS.backgroundSecondary,
           }}>
             <thead>
               <tr>
@@ -121,11 +123,11 @@ const HomePage: React.FC = () => {
                   <th
                     key={header}
                     style={{
-                      border: '1px solid #30363d',
+                      border: `1px solid ${COLORS.borderPrimary}`,
                       padding: '0.75rem 1rem',
                       textAlign: 'left',
-                      backgroundColor: '#21262d',
-                      color: '#c9d1d9',
+                      backgroundColor: COLORS.backgroundTertiary,
+                      color: COLORS.textPrimary,
                       fontWeight: 600,
                       whiteSpace: 'nowrap',
                     }}
@@ -138,17 +140,17 @@ const HomePage: React.FC = () => {
             <tbody>
               {Array.from({ length: minRows }).map((_, rowIndex) => (
                 <tr key={`row-${rowIndex}`} style={{ 
-                  backgroundColor: rowIndex % 2 === 0 ? '#161b22' : '#0d1117'
+                  backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary
                 }}>
                   {tableHeaders.map((_, colIndex) => (
                     <td
                       key={`cell-${rowIndex}-${colIndex}`}
                       style={{
-                        border: '1px solid #30363d',
+                        border: `1px solid ${COLORS.borderPrimary}`,
                         padding: '0.75rem 1rem',
                         minHeight: '3rem',
                         textAlign: 'left',
-                        color: '#c9d1d9',
+                        color: COLORS.textPrimary,
                       }}
                     >
                       {/* Empty cells for user input */}

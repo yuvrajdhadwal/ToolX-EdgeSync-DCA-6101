@@ -5,10 +5,11 @@ import WelcomePage from './pages/WelcomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage'; 
+import { AUTH_ROUTES, ROUTES } from './constants/routes';
 
 function AppLayout() {
   const location = useLocation();
-  const showAuthNav = ['/', '/login', '/register'].includes(location.pathname);
+  const showAuthNav = AUTH_ROUTES.includes(location.pathname as (typeof AUTH_ROUTES)[number]);
 
   return (
     <>
@@ -16,18 +17,18 @@ function AppLayout() {
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '2rem' }}>
           <nav className="navbar-container"
           style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
+            <Link to={ROUTES.LOGIN}>Login</Link>
+            <Link to={ROUTES.REGISTER}>Register</Link>
           </nav>
           <Routes>
-            <Route path="/" element={<WelcomePage></WelcomePage>}></Route>
-            <Route path="/login" element={<LoginPage></LoginPage>}></Route>
-            <Route path='/register' element={<RegisterPage></RegisterPage>}></Route>
+            <Route path={ROUTES.WELCOME} element={<WelcomePage></WelcomePage>}></Route>
+            <Route path={ROUTES.LOGIN} element={<LoginPage></LoginPage>}></Route>
+            <Route path={ROUTES.REGISTER} element={<RegisterPage></RegisterPage>}></Route>
           </Routes>
         </div>
       ) : (
         <Routes>
-          <Route path="/home" element={<HomePage></HomePage>}></Route>
+          <Route path={ROUTES.HOME} element={<HomePage></HomePage>}></Route>
         </Routes>
       )}
     </>
