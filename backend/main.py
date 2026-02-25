@@ -8,6 +8,7 @@ from models import User
 from database import SessionLocal, engine, Base
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv # uvicorn loading .env
 import os
 
 from fastapi.staticfiles import StaticFiles
@@ -16,6 +17,7 @@ from fastapi.responses import FileResponse
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+load_dotenv()
 
 origins = [ 
     os.getenv('LOCAL_ORIGIN'),
