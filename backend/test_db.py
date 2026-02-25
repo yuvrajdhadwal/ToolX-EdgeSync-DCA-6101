@@ -18,6 +18,7 @@ def main():
         users = db.query(User).all()
         print("All users:", [(x.id, x.role, x.username) for x in users])
 
+
         # 3) query one user
         one = db.query(User).filter(User.username == "user1").first()
         print("Found:", one.id, one.username if one else None)

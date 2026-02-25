@@ -15,6 +15,18 @@ const options: roleOption[] = [
   {role: 'Field/Shop Professional', label: 'Field/Shop Professional'}
 ]
 
+type roleOption = {
+  role: string;
+  label: string;
+}
+
+const options: roleOption[] = [
+  {role: 'Developer', label: 'Developer'},
+  {role: 'Developer Manager', label: 'Developer Manager'},
+  {role: 'Business Manager', label: 'Business Manager'},
+  {role: 'Field/Shop Professional', label: 'Field/Shop Professional'}
+]
+
 const RegisterPage: React.FC = () => {
   const [role, setrole] = useState('');
   const [username, setUsername] = useState('');
@@ -86,6 +98,21 @@ const RegisterPage: React.FC = () => {
       {success && <p style={{ color: COLORS.successText }}>Registration successful! Redirecting to login...</p>}
       <form onSubmit={handleSubmit}>
       <div>
+          <label>
+            Role:
+          </label>
+          <select 
+            value = {role}
+            onChange={(e) => setrole(e.target.value)}
+          >
+            {options.map((option) => (
+              <option key={option.role} value={option.role}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label>
             Role:
           </label>
