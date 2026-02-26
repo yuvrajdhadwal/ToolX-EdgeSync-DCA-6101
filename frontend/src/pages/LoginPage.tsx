@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { COLORS } from '../constants/colors';
+import { ROUTES } from '../constants/routes';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -41,7 +43,7 @@ const LoginPage: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.access_token);
-        navigate('/protected');
+        navigate(ROUTES.HOME);
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Authentication Failed');
@@ -53,9 +55,9 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div>
-        <h1>This is LoginPage</h1>
-        <form onSubmit={handleSubmit}>
+    <div style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
+      <h1>This is LoginPage</h1>
+      <form onSubmit={handleSubmit}>
           <div>
             <label>
               Username:
@@ -79,7 +81,7 @@ const LoginPage: React.FC = () => {
           <button type='submit' disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
-          {error && <p style={{color: 'red'}}>{error}</p>}
+          {error && <p style={{ color: COLORS.error }}>{error}</p>}
         </form>
     </div>
   )

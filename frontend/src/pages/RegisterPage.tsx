@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { COLORS } from '../constants/colors';
+import { ROUTES } from '../constants/routes';
 
 const RegisterPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -52,7 +54,7 @@ const RegisterPage: React.FC = () => {
         setError('');
         // Redirect to login page after 2 seconds
         setTimeout(() => {
-          navigate('/login');
+          navigate(ROUTES.LOGIN);
         }, 2000);
       } else {
         const errorData = await response.json();
@@ -65,9 +67,9 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
       <h1>Register</h1>
-      {success && <p style={{color: 'green'}}>Registration successful! Redirecting to login...</p>}
+      {success && <p style={{ color: COLORS.successText }}>Registration successful! Redirecting to login...</p>}
       <form onSubmit={handleSubmit}>
         <div>
           <label>
@@ -102,11 +104,11 @@ const RegisterPage: React.FC = () => {
         <button type='submit' disabled={loading}>
           {loading ? 'Registering...' : 'Register'}
         </button>
-        {error && <p style={{color: 'red'}}>{error}</p>}
+        {error && <p style={{ color: COLORS.error }}>{error}</p>}
       </form>
-      <p>
-        Already have an account? <button onClick={() => navigate('/login')}>Login here</button>
-      </p>
+        <p>
+          Already have an account? <button onClick={() => navigate(ROUTES.LOGIN)}>Login here</button>
+        </p>
     </div>
   )
 }
