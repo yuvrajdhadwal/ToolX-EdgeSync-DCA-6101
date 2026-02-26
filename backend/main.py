@@ -46,6 +46,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Define a Pydantic Model for User Registration
 class UserCreate(BaseModel):
+    role: str
     username: str
     password: str
 
@@ -55,7 +56,7 @@ def get_user_by_username(db: Session, username: str):
 def create_user(db: Session, user: UserCreate):
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    db_user = User(username=user.username, hashed_password=hashed_password)
+    db_user = User(role=user.role, username=user.username, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
     return "complete"

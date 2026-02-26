@@ -3,7 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors';
 import { ROUTES } from '../constants/routes';
 
+type roleOption = {
+  role: string;
+  label: string;
+}
+
+const options: roleOption[] = [
+  {role: 'Developer', label: 'Developer'},
+  {role: 'Developer Manager', label: 'Developer Manager'},
+  {role: 'Business Manager', label: 'Business Manager'},
+  {role: 'Field/Shop Professional', label: 'Field/Shop Professional'}
+]
+
 const RegisterPage: React.FC = () => {
+  const [role, setrole] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -14,7 +27,7 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
 
   const validateForm = () => {
-    if (!username || !password || !confirmPassword) {
+    if (!role || !username || !password || !confirmPassword) {
       setError('All fields are required');
       return false;
     }
@@ -42,6 +55,7 @@ const RegisterPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          role: role,
           username: username,
           password: password,
         }),
@@ -71,6 +85,21 @@ const RegisterPage: React.FC = () => {
       <h1>Register</h1>
       {success && <p style={{ color: COLORS.successText }}>Registration successful! Redirecting to login...</p>}
       <form onSubmit={handleSubmit}>
+      <div>
+          <label>
+            Role:
+          </label>
+          <select 
+            value = {role}
+            onChange={(e) => setrole(e.target.value)}
+          >
+            {options.map((option) => (
+              <option key={option.role} value={option.role}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label>
             Username:
