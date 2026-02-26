@@ -43,3 +43,5 @@
 # vscode
 .vscode/
 .env
+
+backend/.venv/*
