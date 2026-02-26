@@ -9,4 +9,3 @@ passlib
 aiofiles
 gunicorn
 dotenv
-dsa
