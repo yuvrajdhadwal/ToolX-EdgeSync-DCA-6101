@@ -9,10 +9,10 @@ type roleOption = {
 }
 
 const options: roleOption[] = [
-  {role: 'Developer', label: 'Developer'},
-  {role: 'Developer Manager', label: 'Developer Manager'},
-  {role: 'Business Manager', label: 'Business Manager'},
-  {role: 'Field/Shop Professional', label: 'Field/Shop Professional'}
+  {role: 'developer', label: 'Developer'},
+  {role: 'developer_manager', label: 'Developer Manager'},
+  {role: 'business_manager', label: 'Business Manager'},
+  {role: 'field_shop_professional', label: 'Field/Shop Professional'}
 ]
 
 const RegisterPage: React.FC = () => {
@@ -94,6 +94,9 @@ const RegisterPage: React.FC = () => {
             value = {role}
             onChange={(e) => setrole(e.target.value)}
           >
+            <option value="" disabled>
+              Select your role
+            </option>
             {options.map((option) => (
               <option key={option.role} value={option.role}>
                 {option.label}
