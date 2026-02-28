@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv # uvicorn loading .env
 import os
+from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, UserRole
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -46,6 +47,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Define a Pydantic Model for User Registration
 class UserCreate(BaseModel):
+    role: UserRole
     username: str
     password: str
 
@@ -55,9 +57,21 @@ def get_user_by_username(db: Session, username: str):
 def create_user(db: Session, user: UserCreate):
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    db_user = User(username=user.username, hashed_password=hashed_password)
+    db_user = User(role=user.role, username=user.username, hashed_password=hashed_password)
     db.add(db_user)
+    db.flush()
+
+    if user.role == UserRole.developer:
+        db.add(Developer(user_id=db_user.id))
+    elif user.role == UserRole.developer_manager:
+        db.add(DeveloperManager(user_id=db_user.id))
+    elif user.role == UserRole.business_manager:
+        db.add(BusinessManager(user_id=db_user.id))
+    elif user.role == UserRole.field_shop_professional:
+        db.add(FieldShopProfessional(user_id=db_user.id))
+
     db.commit()
+    db.refresh(db_user)
     return "complete"
 
 # POST route that uses the Pydantic model to receive the request body.
