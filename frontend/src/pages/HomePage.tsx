@@ -1,19 +1,51 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
+import { getUploadsByStatus } from '../services/uploadService'
+import { UPLOAD_STATUS, type UploadItem, type UploadStatus } from '../types/upload'
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState(0)
+  const [uploads, setUploads] = useState<UploadItem[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   // Table Headers
   const tableHeaders = ['Date', 'Version', 'Priority', 'Developer', 'Short Description']
 
   // Name of Tabs
   const tabs = ['Current', 'Pending', 'Rejected']
 
+  const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
+  const isPendingTab = tabStatusMap[activeTab] === UPLOAD_STATUS.PENDING
+
   // Minimum 3 empty rows
-  const minRows = 3
+  const minRows = 1
+
+  useEffect(() => {
+    const loadUploads = async () => {
+      setIsLoading(true)
+      setError('')
+
+      try {
+        const status = tabStatusMap[activeTab]
+        const records = await getUploadsByStatus(status)
+        setUploads(records)
+      } catch {
+        setError('Failed to load uploads')
+        setUploads([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadUploads()
+  }, [activeTab])
+
+  const tableRows = uploads.length >= minRows
+    ? uploads
+    : [...uploads, ...Array.from({ length: minRows - uploads.length }, () => null)]
 
   return (
     <div style={{ 
@@ -110,6 +142,8 @@ const HomePage: React.FC = () => {
         }}
       >
         <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>{tabs[activeTab]}</h2>
+        {isLoading && <p style={{ margin: 0, color: COLORS.textMuted }}>Loading uploads...</p>}
+        {error && <p style={{ margin: 0, color: COLORS.error }}>{error}</p>}
         
         <div style={{ overflow: 'auto' }}>
           <table style={{ 
@@ -138,24 +172,77 @@ const HomePage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: minRows }).map((_, rowIndex) => (
-                <tr key={`row-${rowIndex}`} style={{ 
-                  backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary
-                }}>
-                  {tableHeaders.map((_, colIndex) => (
-                    <td
-                      key={`cell-${rowIndex}-${colIndex}`}
-                      style={{
-                        border: `1px solid ${COLORS.borderPrimary}`,
-                        padding: '0.75rem 1rem',
-                        minHeight: '3rem',
-                        textAlign: 'left',
-                        color: COLORS.textPrimary,
-                      }}
-                    >
-                      {/* Empty cells for user input */}
-                    </td>
-                  ))}
+              {tableRows.map((upload, rowIndex) => (
+                <tr
+                  key={`row-${rowIndex}`}
+                  onClick={() => {
+                    if (!upload || !isPendingTab) {
+                      return
+                    }
+
+                    const detailRoute = ROUTES.FIRMWARE_DETAIL.replace(':uploadId', encodeURIComponent(upload.id))
+                    navigate(detailRoute)
+                  }}
+                  style={{
+                    backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary,
+                    cursor: upload && isPendingTab ? 'pointer' : 'default',
+                  }}
+                >
+                  <td
+                    style={{
+                      border: `1px solid ${COLORS.borderPrimary}`,
+                      padding: '0.75rem 1rem',
+                      minHeight: '3rem',
+                      textAlign: 'left',
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    {upload?.date ?? ''}
+                  </td>
+                  <td
+                    style={{
+                      border: `1px solid ${COLORS.borderPrimary}`,
+                      padding: '0.75rem 1rem',
+                      minHeight: '3rem',
+                      textAlign: 'left',
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    {upload?.version ?? ''}
+                  </td>
+                  <td
+                    style={{
+                      border: `1px solid ${COLORS.borderPrimary}`,
+                      padding: '0.75rem 1rem',
+                      minHeight: '3rem',
+                      textAlign: 'left',
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    {upload?.priority ?? ''}
+                  </td>
+                  <td
+                    style={{
+                      border: `1px solid ${COLORS.borderPrimary}`,
+                      padding: '0.75rem 1rem',
+                      minHeight: '3rem',
+                      textAlign: 'left',
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    {upload?.developer ?? ''}
+                  </td>
+                  <td
+                    style={{
+                      border: `1px solid ${COLORS.borderPrimary}`,
+                      padding: '0.75rem 1rem',
+                      minHeight: '3rem',
+                      textAlign: 'left',
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    {upload?.shortDescription ?? ''}
+                  </td>
                 </tr>
               ))}
             </tbody>
