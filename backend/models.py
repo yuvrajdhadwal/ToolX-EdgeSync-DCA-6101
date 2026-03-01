@@ -1,9 +1,8 @@
 from sqlalchemy import (Column, Integer, String, Boolean, Float,
     ForeignKey, DateTime, Table, ForeignKeyConstraint)
-from sqlalchemy.orm import relationship, declarative_base, backref
+from sqlalchemy.orm import relationship, backref
+from database import Base
 from datetime import datetime
-
-Base = declarative_base()
 
 # ==============================
 #       Relationships
@@ -39,7 +38,7 @@ class User(Base):
     # Disjoint Relationship based on Tutorial
     type = Column(String(50))
     __mapper_args__ = {
-        "polymorphic_on": type,
+        "polymorphic_on": "type",
         "polymorphic_identity": "user"
     }
 
