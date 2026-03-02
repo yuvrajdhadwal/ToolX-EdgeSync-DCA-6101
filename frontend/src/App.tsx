@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage'; 
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
+import UploadPage from './pages/UploadPage';
 
 function AppLayout() {
   const location = useLocation();
@@ -24,6 +25,7 @@ function AppLayout() {
             <Route path={ROUTES.WELCOME} element={<WelcomePage></WelcomePage>}></Route>
             <Route path={ROUTES.LOGIN} element={<LoginPage></LoginPage>}></Route>
             <Route path={ROUTES.REGISTER} element={<RegisterPage></RegisterPage>}></Route>
+            <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
           </Routes>
         </div>
       ) : (
