@@ -43,7 +43,16 @@ const LoginPage: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.access_token);
-        navigate(ROUTES.HOME);
+        
+        // Decode JWT to check for role before routing
+        const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+        
+        // Check and route based on role
+        if (payload.role == 'business_manager') {
+          navigate(ROUTES.BIZMNGPAGE);
+        } else {
+          navigate(ROUTES.HOME);
+        }
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Authentication Failed');
