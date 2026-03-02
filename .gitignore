@@ -43,5 +43,6 @@
 # vscode
 .vscode/
 .env
+.DS_Store
 
 backend/.venv/*
