@@ -24,7 +24,7 @@ const DeveloperPage: React.FC = () => {
       gap: '2rem',
       backgroundColor: COLORS.backgroundPrimary,
     }}>
-      {/* Header with SLB, Upload New Firmware, and Logout */}
+      {/* Header with SLB & Upload New Firmware merged from SCRUM-26*/}
       <header
         style={{
           display: 'flex',
@@ -34,60 +34,63 @@ const DeveloperPage: React.FC = () => {
       >
         <button 
           type="button" 
-          onClick={() => navigate(ROUTES.DEVELOPERPAGE)}
+          onClick={() => navigate(ROUTES.HOME)}
+          style = {{
+            padding: '0.5rem 1.5rem',
+            backgroundColor: COLORS.backgroundPrimary,
+            border: 'none'
+          }}
+        >
+          <img 
+          src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
+          alt="SLB Logo" 
+          style={{ width: '100px', height: 'auto' }} 
+          />
+            
+        </button>
+
+        {/*Group Upload New Firmware & Logout at top right*/}
+        <div
+          style = {{
+            display: 'flex',
+            gap: '1rem'
+          }}>
+        <button 
+          type="button" 
+          onClick={() => navigate(ROUTES.UPLOAD)}
           style={{
             padding: '0.5rem 1.5rem',
             fontSize: '1rem',
             cursor: 'pointer',
             borderRadius: '6px',
-            border: 'none',
-            backgroundColor: COLORS.accentPrimary,
-            color: COLORS.white,
+            border: `1px solid ${COLORS.success}`,
+            backgroundColor: 'transparent',
+            color: COLORS.success,
             fontWeight: 500,
             transition: 'background-color 0.2s',
           }}
         >
-          SLB
+          Upload New Firmware
         </button>
-
-        {/*Group Upload New Firmware & Logout at top right*/}
-        <div style={{display: 'flex', gap: '0.75rem'}}>
-          <button 
-            type="button" 
-            onClick={() => navigate(ROUTES.LOGIN)}
-            style={{
-              padding: '0.5rem 1.5rem',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              borderRadius: '6px',
-              border: `1px solid ${COLORS.success}`,
-              backgroundColor: 'transparent',
-              color: COLORS.success,
-              fontWeight: 500,
-              transition: 'all 0.2s',
-            }}
-          >
-            Upload New Firmware
-          </button>
           
-          <button
-            type="button" 
-            onClick={() => navigate(ROUTES.LOGIN)}
-            style={{
-              padding: '0.5rem 1.5rem',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              borderRadius: '6px',
-              border: `1px solid ${COLORS.danger}`,
-              backgroundColor: 'transparent',
-              color: COLORS.dangerText,
-              fontWeight: 500,
-              transition: 'all 0.2s',
-            }}
-            >
-              Logout
-            </button>
-          </div>
+        <button
+          type="button" 
+          onClick={() => navigate(ROUTES.LOGIN)}
+          style={{
+            padding: '0.5rem 1.5rem',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            borderRadius: '6px',
+            border: `1px solid ${COLORS.danger}`,
+            backgroundColor: 'transparent',
+            color: COLORS.dangerText,
+            fontWeight: 500,
+            transition: 'all 0.2s',
+          }}
+          >
+            Logout
+          </button>
+        </div>
       </header>
 
     {/*Modified Dashboard header and tab nav*/}
