@@ -1,6 +1,6 @@
 import React, {useState} from 'react'
 import type { ChangeEvent } from 'react'
-import { Meta, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 
