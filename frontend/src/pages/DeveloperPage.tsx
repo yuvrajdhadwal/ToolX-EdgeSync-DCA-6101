@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 
-const HomePage: React.FC = () => {
+const DeveloperPage: React.FC = () => {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState(0)
   // Table Headers
-  const tableHeaders = ['Date', 'Version', 'Priority', 'Developer', 'Short Description']
+  const tableHeaders = ['Last Updated', 'Firmware Version', 'Priority', 'Developer', 'Short Description']
 
   // Name of Tabs
-  const tabs = ['Current', 'Pending', 'Rejected']
+  const tabs = ['Current Firmware', 'Pending Firmware', 'Rejected Firmware']
 
   // Minimum 3 empty rows
   const minRows = 3
@@ -24,7 +24,7 @@ const HomePage: React.FC = () => {
       gap: '2rem',
       backgroundColor: COLORS.backgroundPrimary,
     }}>
-      {/* Header with SLB and Logout */}
+      {/* Header with SLB & Upload New Firmware merged from SCRUM-26*/}
       <header
         style={{
           display: 'flex',
@@ -48,6 +48,8 @@ const HomePage: React.FC = () => {
           />
             
         </button>
+
+        {/*Group Upload New Firmware & Logout at top right*/}
         <div
           style = {{
             display: 'flex',
@@ -70,7 +72,8 @@ const HomePage: React.FC = () => {
         >
           Upload New Firmware
         </button>
-        <button 
+          
+        <button
           type="button" 
           onClick={() => navigate(ROUTES.LOGIN)}
           style={{
@@ -84,14 +87,27 @@ const HomePage: React.FC = () => {
             fontWeight: 500,
             transition: 'all 0.2s',
           }}
-        >
-          Logout
-        </button>
+          >
+            Logout
+          </button>
         </div>
       </header>
 
+    {/*Modified Dashboard header and tab nav*/}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `3px solid ${COLORS.borderPrimary}`}}>
+      <h1 style ={{
+          margin: 0,
+          fontSize: '2rem',
+          fontWeight: 700,
+          color: COLORS.white,
+          textAlign: 'left',
+          marginBottom: '0.5rem',
+        }}>
+          Dashboard
+      </h1>
+
       {/* Tab Navigation */}
-      <nav style={{ display: 'flex', gap: '4px', borderBottom: `3px solid ${COLORS.borderPrimary}` }}>
+      <nav style={{ display: 'flex', gap: '4px', borderBottom: `3px solid ${COLORS.borderPrimary}`}}>
         {tabs.map((tab, index) => (
           <button
             key={tab}
@@ -117,6 +133,7 @@ const HomePage: React.FC = () => {
           </button>
         ))}
       </nav>
+    </div>
 
       {/* Main Content Area */}
       <main
@@ -188,4 +205,4 @@ const HomePage: React.FC = () => {
   )
 }
 
-export default HomePage
+export default DeveloperPage
