@@ -20,7 +20,10 @@ type UploadItem = {
 };
 
 const getUploadById = async (uploadId: number): Promise<UploadItem | null> => {
-  const response = await fetch(`/firmware/${uploadId}`);
+  const token = localStorage.getItem('token');
+  const response = await fetch(`/firmware/${uploadId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
 
   if (response.status === 404) {
     return null;

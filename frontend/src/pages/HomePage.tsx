@@ -26,7 +26,10 @@ type UploadItem = {
 }
 
 const getUploadsByStatus = async (status: UploadStatus): Promise<UploadItem[]> => {
-  const response = await fetch(`/firmware/status/${status}`)
+  const token = localStorage.getItem('token')
+  const response = await fetch(`/firmware/status/${status}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
 
   if (!response.ok) {
     throw new Error(`Failed to fetch firmware: ${response.statusText}`)
@@ -54,7 +57,7 @@ const HomePage: React.FC = () => {
   const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
   const isPendingTab = tabStatusMap[activeTab] === UPLOAD_STATUS.PENDING
 
-  // Minimum 3 empty rows
+  // Minimum 1 empty rows
   const minRows = 1
 
   useEffect(() => {

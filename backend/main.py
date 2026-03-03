@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -47,6 +47,7 @@ def get_db():
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
 ALGORITHM = os.getenv('ALGORITHM', 'HS256')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+MAHU_PENDING_VERSION_WHITELIST = ["v2.0.0-rc1", "v2.0.0-rc2", "v2.0.1-hotfix"]
 
 # Define UserRole enum locally for Pydantic validation
 class UserRole(str, Enum):
@@ -142,6 +143,22 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         return payload
     except JWTError:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
+
+
+def enforce_pending_access(authorization: Optional[str]) -> None:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    token = authorization.split(" ", 1)[1]
+    payload = verify_token(token=token)
+    role = payload.get("role")
+    username = payload.get("sub")
+
+    if role != UserRole.developer_manager.value:
+        raise HTTPException(status_code=403, detail="Only developer managers can view pending firmware")
+
+    if not username or username.lower() != "mahu":
+        raise HTTPException(status_code=403, detail="Only Mahu developer manager can view pending firmware")
     
 @app.get("/verify-token/{token}")
 async def verify_user_token(token: str):
@@ -167,13 +184,19 @@ class FirmwareResponse(BaseModel):
 
 # Get firmware by status
 @app.get("/firmware/status/{status}", response_model=List[FirmwareResponse])
-def get_firmware_by_status(status: str, db: Session = Depends(get_db)):
+def get_firmware_by_status(
+    status: str,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
     query = db.query(FirmwareUpdate)
     
     if status == "pending":
+        enforce_pending_access(authorization)
         firmware_list = query.filter(
             FirmwareUpdate.approved_by.is_(None),
-            FirmwareUpdate.declined_by.is_(None)
+            FirmwareUpdate.declined_by.is_(None),
+            FirmwareUpdate.version_number.in_(MAHU_PENDING_VERSION_WHITELIST),
         ).all()
     elif status == "current":
         firmware_list = query.filter(
@@ -208,7 +231,11 @@ def get_firmware_by_status(status: str, db: Session = Depends(get_db)):
 
 # Get firmware by ID
 @app.get("/firmware/{firmware_id}", response_model=FirmwareResponse)
-def get_firmware_by_id(firmware_id: int, db: Session = Depends(get_db)):
+def get_firmware_by_id(
+    firmware_id: int,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
     firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
     
     if not firmware:
@@ -221,6 +248,11 @@ def get_firmware_by_id(firmware_id: int, db: Session = Depends(get_db)):
         status = "current"
     else:
         status = "pending"
+
+    if status == "pending":
+        if firmware.version_number not in MAHU_PENDING_VERSION_WHITELIST:
+            raise HTTPException(status_code=404, detail="Firmware not found")
+        enforce_pending_access(authorization)
     
     firmware_dict = {
         "id": firmware.id,
