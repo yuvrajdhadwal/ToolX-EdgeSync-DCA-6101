@@ -104,19 +104,40 @@ const HomePage: React.FC = () => {
         <button 
           type="button" 
           onClick={() => navigate(ROUTES.HOME)}
+          style = {{
+            padding: '0.5rem 1.5rem',
+            backgroundColor: COLORS.backgroundPrimary,
+            border: 'none'
+          }}
+        >
+          <img 
+          src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
+          alt="SLB Logo" 
+          style={{ width: '100px', height: 'auto' }} 
+          />
+            
+        </button>
+        <div
+          style = {{
+            display: 'flex',
+            gap: '1rem'
+          }}>
+        <button 
+          type="button" 
+          onClick={() => navigate(ROUTES.UPLOAD)}
           style={{
             padding: '0.5rem 1.5rem',
             fontSize: '1rem',
             cursor: 'pointer',
             borderRadius: '6px',
-            border: 'none',
-            backgroundColor: COLORS.success,
-            color: COLORS.white,
+            border: `1px solid ${COLORS.success}`,
+            backgroundColor: 'transparent',
+            color: COLORS.success,
             fontWeight: 500,
             transition: 'background-color 0.2s',
           }}
         >
-          SLB
+          Upload New Firmware
         </button>
         <button 
           type="button" 
@@ -135,6 +156,7 @@ const HomePage: React.FC = () => {
         >
           Logout
         </button>
+        </div>
       </header>
 
       {/* Tab Navigation */}

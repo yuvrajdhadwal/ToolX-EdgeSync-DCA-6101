@@ -61,6 +61,12 @@ class UserCreate(BaseModel):
     role: UserRole
     username: str
     password: str
+class FirmwareCreate(BaseModel):
+    device_type: str
+    developer: str
+    version_number: str
+    isEmergency: int
+    description: str
 
 def get_user_by_username(db: Session, username: str):
     # This will search the base User table and return the correct subclass automatically
@@ -87,6 +93,23 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
     
     return "complete"
+def create_firmware(db: Session, firmware_data: FirmwareCreate):
+
+    firmware = FirmwareUpdate(
+        device_type=firmware_data.device_type,
+        uploaded_by=firmware_data.developer,
+        version_number=firmware_data.version_number,
+        isEmergency=firmware_data.isEmergency,
+        description=firmware_data.description
+    )
+    db.add(firmware)
+    db.commit()
+    db.refresh(firmware)
+    return "complete firmware"
+#POST for firmware upload
+@app.post("/upload")
+def upload_firmware(firmware_data: FirmwareCreate, db: Session = Depends(get_db)):
+    return create_firmware(db=db, firmware_data=firmware_data)  
 
 # POST route that uses the Pydantic model to receive the request body.
 @app.post("/register")
@@ -133,6 +156,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 def verify_token(token: str = Depends(oauth2_scheme)):
     try:
