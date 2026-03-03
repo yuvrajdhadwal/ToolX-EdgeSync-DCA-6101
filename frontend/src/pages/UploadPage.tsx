@@ -23,6 +23,7 @@ interface ItemInfo {
 const UploadPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate()
+  
 
   const [formData, setFormData] = useState<ItemInfo>({
     file: null,
@@ -31,7 +32,6 @@ const UploadPage: React.FC = () => {
     version_number: '',
     isEmergency: false,
     description: '',
-
     approved_by: null,
     declined_by: null,
     declined_comment: null,
@@ -41,7 +41,10 @@ const UploadPage: React.FC = () => {
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, type } = event.target;
     let value: any;
-    if (type === 'checkbox') {
+    if (type === 'file') {
+      const fileInput = event.target as HTMLInputElement;
+      value = fileInput.files ? fileInput.files[0] : null;
+    } else if (type === 'checkbox') {
       value = (event.target as HTMLInputElement).checked;
     } else {
       value = event.target.value;
@@ -52,18 +55,29 @@ const UploadPage: React.FC = () => {
     });
   };
 
-  
+
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!formData.file) {
+      setLoading(false);
+      console.error('Firmware file is required');
+      return;
+    }
     setLoading(true);
-    const {file, ...metaData} = formData
+    const data = new FormData();
+    if (formData.file) {
+    data.append('file', formData.file); 
+    }
+    data.append('device_type', formData.device_type);
+    data.append('version_number', formData.version_number);
+    data.append('description', formData.description);
+    data.append('isEmergency', String(formData.isEmergency));
+    data.append('developer', String(formData.developer));
     try {
       const response = await fetch('/upload', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(metaData),
+          body: data,
       });
       setLoading(false);
       if (response.ok) {
@@ -167,7 +181,8 @@ const UploadPage: React.FC = () => {
                         
                     }}
                     type='file'
-                    name='file'>
+                    name='file'
+                    onChange={handleInputChange}>
                 </input>
 
                 <label style={{
