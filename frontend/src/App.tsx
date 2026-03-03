@@ -5,6 +5,7 @@ import WelcomePage from './pages/WelcomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage'; 
+import FirmwareDetailPage from './pages/FirmwareDetailPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 
 function AppLayout() {
@@ -29,6 +30,7 @@ function AppLayout() {
       ) : (
         <Routes>
           <Route path={ROUTES.HOME} element={<HomePage></HomePage>}></Route>
+          <Route path={ROUTES.FIRMWARE_DETAIL} element={<FirmwareDetailPage></FirmwareDetailPage>}></Route>
         </Routes>
       )}
     </>
