@@ -2,8 +2,36 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { COLORS } from '../constants/colors';
 import { ROUTES } from '../constants/routes';
-import { getUploadById } from '../services/uploadService';
-import type { UploadItem } from '../types/upload';
+
+type UploadStatus = 'current' | 'pending' | 'rejected';
+
+type UploadItem = {
+  id: number;
+  version_number: string;
+  device_type: string;
+  description: string | null;
+  isEmergency: boolean;
+  uploaded_by: number | null;
+  uploaded_timestamp: string | null;
+  approved_by: number | null;
+  declined_by: number | null;
+  declined_comment: string | null;
+  status: UploadStatus;
+};
+
+const getUploadById = async (uploadId: number): Promise<UploadItem | null> => {
+  const response = await fetch(`/firmware/${uploadId}`);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch firmware: ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 const FirmwareDetailPage: React.FC = () => {
   const navigate = useNavigate();

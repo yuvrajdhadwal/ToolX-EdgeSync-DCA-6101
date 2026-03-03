@@ -2,8 +2,38 @@ import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
-import { getUploadsByStatus } from '../services/uploadService'
-import { UPLOAD_STATUS, type UploadItem, type UploadStatus } from '../types/upload'
+
+const UPLOAD_STATUS = {
+  CURRENT: 'current',
+  PENDING: 'pending',
+  REJECTED: 'rejected',
+} as const
+
+type UploadStatus = (typeof UPLOAD_STATUS)[keyof typeof UPLOAD_STATUS]
+
+type UploadItem = {
+  id: number
+  version_number: string
+  device_type: string
+  description: string | null
+  isEmergency: boolean
+  uploaded_by: number | null
+  uploaded_timestamp: string | null
+  approved_by: number | null
+  declined_by: number | null
+  declined_comment: string | null
+  status: UploadStatus
+}
+
+const getUploadsByStatus = async (status: UploadStatus): Promise<UploadItem[]> => {
+  const response = await fetch(`/firmware/status/${status}`)
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch firmware: ${response.statusText}`)
+  }
+
+  return response.json()
+}
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate()
