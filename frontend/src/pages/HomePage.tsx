@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import { getUploadsByStatus } from '../services/uploadService'
@@ -7,12 +7,16 @@ import { UPLOAD_STATUS, type UploadItem, type UploadStatus } from '../types/uplo
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState(0)
+  const location = useLocation()
+  const [activeTab, setActiveTab] = useState(() => {
+    const navigationState = location.state as { activeTab?: number } | null
+    return typeof navigationState?.activeTab === 'number' ? navigationState.activeTab : 0
+  })
   const [uploads, setUploads] = useState<UploadItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   // Table Headers
-  const tableHeaders = ['Date', 'Version', 'Priority', 'Developer', 'Short Description']
+  const tableHeaders = ['ID', 'Version', 'Device Type', 'Emergency', 'Description']
 
   // Name of Tabs
   const tabs = ['Current', 'Pending', 'Rejected']
@@ -180,7 +184,7 @@ const HomePage: React.FC = () => {
                       return
                     }
 
-                    const detailRoute = ROUTES.FIRMWARE_DETAIL.replace(':uploadId', encodeURIComponent(upload.id))
+                    const detailRoute = ROUTES.FIRMWARE_DETAIL.replace(':uploadId', String(upload.id))
                     navigate(detailRoute)
                   }}
                   style={{
@@ -197,7 +201,7 @@ const HomePage: React.FC = () => {
                       color: COLORS.textPrimary,
                     }}
                   >
-                    {upload?.date ?? ''}
+                    {upload?.id ?? ''}
                   </td>
                   <td
                     style={{
@@ -208,7 +212,7 @@ const HomePage: React.FC = () => {
                       color: COLORS.textPrimary,
                     }}
                   >
-                    {upload?.version ?? ''}
+                    {upload?.version_number ?? ''}
                   </td>
                   <td
                     style={{
@@ -219,7 +223,7 @@ const HomePage: React.FC = () => {
                       color: COLORS.textPrimary,
                     }}
                   >
-                    {upload?.priority ?? ''}
+                    {upload?.device_type ?? ''}
                   </td>
                   <td
                     style={{
@@ -230,7 +234,7 @@ const HomePage: React.FC = () => {
                       color: COLORS.textPrimary,
                     }}
                   >
-                    {upload?.developer ?? ''}
+                    {upload?.isEmergency ? 'Yes' : upload ? 'No' : ''}
                   </td>
                   <td
                     style={{
@@ -241,7 +245,7 @@ const HomePage: React.FC = () => {
                       color: COLORS.textPrimary,
                     }}
                   >
-                    {upload?.shortDescription ?? ''}
+                    {upload?.description ?? ''}
                   </td>
                 </tr>
               ))}

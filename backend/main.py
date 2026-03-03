@@ -12,10 +12,11 @@ import os
 from enum import Enum
 
 # Removed UserRole from imports, it will be defined locally for Pydantic
-from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional
+from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from typing import List, Optional
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -146,6 +147,96 @@ def verify_token(token: str = Depends(oauth2_scheme)):
 async def verify_user_token(token: str):
     payload = verify_token(token=token)
     return {"message": "Token is valid", "user": payload.get("sub"), "role": payload.get("role")}
+
+# Pydantic model for firmware response
+class FirmwareResponse(BaseModel):
+    id: int
+    version_number: str
+    device_type: str
+    description: Optional[str]
+    isEmergency: bool
+    uploaded_by: Optional[int]
+    uploaded_timestamp: Optional[datetime]
+    approved_by: Optional[int]
+    declined_by: Optional[int]
+    declined_comment: Optional[str]
+    status: str  # 'pending', 'current', 'rejected'
+    
+    class Config:
+        from_attributes = True
+
+# Get firmware by status
+@app.get("/firmware/status/{status}", response_model=List[FirmwareResponse])
+def get_firmware_by_status(status: str, db: Session = Depends(get_db)):
+    query = db.query(FirmwareUpdate)
+    
+    if status == "pending":
+        firmware_list = query.filter(
+            FirmwareUpdate.approved_by.is_(None),
+            FirmwareUpdate.declined_by.is_(None)
+        ).all()
+    elif status == "current":
+        firmware_list = query.filter(
+            FirmwareUpdate.approved_by.isnot(None)
+        ).all()
+    elif status == "rejected":
+        firmware_list = query.filter(
+            FirmwareUpdate.declined_by.isnot(None)
+        ).all()
+    else:
+        raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'current', or 'rejected'")
+    
+    # Map to response model with status field
+    result = []
+    for firmware in firmware_list:
+        firmware_dict = {
+            "id": firmware.id,
+            "version_number": firmware.version_number,
+            "device_type": firmware.device_type,
+            "description": firmware.description,
+            "isEmergency": firmware.isEmergency,
+            "uploaded_by": firmware.uploaded_by,
+            "uploaded_timestamp": firmware.uploaded_timestamp,
+            "approved_by": firmware.approved_by,
+            "declined_by": firmware.declined_by,
+            "declined_comment": firmware.declined_comment,
+            "status": status
+        }
+        result.append(FirmwareResponse(**firmware_dict))
+    
+    return result
+
+# Get firmware by ID
+@app.get("/firmware/{firmware_id}", response_model=FirmwareResponse)
+def get_firmware_by_id(firmware_id: int, db: Session = Depends(get_db)):
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+    
+    # Determine status
+    if firmware.declined_by is not None:
+        status = "rejected"
+    elif firmware.approved_by is not None:
+        status = "current"
+    else:
+        status = "pending"
+    
+    firmware_dict = {
+        "id": firmware.id,
+        "version_number": firmware.version_number,
+        "device_type": firmware.device_type,
+        "description": firmware.description,
+        "isEmergency": firmware.isEmergency,
+        "uploaded_by": firmware.uploaded_by,
+        "uploaded_timestamp": firmware.uploaded_timestamp,
+        "approved_by": firmware.approved_by,
+        "declined_by": firmware.declined_by,
+        "declined_comment": firmware.declined_comment,
+        "status": status
+    }
+    
+    return FirmwareResponse(**firmware_dict)
 
 if os.path.exists("static/assets"):
     app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")

@@ -2,15 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { COLORS } from '../constants/colors';
 import { ROUTES } from '../constants/routes';
-import { getUploadById, updateUploadStatus } from '../services/uploadService';
-import { UPLOAD_STATUS, type UploadItem } from '../types/upload';
+import { getUploadById } from '../services/uploadService';
+import type { UploadItem } from '../types/upload';
 
 const FirmwareDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { uploadId } = useParams<{ uploadId: string }>();
   const [firmware, setFirmware] = useState<UploadItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -24,7 +23,7 @@ const FirmwareDetailPage: React.FC = () => {
       setError('');
 
       try {
-        const upload = await getUploadById(uploadId);
+        const upload = await getUploadById(Number(uploadId));
         if (!upload) {
           setError('Firmware not found');
           setFirmware(null);
@@ -42,37 +41,18 @@ const FirmwareDetailPage: React.FC = () => {
     loadFirmware();
   }, [uploadId]);
 
-  const handleDecision = async (nextStatus: typeof UPLOAD_STATUS.CURRENT | typeof UPLOAD_STATUS.REJECTED) => {
-    if (!uploadId) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError('');
-
-    try {
-      const updated = await updateUploadStatus(uploadId, nextStatus);
-      if (!updated) {
-        setError('Firmware not found');
-        return;
-      }
-
-      navigate(ROUTES.HOME);
-    } catch {
-      setError('Failed to update firmware status');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const detailRows: Array<{ label: string; value: string | undefined }> = [
+  const detailRows: Array<{ label: string; value: string | number | boolean | null | undefined }> = [
     { label: 'ID', value: firmware?.id },
-    { label: 'Date', value: firmware?.date },
-    { label: 'Version', value: firmware?.version },
-    { label: 'Priority', value: firmware?.priority },
-    { label: 'Developer', value: firmware?.developer },
-    { label: 'Short Description', value: firmware?.shortDescription },
+    { label: 'Version', value: firmware?.version_number },
+    { label: 'Device Type', value: firmware?.device_type },
+    { label: 'Emergency', value: firmware?.isEmergency ? 'Yes' : 'No' },
+    { label: 'Description', value: firmware?.description },
     { label: 'Status', value: firmware?.status },
+    { label: 'Uploaded By', value: firmware?.uploaded_by },
+    { label: 'Upload Timestamp', value: firmware?.uploaded_timestamp },
+    { label: 'Approved By', value: firmware?.approved_by },
+    { label: 'Declined By', value: firmware?.declined_by },
+    { label: 'Decline Comment', value: firmware?.declined_comment },
   ];
 
   return (
@@ -98,10 +78,10 @@ const FirmwareDetailPage: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-          <h2 style={{ margin: 0 }}>Pending Firmware Details</h2>
+          <h2 style={{ margin: 0 }}>Firmware Details</h2>
           <button
             type="button"
-            onClick={() => navigate(ROUTES.HOME)}
+            onClick={() => navigate(ROUTES.HOME, { state: { activeTab: 1 } })}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: 'transparent',
@@ -119,66 +99,29 @@ const FirmwareDetailPage: React.FC = () => {
         {error && <p style={{ margin: 0, color: COLORS.error }}>{error}</p>}
 
         {!isLoading && firmware && (
-          <>
-            <div style={{ border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
-              {detailRows.map((row) => (
+          <div style={{ border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
+            {detailRows.map((row) => (
+              <div
+                key={row.label}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '220px 1fr',
+                  borderBottom: `1px solid ${COLORS.borderPrimary}`,
+                }}
+              >
                 <div
-                  key={row.label}
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '220px 1fr',
-                    borderBottom: `1px solid ${COLORS.borderPrimary}`,
+                    padding: '0.75rem 1rem',
+                    backgroundColor: COLORS.backgroundTertiary,
+                    fontWeight: 600,
                   }}
                 >
-                  <div
-                    style={{
-                      padding: '0.75rem 1rem',
-                      backgroundColor: COLORS.backgroundTertiary,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {row.label}
-                  </div>
-                  <div style={{ padding: '0.75rem 1rem' }}>{row.value ?? '-'}</div>
+                  {row.label}
                 </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => handleDecision(UPLOAD_STATUS.CURRENT)}
-                style={{
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  backgroundColor: COLORS.success,
-                  color: COLORS.white,
-                  fontWeight: 600,
-                }}
-              >
-                Accept Firmware
-              </button>
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => handleDecision(UPLOAD_STATUS.REJECTED)}
-                style={{
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  backgroundColor: COLORS.danger,
-                  color: COLORS.white,
-                  fontWeight: 600,
-                }}
-              >
-                Reject Firmware
-              </button>
-            </div>
-          </>
+                <div style={{ padding: '0.75rem 1rem' }}>{row.value ?? '-'}</div>
+              </div>
+            ))}
+          </div>
         )}
       </main>
     </div>

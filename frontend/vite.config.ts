@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       '/register': 'http://localhost:8000',
       '/token': 'http://localhost:8000',
+      '/firmware': 'http://localhost:8000',
     }
   }
 })
