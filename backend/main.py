@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Header
+from fastapi import FastAPI, Depends, HTTPException, status, Header, Form, File, UploadFile
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -61,11 +61,13 @@ class UserCreate(BaseModel):
     role: UserRole
     username: str
     password: str
+
 class FirmwareCreate(BaseModel):
+    objectBinary: str
     device_type: str
     developer: str
     version_number: str
-    isEmergency: int
+    isEmergency: bool
     description: str
 
 def get_user_by_username(db: Session, username: str):
@@ -93,23 +95,35 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
     
     return "complete"
-def create_firmware(db: Session, firmware_data: FirmwareCreate):
 
+#POST for firmware upload
+@app.post("/upload")
+async def upload_firmware(
+    file: UploadFile = File(...),
+    device_type: str = Form(...),
+    developer: int = Form(...),
+    version_number: str = Form(...),
+    isEmergency: bool = Form(...),
+    description: str = Form(...),
+    db: Session = Depends(get_db)
+):
+
+    file_content = await file.read()
     firmware = FirmwareUpdate(
-        device_type=firmware_data.device_type,
-        uploaded_by=firmware_data.developer,
-        version_number=firmware_data.version_number,
-        isEmergency=firmware_data.isEmergency,
-        description=firmware_data.description
+        objectBinary=file_content,
+        version_number=version_number,
+        device_type=device_type,
+        description=description,
+        uploaded_by=developer,
+        isEmergency=isEmergency,
     )
     db.add(firmware)
     db.commit()
     db.refresh(firmware)
-    return "complete firmware"
-#POST for firmware upload
-@app.post("/upload")
-def upload_firmware(firmware_data: FirmwareCreate, db: Session = Depends(get_db)):
-    return create_firmware(db=db, firmware_data=firmware_data)  
+    return {'message': 'upload successful'}
+        
+
+  
 
 # POST route that uses the Pydantic model to receive the request body.
 @app.post("/register")
