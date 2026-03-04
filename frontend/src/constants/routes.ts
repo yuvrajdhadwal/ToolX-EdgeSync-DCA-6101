@@ -4,7 +4,8 @@ export const ROUTES = {
   REGISTER: '/register',
   HOME: '/home',
   DEVELOPERPAGE: '/developer',
-  UPLOAD: '/upload'
+  UPLOAD: '/upload',
+  DEVICETYPE: '/device_type'
 } as const;
 
-export const AUTH_ROUTES = [ROUTES.WELCOME, ROUTES.LOGIN, ROUTES.REGISTER, ROUTES.UPLOAD] as const;
+export const AUTH_ROUTES = [ROUTES.WELCOME, ROUTES.LOGIN, ROUTES.REGISTER, ROUTES.UPLOAD, ROUTES.DEVICETYPE] as const;

@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import DeveloperPage from './pages/DeveloperPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 import UploadPage from './pages/UploadPage';
+import DeviceTypePage from './pages/DeviceTypePage';
 
 function AppLayout() {
   const location = useLocation();
@@ -26,13 +27,15 @@ function AppLayout() {
             <Route path={ROUTES.WELCOME} element={<WelcomePage></WelcomePage>}></Route>
             <Route path={ROUTES.LOGIN} element={<LoginPage></LoginPage>}></Route>
             <Route path={ROUTES.REGISTER} element={<RegisterPage></RegisterPage>}></Route>
-            <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
+
           </Routes>
         </div>
       ) : (
         <Routes>
           <Route path={ROUTES.HOME} element={<HomePage></HomePage>}></Route>
           <Route path={ROUTES.DEVELOPERPAGE} element={<DeveloperPage></DeveloperPage>}></Route>
+          <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
+          <Route path={ROUTES.DEVICETYPE} element={<DeviceTypePage></DeviceTypePage>}></Route>
         </Routes>
       )}
     </>
