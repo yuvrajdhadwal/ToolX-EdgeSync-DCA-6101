@@ -194,23 +194,26 @@ def get_firmware_by_status(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(default=None),
 ):
-    query = db.query(FirmwareUpdate)
+    user = get_authenticated_user(authorization, db)
     
     if status == "pending":
-        user = get_authenticated_user(authorization, db)
         firmware_list = [
             firmware
             for firmware in user.viewable_firmware
             if firmware.approved_by is None and firmware.declined_by is None
         ]
     elif status == "current":
-        firmware_list = query.filter(
-            FirmwareUpdate.approved_by.isnot(None)
-        ).all()
+        firmware_list = [
+            firmware
+            for firmware in user.viewable_firmware
+            if firmware.approved_by is not None and firmware.declined_by is None
+        ]
     elif status == "rejected":
-        firmware_list = query.filter(
-            FirmwareUpdate.declined_by.isnot(None)
-        ).all()
+        firmware_list = [
+            firmware
+            for firmware in user.viewable_firmware
+            if firmware.declined_by is not None
+        ]
     else:
         raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'current', or 'rejected'")
     
@@ -241,9 +244,13 @@ def get_firmware_by_id(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(default=None),
 ):
+    user = get_authenticated_user(authorization, db)
     firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
     
     if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if not user_can_view_firmware(user, firmware.id):
         raise HTTPException(status_code=404, detail="Firmware not found")
     
     # Determine status
@@ -254,11 +261,6 @@ def get_firmware_by_id(
     else:
         status = "pending"
 
-    if status == "pending":
-        user = get_authenticated_user(authorization, db)
-        if not user_can_view_firmware(user, firmware.id):
-            raise HTTPException(status_code=404, detail="Firmware not found")
-    
     firmware_dict = {
         "id": firmware.id,
         "version_number": firmware.version_number,
