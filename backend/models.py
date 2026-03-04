@@ -1,4 +1,4 @@
-from sqlalchemy import (Column, Integer, String, Boolean, Float,
+from sqlalchemy import (Column, Integer, String, Boolean, Float, LargeBinary,
     ForeignKey, DateTime, Table, ForeignKeyConstraint)
 from sqlalchemy.orm import relationship, backref
 from database import Base
@@ -91,6 +91,7 @@ class FieldShopProfessional(User):
 class FirmwareUpdate(Base):
     __tablename__ = "firmware_updates"
     id = Column(Integer, primary_key=True)
+    objectBinary = Column(LargeBinary, nullable=False)
     version_number = Column(String(20), nullable=False)
     device_type = Column(String(50), nullable=False)
     description = Column(String(255))
