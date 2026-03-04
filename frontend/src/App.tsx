@@ -26,13 +26,13 @@ function AppLayout() {
             <Route path={ROUTES.WELCOME} element={<WelcomePage></WelcomePage>}></Route>
             <Route path={ROUTES.LOGIN} element={<LoginPage></LoginPage>}></Route>
             <Route path={ROUTES.REGISTER} element={<RegisterPage></RegisterPage>}></Route>
-            <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
           </Routes>
         </div>
       ) : (
         <Routes>
           <Route path={ROUTES.HOME} element={<HomePage></HomePage>}></Route>
           <Route path={ROUTES.DEVELOPERPAGE} element={<DeveloperPage></DeveloperPage>}></Route>
+          <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
         </Routes>
       )}
     </>
