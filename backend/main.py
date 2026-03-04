@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Header
+from fastapi import FastAPI, Depends, HTTPException, status, Header, Form, File, UploadFile
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -61,6 +61,14 @@ class UserCreate(BaseModel):
     username: str
     password: str
 
+class FirmwareCreate(BaseModel):
+    objectBinary: str
+    device_type: str
+    developer: str
+    version_number: str
+    isEmergency: bool
+    description: str
+
 def get_user_by_username(db: Session, username: str):
     # This will search the base User table and return the correct subclass automatically
     return db.query(User).filter(User.username == username).first()
@@ -86,6 +94,35 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
     
     return "complete"
+
+#POST for firmware upload
+@app.post("/upload")
+async def upload_firmware(
+    file: UploadFile = File(...),
+    device_type: str = Form(...),
+    developer: int = Form(...),
+    version_number: str = Form(...),
+    isEmergency: bool = Form(...),
+    description: str = Form(...),
+    db: Session = Depends(get_db)
+):
+
+    file_content = await file.read()
+    firmware = FirmwareUpdate(
+        objectBinary=file_content,
+        version_number=version_number,
+        device_type=device_type,
+        description=description,
+        uploaded_by=developer,
+        isEmergency=isEmergency,
+    )
+    db.add(firmware)
+    db.commit()
+    db.refresh(firmware)
+    return {'message': 'upload successful'}
+        
+
+  
 
 # POST route that uses the Pydantic model to receive the request body.
 @app.post("/register")
@@ -132,6 +169,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 def verify_token(token: str = Depends(oauth2_scheme)):
     try:

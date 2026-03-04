@@ -9,6 +9,8 @@ export default defineConfig({
       '/register': 'http://localhost:8000',
       '/token': 'http://localhost:8000',
       '/firmware': 'http://localhost:8000',
+      '/upload': 'http://localhost:8000'
+      
     }
   }
 })
