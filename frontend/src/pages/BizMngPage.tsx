@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Route, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 
@@ -12,7 +12,7 @@ const BizMngPage: React.FC = () => {
     setActiveView(value)
     setClickedButton(value)
     if (value == 'devices') {
-      navigate(ROUTES.DEVICEADD)
+      navigate(ROUTES.DEVICES_BIZMNG)
     }
   }
 

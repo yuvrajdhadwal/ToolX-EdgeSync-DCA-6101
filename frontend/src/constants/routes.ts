@@ -6,7 +6,7 @@ export const ROUTES = {
   DEVELOPERPAGE: '/developer',
   UPLOAD: '/upload',
   BIZMNGPAGE: '/business_manager',
-  DEVICEADD: 'add_device'
+  DEVICES_BIZMNG: '/view_devices'
 } as const;
 
 export const AUTH_ROUTES = [ROUTES.WELCOME, ROUTES.LOGIN, ROUTES.REGISTER] as const;
