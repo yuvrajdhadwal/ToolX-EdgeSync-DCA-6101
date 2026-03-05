@@ -3,6 +3,8 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   HOME: '/home',
+  DEVELOPERPAGE: '/developer',
+  UPLOAD: '/upload'
   BIZMNGPAGE: '/business_manager',
   DEVICEADD: 'add_device'
 } as const;

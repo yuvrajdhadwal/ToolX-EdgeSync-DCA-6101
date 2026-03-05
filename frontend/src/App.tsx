@@ -5,7 +5,9 @@ import WelcomePage from './pages/WelcomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
-import BizMngPage from './pages/BizMngPage'; 
+import UploadPage from './pages/UploadPage';
+import BizMngPage from './pages/BizMngPage';
+import DeveloperPage from './pages/DeveloperPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 
 function AppLayout() {
@@ -30,6 +32,8 @@ function AppLayout() {
       ) : (
         <Routes>
           <Route path={ROUTES.HOME} element={<HomePage></HomePage>}></Route>
+          <Route path={ROUTES.DEVELOPERPAGE} element={<DeveloperPage></DeveloperPage>}></Route>
+          <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
           <Route path={ROUTES.BIZMNGPAGE} element={<BizMngPage></BizMngPage>}></Route>
         </Routes>
       )}
