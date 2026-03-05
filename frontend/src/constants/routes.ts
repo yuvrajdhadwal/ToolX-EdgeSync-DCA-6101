@@ -4,7 +4,7 @@ export const ROUTES = {
   REGISTER: '/register',
   HOME: '/home',
   DEVELOPERPAGE: '/developer',
-  UPLOAD: '/upload'
+  UPLOAD: '/upload',
   BIZMNGPAGE: '/business_manager',
   DEVICEADD: 'add_device'
 } as const;
