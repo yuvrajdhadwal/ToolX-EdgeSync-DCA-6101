@@ -109,8 +109,8 @@ class FirmwareUpdate(Base):
 
 class Device(Base):
     __tablename__ = "devices"
-
     serial_number = Column(String(100), primary_key=True)
+    device_type = Column(String(50), nullable=False)
     firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="RESTRICT"), primary_key=True, autoincrement=False)
 
     description = Column(String(255))

@@ -17,11 +17,12 @@ const HomePage: React.FC = () => {
 
   return (
     <div style={{ 
-      minHeight: '100vh', 
+      minHeight: '95vh', 
       display: 'flex', 
       flexDirection: 'column', 
       padding: '2rem',
       gap: '2rem',
+      width: '',
       backgroundColor: COLORS.backgroundPrimary,
     }}>
       {/* Header with SLB and Logout */}

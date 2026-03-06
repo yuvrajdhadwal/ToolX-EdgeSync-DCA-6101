@@ -8,4 +8,4 @@ export const ROUTES = {
   DEVICETYPE: '/device_type'
 } as const;
 
-export const AUTH_ROUTES = [ROUTES.WELCOME, ROUTES.LOGIN, ROUTES.REGISTER, ROUTES.UPLOAD, ROUTES.DEVICETYPE] as const;
+export const AUTH_ROUTES = [ROUTES.WELCOME, ROUTES.LOGIN, ROUTES.REGISTER] as const;
