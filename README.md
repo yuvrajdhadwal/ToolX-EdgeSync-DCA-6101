@@ -32,6 +32,18 @@ npm run dev
 python -m uvicorn main:app --reload
 ```
 
+### Local Access
+
+**Frontend**
+```bash
+http://localhost:5173/
+```
+
+**Backend**
+```bash
+http://127.0.0.1:8000/docs
+```
+
 ---
 
 ## Features
