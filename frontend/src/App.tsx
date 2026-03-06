@@ -4,7 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import WelcomePage from './pages/WelcomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage';
+import HomePage from './pages/HomePage'; 
+import FirmwareDetailPage from './pages/FirmwareDetailPage';
 import DeveloperPage from './pages/DeveloperPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 import UploadPage from './pages/UploadPage';
@@ -31,7 +32,8 @@ function AppLayout() {
         </div>
       ) : (
         <Routes>
-          <Route path={ROUTES.HOME} element={<ProtectedRoute><HomePage /></ProtectedRoute>}></Route>
+          <Route path={ROUTES.HOME} element={<ProtectedRoute><HomePage></HomePage></ProtectedRoute>}></Route>
+          <Route path={ROUTES.FIRMWARE_DETAIL} element={<FirmwareDetailPage></FirmwareDetailPage>}></Route>
           <Route path={ROUTES.DEVELOPERPAGE} element={<ProtectedRoute><DeveloperPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
         </Routes>
