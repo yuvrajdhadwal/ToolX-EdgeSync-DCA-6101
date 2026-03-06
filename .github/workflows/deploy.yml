@@ -30,16 +30,7 @@ jobs:
           mkdir -p backend/static
           # Copy the built React files (from frontend/dist) to backend/static
           cp -r frontend/dist/* backend/static/
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install Python dependencies
-        run: |
-          cd backend
-          pip install -r requirements.txt
+          find backend/static -name "*.map" -type f -delete # Delete source maps
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
