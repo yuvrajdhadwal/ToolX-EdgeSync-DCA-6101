@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status,Form, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, status, Header, Form, File, UploadFile
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -16,6 +16,7 @@ from models import User, Developer, DeveloperManager, BusinessManager, FieldShop
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from typing import List, Optional
 
 from iot import deploy_helper, FirmwareOverview
 
@@ -191,6 +192,27 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
 
 
+def get_token_payload_from_header(authorization: Optional[str]) -> dict:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    token = authorization.split(" ", 1)[1]
+    return verify_token(token=token)
+
+
+def require_developer_manager(authorization: Optional[str]) -> str:
+    payload = get_token_payload_from_header(authorization)
+    role = payload.get("role")
+    username = payload.get("sub")
+
+    if role != UserRole.developer_manager.value:
+        raise HTTPException(status_code=403, detail="Only developer managers can perform this action")
+
+    if not username:
+        raise HTTPException(status_code=403, detail="Token is invalid or expired")
+
+    return username
+    
 @app.post("/deploy-to-one-device")
 def cloud_to_device(device_id: str, firmware: FirmwareOverview):
     """
@@ -227,6 +249,129 @@ def cloud_to_many_device(device_ids: list[str], firmware: FirmwareOverview):
 async def verify_user_token(token: str):
     payload = verify_token(token=token)
     return {"message": "Token is valid", "user": payload.get("sub"), "role": payload.get("role")}
+
+
+class FirmwareResponse(BaseModel):
+    id: int
+    version_number: str
+    device_type: str
+    description: Optional[str]
+    isEmergency: bool
+    uploaded_by: Optional[int]
+    uploaded_timestamp: Optional[datetime]
+    approved_by: Optional[int]
+    declined_by: Optional[int]
+    declined_comment: Optional[str]
+    status: str
+
+    class Config:
+        from_attributes = True
+
+
+class RejectFirmwareRequest(BaseModel):
+    rejecting_manager_username: str
+    rejection_reason: str
+
+
+def get_firmware_status(firmware: FirmwareUpdate) -> str:
+    if firmware.declined_by is not None:
+        return "rejected"
+    if firmware.approved_by is not None:
+        return "current"
+    return "pending"
+
+
+def map_firmware_response(firmware: FirmwareUpdate) -> FirmwareResponse:
+    return FirmwareResponse(
+        id=firmware.id,
+        version_number=firmware.version_number,
+        device_type=firmware.device_type,
+        description=firmware.description,
+        isEmergency=firmware.isEmergency,
+        uploaded_by=firmware.uploaded_by,
+        uploaded_timestamp=firmware.uploaded_timestamp,
+        approved_by=firmware.approved_by,
+        declined_by=firmware.declined_by,
+        declined_comment=firmware.declined_comment,
+        status=get_firmware_status(firmware),
+    )
+
+
+@app.get("/firmware/status/{status}", response_model=List[FirmwareResponse])
+def get_firmware_by_status(
+    status: str,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    if status not in {"current", "pending", "rejected"}:
+        raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'current', or 'rejected'")
+
+    query = db.query(FirmwareUpdate)
+
+    if status == "pending":
+        require_developer_manager(authorization)
+        records = query.filter(
+            FirmwareUpdate.approved_by.is_(None),
+            FirmwareUpdate.declined_by.is_(None),
+        ).all()
+    elif status == "current":
+        records = query.filter(FirmwareUpdate.approved_by.isnot(None)).all()
+    else:
+        records = query.filter(FirmwareUpdate.declined_by.isnot(None)).all()
+
+    return [map_firmware_response(record) for record in records]
+
+
+@app.get("/firmware/{firmware_id}", response_model=FirmwareResponse)
+def get_firmware_by_id(
+    firmware_id: int,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if get_firmware_status(firmware) == "pending":
+        require_developer_manager(authorization)
+
+    return map_firmware_response(firmware)
+
+
+@app.post("/firmware/{firmware_id}/reject", response_model=FirmwareResponse)
+def reject_firmware(
+    firmware_id: int,
+    payload: RejectFirmwareRequest,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    token_username = require_developer_manager(authorization)
+
+    if payload.rejecting_manager_username.strip().lower() != token_username.strip().lower():
+        raise HTTPException(status_code=403, detail="Rejecting manager must match the authenticated user")
+
+    if not payload.rejection_reason.strip():
+        raise HTTPException(status_code=400, detail="Rejection reason is required")
+
+    manager = db.query(DeveloperManager).filter(DeveloperManager.username == token_username).first()
+    if not manager:
+        raise HTTPException(status_code=404, detail="Developer manager not found")
+
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if firmware.approved_by is not None or firmware.declined_by is not None:
+        raise HTTPException(status_code=400, detail="Only pending firmware can be rejected")
+
+    firmware.declined_by = manager.id
+    firmware.declined_comment = payload.rejection_reason.strip()
+
+    db.commit()
+    db.refresh(firmware)
+
+    return map_firmware_response(firmware)
 
 
 if os.path.exists("static/assets"):
