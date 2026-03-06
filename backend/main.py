@@ -17,7 +17,7 @@ from models import User, Developer, DeveloperManager, BusinessManager, FieldShop
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from iot import deploy_helper
+from iot import deploy_helper, FirmwareOverview
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -192,13 +192,13 @@ def verify_token(token: str = Depends(oauth2_scheme)):
 
 
 @app.post("/deploy-to-one-device")
-def cloud_to_device(device_id: str):
+def cloud_to_device(device_id: str, firmware: FirmwareOverview):
     """
     @brief Sends a Deployement message to selected edge device
     """
     connection_str = os.getenv('IOT_CONNECTION')
     iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
-    if not deploy_helper(device_id, iot_hub):
+    if not deploy_helper(device_id, iot_hub, firmware):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Device not found or invalid DeviceID"
@@ -207,7 +207,7 @@ def cloud_to_device(device_id: str):
 
 
 @app.post("/deploy-to-many-devices")
-def cloud_to_many_device(device_ids: list[str]):
+def cloud_to_many_device(device_ids: list[str], firmware: FirmwareOverview):
     """
     @brief Sends a Deployment Message to all selected edge devices
     """
@@ -215,7 +215,7 @@ def cloud_to_many_device(device_ids: list[str]):
     iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
 
     for device_id in device_ids:
-        if not deploy_helper(device_id, iot_hub):
+        if not deploy_helper(device_id, iot_hub, firmware):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Device not found or invalid DeviceID"
