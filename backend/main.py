@@ -106,6 +106,16 @@ async def upload_firmware(
     description: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    developer_user = db.query(Developer).filter(Developer.id == developer).first()
+    if not developer_user:
+        raise HTTPException(status_code=404, detail="Developer not found")
+
+    if developer_user.manager_id is None:
+        raise HTTPException(status_code=400, detail="Developer does not have an assigned manager")
+
+    manager_user = db.query(DeveloperManager).filter(DeveloperManager.id == developer_user.manager_id).first()
+    if not manager_user:
+        raise HTTPException(status_code=404, detail="Developer manager not found")
 
     file_content = await file.read()
     firmware = FirmwareUpdate(
@@ -116,6 +126,9 @@ async def upload_firmware(
         uploaded_by=developer,
         isEmergency=isEmergency,
     )
+
+    manager_user.viewable_firmware.append(firmware)
+
     db.add(firmware)
     db.commit()
     db.refresh(firmware)
