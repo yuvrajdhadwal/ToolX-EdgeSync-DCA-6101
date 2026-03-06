@@ -291,69 +291,94 @@ const FirmwareDetailPage: React.FC = () => {
                   style={{
                     width: '100%',
                     maxWidth: '760px',
+                    maxHeight: '90vh',
                     backgroundColor: COLORS.backgroundSecondary,
                     border: `1px solid ${COLORS.borderPrimary}`,
                     borderRadius: '8px',
-                    padding: '1.5rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '1rem',
+                    overflow: 'hidden',
                   }}
                 >
-                  <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Reject Pending Firmware</h3>
+                  <div
+                    style={{
+                      padding: '1rem 1.25rem',
+                      borderBottom: `1px solid ${COLORS.borderPrimary}`,
+                    }}
+                  >
+                    <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Reject Pending Firmware</h3>
+                  </div>
 
-                  {rejectFields.map((field) => (
-                    <div key={field.label} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ color: COLORS.textMuted }}>{field.label}</label>
+                  <div
+                    style={{
+                      padding: '1rem 1.25rem',
+                      overflowY: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.85rem',
+                    }}
+                  >
+                    {rejectFields.map((field) => (
+                      <div key={field.label} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ color: COLORS.textMuted }}>{field.label}</label>
+                        <input
+                          readOnly
+                          value={field.value}
+                          style={{
+                            padding: '0.6rem 0.75rem',
+                            borderRadius: '6px',
+                            border: `1px solid ${COLORS.borderPrimary}`,
+                            backgroundColor: COLORS.backgroundTertiary,
+                            color: COLORS.textPrimary,
+                          }}
+                        />
+                      </div>
+                    ))}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ color: COLORS.textMuted }}>Rejecting Developer Manager</label>
                       <input
-                        readOnly
-                        value={field.value}
+                        value={rejectingManager}
+                        onChange={(event) => setRejectingManager(event.target.value)}
+                        placeholder="Developer manager username"
                         style={{
                           padding: '0.6rem 0.75rem',
                           borderRadius: '6px',
                           border: `1px solid ${COLORS.borderPrimary}`,
-                          backgroundColor: COLORS.backgroundTertiary,
+                          backgroundColor: COLORS.backgroundPrimary,
                           color: COLORS.textPrimary,
                         }}
                       />
                     </div>
-                  ))}
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    <label style={{ color: COLORS.textMuted }}>Rejecting Developer Manager</label>
-                    <input
-                      value={rejectingManager}
-                      onChange={(event) => setRejectingManager(event.target.value)}
-                      placeholder="Developer manager username"
-                      style={{
-                        padding: '0.6rem 0.75rem',
-                        borderRadius: '6px',
-                        border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: COLORS.backgroundPrimary,
-                        color: COLORS.textPrimary,
-                      }}
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ color: COLORS.textMuted }}>Reason for Rejection</label>
+                      <textarea
+                        value={rejectionReason}
+                        onChange={(event) => setRejectionReason(event.target.value)}
+                        placeholder="Provide rejection reason"
+                        rows={4}
+                        style={{
+                          padding: '0.6rem 0.75rem',
+                          borderRadius: '6px',
+                          border: `1px solid ${COLORS.borderPrimary}`,
+                          backgroundColor: COLORS.backgroundPrimary,
+                          color: COLORS.textPrimary,
+                          resize: 'vertical',
+                        }}
+                      />
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    <label style={{ color: COLORS.textMuted }}>Reason for Rejection</label>
-                    <textarea
-                      value={rejectionReason}
-                      onChange={(event) => setRejectionReason(event.target.value)}
-                      placeholder="Provide rejection reason"
-                      rows={4}
-                      style={{
-                        padding: '0.6rem 0.75rem',
-                        borderRadius: '6px',
-                        border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: COLORS.backgroundPrimary,
-                        color: COLORS.textPrimary,
-                        resize: 'vertical',
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      gap: '0.75rem',
+                      padding: '1rem 1.25rem',
+                      borderTop: `1px solid ${COLORS.borderPrimary}`,
+                    }}
+                  >
                     <button
                       type="button"
                       disabled={isSubmitting}
