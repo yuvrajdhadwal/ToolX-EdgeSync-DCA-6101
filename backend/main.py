@@ -7,15 +7,17 @@ import bcrypt
 from database import SessionLocal, engine, Base
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv # uvicorn loading .env
+from dotenv import load_dotenv
 import os
 from enum import Enum
+from azure.iot.hub import IoTHubRegistryManager
 
-# Removed UserRole from imports, it will be defined locally for Pydantic
 from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+
+from iot import deploy_helper, FirmwareOverview
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -34,6 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Database dependency injection function to manage the lifecycle of a database session
 def get_db():
     db = SessionLocal()
@@ -42,10 +45,12 @@ def get_db():
     finally:
         db.close()
 
+
 # JWT Secret and Algorithm
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
 ALGORITHM = os.getenv('ALGORITHM', 'HS256')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
 
 # Define UserRole enum locally for Pydantic validation
 class UserRole(str, Enum):
@@ -54,11 +59,13 @@ class UserRole(str, Enum):
     business_manager = "business_manager"
     field_shop_professional = "field_shop_professional"
 
+
 # Define a Pydantic Model for User Registration
 class UserCreate(BaseModel):
     role: UserRole
     username: str
     password: str
+
 
 class FirmwareCreate(BaseModel):
     objectBinary: str
@@ -68,9 +75,11 @@ class FirmwareCreate(BaseModel):
     isEmergency: bool
     description: str
 
+
 def get_user_by_username(db: Session, username: str):
     # This will search the base User table and return the correct subclass automatically
     return db.query(User).filter(User.username == username).first()
+
 
 def create_user(db: Session, user: UserCreate):
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -93,6 +102,7 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
     
     return "complete"
+
 
 #POST for firmware upload
 @app.post("/upload")
@@ -119,8 +129,6 @@ async def upload_firmware(
     db.commit()
     db.refresh(firmware)
     return {'message': 'upload successful'}
-        
-
   
 
 # POST route that uses the Pydantic model to receive the request body.
@@ -130,6 +138,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     if db_user: # if username is in use
         raise HTTPException(status_code=400, detail="Username already registered")
     return create_user(db=db, user=user)
+
 
 # Authenticate the user
 def authenticate_user(username: str, password: str, db: Session):
@@ -150,6 +159,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire})
     encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encode_jwt
+
 
 @app.post("/token")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -179,14 +189,49 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         return payload
     except JWTError:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
-    
+
+
+@app.post("/deploy-to-one-device")
+def cloud_to_device(device_id: str, firmware: FirmwareOverview):
+    """
+    @brief Sends a Deployement message to selected edge device
+    """
+    connection_str = os.getenv('IOT_CONNECTION')
+    iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
+    if not deploy_helper(device_id, iot_hub, firmware):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Device not found or invalid DeviceID"
+        )
+    return {"status": "sent"}
+
+
+@app.post("/deploy-to-many-devices")
+def cloud_to_many_device(device_ids: list[str], firmware: FirmwareOverview):
+    """
+    @brief Sends a Deployment Message to all selected edge devices
+    """
+    connection_str = os.getenv('IOT_CONNECTION')
+    iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
+
+    for device_id in device_ids:
+        if not deploy_helper(device_id, iot_hub, firmware):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Device not found or invalid DeviceID"
+            )
+    return {"status": "sent to all devices"}
+   
+
 @app.get("/verify-token/{token}")
 async def verify_user_token(token: str):
     payload = verify_token(token=token)
     return {"message": "Token is valid", "user": payload.get("sub"), "role": payload.get("role")}
 
+
 if os.path.exists("static/assets"):
     app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+
 
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
