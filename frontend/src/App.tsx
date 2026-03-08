@@ -10,13 +10,16 @@ import DeveloperPage from './pages/DeveloperPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 import UploadPage from './pages/UploadPage';
 import ProtectedRoute from "./components/ProtectedRoute";
+import Profile from './components/Profile';
 
 function AppLayout() {
   const location = useLocation();
   const showAuthNav = AUTH_ROUTES.includes(location.pathname as (typeof AUTH_ROUTES)[number]);
 
   return (
+    
     <>
+    <Profile></Profile>
       {showAuthNav ? (
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '2rem' }}>
           <nav className="navbar-container"
@@ -38,6 +41,7 @@ function AppLayout() {
           <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
         </Routes>
       )}
+      
     </>
   )
 }
