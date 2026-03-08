@@ -209,6 +209,7 @@ def verify_token(token: str = Depends(oauth2_scheme)):
 def get_token_payload_from_header(authorization: Optional[str]) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+    token = authorization.split(" ", 1)[1]
     return verify_token(token=token)
         
 def get_authenticated_user(authorization: Optional[str], db: Session) -> User:
