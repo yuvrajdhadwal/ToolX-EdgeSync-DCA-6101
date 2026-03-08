@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import UploadPage from './pages/UploadPage';
 import BizMngPage from './pages/BizMngPage';
+import FirmwareDetailPage from './pages/FirmwareDetailPage';
 import DeveloperPage from './pages/DeveloperPage';
 import BizMngDevicesPage from './pages/BizMngDevicesPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
@@ -34,6 +35,7 @@ function AppLayout() {
         </div>
       ) : (
         <Routes>
+          <Route path={ROUTES.FIRMWARE_DETAIL} element={<FirmwareDetailPage></FirmwareDetailPage>}></Route>
           <Route path={ROUTES.HOME} element={<ProtectedRoute><HomePage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.DEVELOPERPAGE} element={<ProtectedRoute><DeveloperPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
