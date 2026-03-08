@@ -82,17 +82,7 @@ const BizMngDevicesPage: React.FC = () => {
           >
             Add New Device
           </button>
-          <button
-            type="button" 
-            onClick={() => navigate(ROUTES.LOGIN)}
-            style={{
-              padding: '0.5rem 1.5rem', fontSize: '1rem', cursor: 'pointer',
-              borderRadius: '6px', border: `1px solid ${COLORS.danger}`,
-              backgroundColor: 'transparent', color: COLORS.dangerText, fontWeight: 500,
-            }}
-          >
-            Logout
-          </button>
+
         </div>
       </header>
 

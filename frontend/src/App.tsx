@@ -13,6 +13,7 @@ import BizMngDevicesPage from './pages/BizMngDevicesPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 import ProtectedRoute from "./components/ProtectedRoute";
 import AddDevicePage from './pages/AddDevicePage';
+import Logout from './components/Logout';
 
 function AppLayout() {
   const location = useLocation();
@@ -20,6 +21,7 @@ function AppLayout() {
 
   return (
     <>
+      {!showAuthNav && <Logout />}
       {showAuthNav ? (
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '2rem' }}>
           <nav className="navbar-container"
@@ -54,7 +56,7 @@ function App() {
 
   return (
     <div>
-
+      
       <Router>
         <AppLayout />
       </Router>

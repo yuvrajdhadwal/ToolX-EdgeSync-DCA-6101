@@ -34,25 +34,6 @@ const BizMngPage: React.FC = () => {
           />
         </button>
 
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button
-            type="button" 
-            onClick={() => navigate(ROUTES.LOGIN)}
-            style={{
-              padding: '0.5rem 1.5rem',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              borderRadius: '6px',
-              border: `1px solid ${COLORS.danger}`,
-              backgroundColor: 'transparent',
-              color: COLORS.dangerText,
-              fontWeight: 500,
-              transition: 'all 0.2s',
-            }}
-          >
-            Logout
-          </button>
-        </div>
       </header>
 
       {/* Dashboard Header */}

@@ -97,7 +97,7 @@ const AddDevicePage: React.FC = () => {
       boxSizing: 'border-box',
 
     }}>
-      {/* Header with SLB and Logout */}
+      {/* Header with SLB */}
       <header
         style={{
           display: 'flex',
@@ -120,24 +120,6 @@ const AddDevicePage: React.FC = () => {
           style={{ width: '100px', height: 'auto' }} 
           />
             
-        </button>
-
-        <button 
-          type="button" 
-          onClick={() => navigate(ROUTES.LOGIN)}
-          style={{
-            padding: '0.5rem 1.5rem',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            borderRadius: '6px',
-            border: `1px solid ${COLORS.danger}`,
-            backgroundColor: 'transparent',
-            color: COLORS.dangerText,
-            fontWeight: 500,
-            transition: 'all 0.2s',
-          }}
-        >
-          Logout
         </button>
 
       </header>

@@ -15,10 +15,6 @@ const DeveloperPage: React.FC = () => {
   // Minimum 3 empty rows
   const minRows = 3
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-  }
-
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -53,7 +49,7 @@ const DeveloperPage: React.FC = () => {
             
         </button>
 
-        {/*Group Upload New Firmware & Logout at top right*/}
+        {/*Group Upload New Firmware top right*/}
         <div
           style = {{
             display: 'flex',
@@ -76,27 +72,7 @@ const DeveloperPage: React.FC = () => {
         >
           Upload New Firmware
         </button>
-          
-        <button
-          type="button" 
-          onClick={() => {
-                      navigate(ROUTES.LOGIN, { replace:true }),
-                      handleLogout();
-                    }}
-          style={{
-            padding: '0.5rem 1.5rem',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            borderRadius: '6px',
-            border: `1px solid ${COLORS.danger}`,
-            backgroundColor: 'transparent',
-            color: COLORS.dangerText,
-            fontWeight: 500,
-            transition: 'all 0.2s',
-          }}
-          >
-            Logout
-          </button>
+
         </div>
       </header>
 
