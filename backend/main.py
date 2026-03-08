@@ -140,6 +140,13 @@ async def upload_firmware(
 # POST for add new device
 @app.post("/add_device")
 def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
+    # Check for duplicate serial number first
+    existing_device = db.query(Device).filter(
+        Device.serial_number == device.serial_number
+    ).first()
+    if existing_device:
+        raise HTTPException(status_code=400, detail="Device with this serial number already exists")
+    
     # Create firmware entry if version doesn't exist
     firmware = db.query(FirmwareUpdate).filter(
         FirmwareUpdate.version_number == device.version_number
@@ -156,13 +163,6 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
         db.add(firmware)
         db.commit()
         db.refresh(firmware)
-
-    # Check for duplicate serial number
-    existing_device = db.query(Device).filter(
-        Device.serial_number == device.serial_number
-    ).first()
-    if existing_device:
-        raise HTTPException(status_code=400, detail="Device with this serial number already exists")
 
     db_device = Device(
         serial_number=device.serial_number,
