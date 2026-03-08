@@ -1,19 +1,14 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 
 const BizMngPage: React.FC = () => {
   const navigate = useNavigate()
-  const [activeView, setActiveView] = useState<'worldmap' | 'devices' | 'firmware'>('devices')
-  const [clickedButton, setClickedButton] = useState<string | null>(null)
 
   const handleButtonClick = (value: 'worldmap' | 'devices' | 'firmware') => {
-    setActiveView(value)
-    setClickedButton(value)
-    if (value == 'devices') {
-      navigate(ROUTES.DEVICES_BIZMNG)
-    }
+    if (value === 'devices') navigate(ROUTES.DEVICES_BIZMNG)
+    // worldmap and firmware navigation can be added here later
   }
 
   return (
@@ -60,19 +55,17 @@ const BizMngPage: React.FC = () => {
         </div>
       </header>
 
-      
-
       {/* Dashboard Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `3px solid ${COLORS.borderPrimary}`}}>
-        <h1 style ={{
-            margin: 0,
-            fontSize: '2rem',
-            fontWeight: 700,
-            color: COLORS.white,
-            textAlign: 'left',
-            marginBottom: '0.5rem',
-          }}>
-            Dashboard
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `3px solid ${COLORS.borderPrimary}` }}>
+        <h1 style={{
+          margin: 0,
+          fontSize: '2rem',
+          fontWeight: 700,
+          color: COLORS.white,
+          textAlign: 'left',
+          marginBottom: '0.5rem',
+        }}>
+          Dashboard
         </h1>
       </div>
 
@@ -87,13 +80,13 @@ const BizMngPage: React.FC = () => {
         borderRadius: '8px',
         boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
       }}>
-        {/*Buttons for World Map, Devices, and Firmware*/}
-        <div style={{display: 'flex', gap: '7.5rem', justifyContent: 'center'}}>
+        {/* Buttons for World Map, Devices, and Firmware */}
+        <div style={{ display: 'flex', gap: '7.5rem', justifyContent: 'center' }}>
           {[
-            {label: 'World Map', value: 'worldmap' as const},
-            {label: 'Devices', value: 'devices' as const},
-            {label: 'Firmware', value: 'firmware' as const},
-          ].map(({label, value}) => (
+            { label: 'World Map', value: 'worldmap' as const },
+            { label: 'Devices', value: 'devices' as const },
+            { label: 'Firmware', value: 'firmware' as const },
+          ].map(({ label, value }) => (
             <button
               key={value}
               type="button"
