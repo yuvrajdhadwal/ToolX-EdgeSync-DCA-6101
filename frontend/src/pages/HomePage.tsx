@@ -15,6 +15,10 @@ const HomePage: React.FC = () => {
   // Minimum 3 empty rows
   const minRows = 3
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+  }
+
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -72,7 +76,10 @@ const HomePage: React.FC = () => {
         </button>
         <button 
           type="button" 
-          onClick={() => navigate(ROUTES.LOGIN)}
+          onClick={() => {
+                      navigate(ROUTES.LOGIN, { replace:true }),
+                      handleLogout();
+                    }}
           style={{
             padding: '0.5rem 1.5rem',
             fontSize: '1rem',

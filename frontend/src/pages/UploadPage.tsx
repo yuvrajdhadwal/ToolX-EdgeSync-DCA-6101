@@ -90,7 +90,11 @@ const UploadPage: React.FC = () => {
       console.error('An error occurred during info upload', error);
     }
   }
-    
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+  }
+  
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -130,7 +134,10 @@ const UploadPage: React.FC = () => {
 
         <button 
           type="button" 
-          onClick={() => navigate(ROUTES.LOGIN)}
+          onClick={() => {
+            navigate(ROUTES.LOGIN, { replace:true }),
+            handleLogout();
+          }}
           style={{
             padding: '0.5rem 1.5rem',
             fontSize: '1rem',
