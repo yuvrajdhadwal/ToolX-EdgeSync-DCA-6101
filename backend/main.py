@@ -123,6 +123,16 @@ async def upload_firmware(
     description: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    developer_user = db.query(Developer).filter(Developer.id == developer).first()
+    if not developer_user:
+        raise HTTPException(status_code=404, detail="Developer not found")
+
+    if developer_user.manager_id is None:
+        raise HTTPException(status_code=400, detail="Developer does not have an assigned manager")
+
+    manager_user = db.query(DeveloperManager).filter(DeveloperManager.id == developer_user.manager_id).first()
+    if not manager_user:
+        raise HTTPException(status_code=404, detail="Developer manager not found")
 
     file_content = await file.read()
     firmware = FirmwareUpdate(
@@ -133,6 +143,9 @@ async def upload_firmware(
         uploaded_by=developer,
         isEmergency=isEmergency,
     )
+
+    manager_user.viewable_firmware.append(firmware)
+
     db.add(firmware)
     db.commit()
     db.refresh(firmware)
@@ -257,12 +270,29 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
 
 
+
 def get_token_payload_from_header(authorization: Optional[str]) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
-
-    token = authorization.split(" ", 1)[1]
     return verify_token(token=token)
+        
+def get_authenticated_user(authorization: Optional[str], db: Session) -> User:
+    token = authorization.split(" ", 1)[1]
+    payload = verify_token(token=token)
+    username = payload.get("sub")
+
+    if not username:
+        raise HTTPException(status_code=403, detail="Token is invalid or expired")
+
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
+
+
+def user_can_view_firmware(user: User, firmware_id: int) -> bool:
+    return any(firmware.id == firmware_id for firmware in user.viewable_firmware)
 
 
 def require_developer_manager(authorization: Optional[str]) -> str:
@@ -314,6 +344,113 @@ def cloud_to_many_device(device_ids: list[str], firmware: FirmwareOverview):
 async def verify_user_token(token: str):
     payload = verify_token(token=token)
     return {"message": "Token is valid", "user": payload.get("sub"), "role": payload.get("role")}
+
+# Pydantic model for firmware response
+class FirmwareResponse(BaseModel):
+    id: int
+    version_number: str
+    device_type: str
+    description: Optional[str]
+    isEmergency: bool
+    uploaded_by: Optional[int]
+    uploaded_timestamp: Optional[datetime]
+    approved_by: Optional[int]
+    declined_by: Optional[int]
+    declined_comment: Optional[str]
+    status: str  # 'pending', 'current', 'rejected'
+    
+    class Config:
+        from_attributes = True
+
+# Get firmware by status
+@app.get("/firmware/status/{status}", response_model=List[FirmwareResponse])
+def get_firmware_by_status(
+    status: str,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+    
+    if status == "pending":
+        firmware_list = [
+            firmware
+            for firmware in user.viewable_firmware
+            if firmware.approved_by is None and firmware.declined_by is None
+        ]
+    elif status == "current":
+        firmware_list = [
+            firmware
+            for firmware in user.viewable_firmware
+            if firmware.approved_by is not None and firmware.declined_by is None
+        ]
+    elif status == "rejected":
+        firmware_list = [
+            firmware
+            for firmware in user.viewable_firmware
+            if firmware.declined_by is not None
+        ]
+    else:
+        raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'current', or 'rejected'")
+    
+    # Map to response model with status field
+    result = []
+    for firmware in firmware_list:
+        firmware_dict = {
+            "id": firmware.id,
+            "version_number": firmware.version_number,
+            "device_type": firmware.device_type,
+            "description": firmware.description,
+            "isEmergency": firmware.isEmergency,
+            "uploaded_by": firmware.uploaded_by,
+            "uploaded_timestamp": firmware.uploaded_timestamp,
+            "approved_by": firmware.approved_by,
+            "declined_by": firmware.declined_by,
+            "declined_comment": firmware.declined_comment,
+            "status": status
+        }
+        result.append(FirmwareResponse(**firmware_dict))
+    
+    return result
+
+# Get firmware by ID
+@app.get("/firmware/{firmware_id}", response_model=FirmwareResponse)
+def get_firmware_by_id(
+    firmware_id: int,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if not user_can_view_firmware(user, firmware.id):
+        raise HTTPException(status_code=404, detail="Firmware not found")
+    
+    # Determine status
+    if firmware.declined_by is not None:
+        status = "rejected"
+    elif firmware.approved_by is not None:
+        status = "current"
+    else:
+        status = "pending"
+
+    firmware_dict = {
+        "id": firmware.id,
+        "version_number": firmware.version_number,
+        "device_type": firmware.device_type,
+        "description": firmware.description,
+        "isEmergency": firmware.isEmergency,
+        "uploaded_by": firmware.uploaded_by,
+        "uploaded_timestamp": firmware.uploaded_timestamp,
+        "approved_by": firmware.approved_by,
+        "declined_by": firmware.declined_by,
+        "declined_comment": firmware.declined_comment,
+        "status": status
+    }
+    
+    return FirmwareResponse(**firmware_dict)
 
 
 class FirmwareResponse(BaseModel):

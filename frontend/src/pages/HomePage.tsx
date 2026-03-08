@@ -79,6 +79,32 @@ const HomePage: React.FC = () => {
     loadUploads()
   }, [activeTab])
 
+  const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
+  const isPendingTab = tabStatusMap[activeTab] === UPLOAD_STATUS.PENDING
+
+  // Minimum 1 empty rows
+  const minRows = 1
+
+  useEffect(() => {
+    const loadUploads = async () => {
+      setIsLoading(true)
+      setError('')
+
+      try {
+        const status = tabStatusMap[activeTab]
+        const records = await getUploadsByStatus(status)
+        setUploads(records)
+      } catch {
+        setError('Failed to load uploads')
+        setUploads([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadUploads()
+  }, [activeTab])
+
   const tableRows = uploads.length >= minRows
     ? uploads
     : [...uploads, ...Array.from({ length: minRows - uploads.length }, () => null)]
