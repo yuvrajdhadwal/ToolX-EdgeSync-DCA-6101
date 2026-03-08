@@ -53,6 +53,31 @@ const HomePage: React.FC = () => {
 
   // Name of Tabs
   const tabs = ['Current', 'Pending', 'Rejected']
+  const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
+  const isPendingTab = tabStatusMap[activeTab] === UPLOAD_STATUS.PENDING
+
+  // Minimum 1 empty rows
+  const minRows = 1
+
+  useEffect(() => {
+    const loadUploads = async () => {
+      setIsLoading(true)
+      setError('')
+
+      try {
+        const status = tabStatusMap[activeTab]
+        const records = await getUploadsByStatus(status)
+        setUploads(records)
+      } catch {
+        setError('Failed to load uploads')
+        setUploads([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadUploads()
+  }, [activeTab])
 
   const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
   const isPendingTab = tabStatusMap[activeTab] === UPLOAD_STATUS.PENDING
@@ -242,7 +267,7 @@ const HomePage: React.FC = () => {
                     const detailRoute = ROUTES.FIRMWARE_DETAIL.replace(':uploadId', String(upload.id))
                     navigate(detailRoute)
                   }}
-                  style={{
+                  style={{ 
                     backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary,
                     cursor: upload && isPendingTab ? 'pointer' : 'default',
                   }}
