@@ -203,12 +203,13 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         return payload
     except JWTError:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
-
+    
 
 
 def get_token_payload_from_header(authorization: Optional[str]) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+    token = authorization.split(" ", 1)[1]
     return verify_token(token=token)
         
 def get_authenticated_user(authorization: Optional[str], db: Session) -> User:
