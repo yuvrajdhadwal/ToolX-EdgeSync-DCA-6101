@@ -3,6 +3,7 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   HOME: '/home',
+  FIRMWARE_DETAIL: '/home/firmware/:uploadId',
   DEVELOPERPAGE: '/developer',
   UPLOAD: '/upload'
 } as const;
