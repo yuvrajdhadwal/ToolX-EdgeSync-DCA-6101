@@ -6,6 +6,9 @@ export const ROUTES = {
   FIRMWARE_DETAIL: '/home/firmware/:uploadId',
   DEVELOPERPAGE: '/developer',
   UPLOAD: '/upload',
+  BIZMNGPAGE: '/business_manager',
+  DEVICES_BIZMNG: '/view_devices',
+  ADD_DEVICES: '/add_device'
 
 } as const;
 

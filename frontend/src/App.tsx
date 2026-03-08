@@ -4,12 +4,15 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import WelcomePage from './pages/WelcomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import HomePage from './pages/HomePage'; 
+import HomePage from './pages/HomePage';
+import UploadPage from './pages/UploadPage';
+import BizMngPage from './pages/BizMngPage';
 import FirmwareDetailPage from './pages/FirmwareDetailPage';
 import DeveloperPage from './pages/DeveloperPage';
+import BizMngDevicesPage from './pages/BizMngDevicesPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
-import UploadPage from './pages/UploadPage';
 import ProtectedRoute from "./components/ProtectedRoute";
+import AddDevicePage from './pages/AddDevicePage';
 
 function AppLayout() {
   const location = useLocation();
@@ -37,6 +40,10 @@ function AppLayout() {
 
           <Route path={ROUTES.DEVELOPERPAGE} element={<ProtectedRoute><DeveloperPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
+          <Route path={ROUTES.BIZMNGPAGE} element={<BizMngPage></BizMngPage>}></Route>
+          <Route path={ROUTES.DEVICES_BIZMNG} element={<BizMngDevicesPage></BizMngDevicesPage>}></Route>
+          <Route path={ROUTES.ADD_DEVICES} element={<AddDevicePage></AddDevicePage>}></Route>
+
         </Routes>
       )}
     </>
