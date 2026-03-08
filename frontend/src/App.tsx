@@ -32,8 +32,9 @@ function AppLayout() {
         </div>
       ) : (
         <Routes>
+          <Route path={ROUTES.HOME} element={<ProtectedRoute><HomePage></HomePage></ProtectedRoute>}></Route>
           <Route path={ROUTES.FIRMWARE_DETAIL} element={<FirmwareDetailPage></FirmwareDetailPage>}></Route>
-          <Route path={ROUTES.HOME} element={<ProtectedRoute><HomePage /></ProtectedRoute>}></Route>
+
           <Route path={ROUTES.DEVELOPERPAGE} element={<ProtectedRoute><DeveloperPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.UPLOAD} element={<UploadPage></UploadPage>}></Route>
         </Routes>
