@@ -90,7 +90,7 @@ const UploadPage: React.FC = () => {
       console.error('An error occurred during info upload', error);
     }
   }
-    
+  
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -103,7 +103,7 @@ const UploadPage: React.FC = () => {
       boxSizing: 'border-box',
 
     }}>
-      {/* Header with SLB and Logout */}
+      {/* Header with SLB */}
       <header
         style={{
           display: 'flex',
@@ -125,27 +125,7 @@ const UploadPage: React.FC = () => {
           alt="SLB Logo" 
           style={{ width: '100px', height: 'auto' }} 
           />
-            
         </button>
-
-        <button 
-          type="button" 
-          onClick={() => navigate(ROUTES.LOGIN)}
-          style={{
-            padding: '0.5rem 1.5rem',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            borderRadius: '6px',
-            border: `1px solid ${COLORS.danger}`,
-            backgroundColor: 'transparent',
-            color: COLORS.dangerText,
-            fontWeight: 500,
-            transition: 'all 0.2s',
-          }}
-        >
-          Logout
-        </button>
-
       </header>
             <div style={{ 
                 minHeight: '100vh', 

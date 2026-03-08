@@ -83,6 +83,7 @@ const HomePage: React.FC = () => {
     ? uploads
     : [...uploads, ...Array.from({ length: minRows - uploads.length }, () => null)]
 
+
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -92,7 +93,7 @@ const HomePage: React.FC = () => {
       gap: '2rem',
       backgroundColor: COLORS.backgroundPrimary,
     }}>
-      {/* Header with SLB and Logout */}
+      {/* Header with SLB */}
       <header
         style={{
           display: 'flex',
@@ -137,23 +138,6 @@ const HomePage: React.FC = () => {
           }}
         >
           Upload New Firmware
-        </button>
-        <button 
-          type="button" 
-          onClick={() => navigate(ROUTES.LOGIN)}
-          style={{
-            padding: '0.5rem 1.5rem',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            borderRadius: '6px',
-            border: `1px solid ${COLORS.danger}`,
-            backgroundColor: 'transparent',
-            color: COLORS.dangerText,
-            fontWeight: 500,
-            transition: 'all 0.2s',
-          }}
-        >
-          Logout
         </button>
         </div>
       </header>
