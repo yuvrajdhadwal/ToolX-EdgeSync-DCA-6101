@@ -178,6 +178,22 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
     db.refresh(db_device)
     return {"message": "Device added successfully"}
 
+# Get device info from backend
+@app.get("/get_devices")
+def get_devices(db: Session = Depends(get_db)):
+    devices = db.query(Device).all()
+    return [
+        {
+            "device_type": d.device_type,
+            "version_number": d.firmware.version_number if d.firmware else "N/A",
+            "last_update": d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A",
+            "location": d.location,
+            "serial_number": d.serial_number,
+            "description": d.description,
+        }
+        for d in devices
+    ]
+
 # POST route that uses the Pydantic model to receive the request body.
 @app.post("/register")
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
