@@ -12,7 +12,7 @@ import os
 from enum import Enum
 from azure.iot.hub import IoTHubRegistryManager
 
-from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate
+from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate, Device
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -76,6 +76,13 @@ class FirmwareCreate(BaseModel):
     isEmergency: bool
     description: str
 
+class DeviceCreate(BaseModel):
+    serial_number: str
+    device_type: str
+    version_number: str
+    description: str
+    location: str
+    developer_manager: str
 
 def get_user_by_username(db: Session, username: str):
     # This will search the base User table and return the correct subclass automatically
@@ -144,6 +151,64 @@ async def upload_firmware(
     db.refresh(firmware)
     return {'message': 'upload successful'}
   
+# POST for add new device
+@app.post("/add_device")
+def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
+    # Check for duplicate serial number first
+    existing_device = db.query(Device).filter(
+        Device.serial_number == device.serial_number
+    ).first()
+    if existing_device:
+        raise HTTPException(status_code=400, detail="Device with this serial number already exists")
+    
+    # Create firmware and device type entry if version doesn't exist
+    # Otherwise query existing entry
+    firmware = db.query(FirmwareUpdate).filter(
+        FirmwareUpdate.version_number == device.version_number,
+        FirmwareUpdate.device_type == device.device_type
+    ).first()
+
+    if not firmware:
+        firmware = FirmwareUpdate(
+            version_number=device.version_number,
+            device_type=device.device_type,
+            description=device.description,
+            objectBinary=b'',
+            isEmergency=False,
+        )
+        db.add(firmware)
+        db.commit()
+        db.refresh(firmware)
+
+    db_device = Device(
+        serial_number=device.serial_number,
+        firmware_id=firmware.id,
+        device_type=device.device_type,
+        location=device.location,
+        developer_manager=device.developer_manager,
+        description=device.description,
+        last_update=datetime.now(timezone.utc),
+    )
+    db.add(db_device)
+    db.commit()
+    db.refresh(db_device)
+    return {"message": "Device added successfully"}
+
+# Get device info from backend
+@app.get("/get_devices")
+def get_devices(db: Session = Depends(get_db)):
+    devices = db.query(Device).all()
+    return [
+        {
+            "device_type": d.device_type,
+            "version_number": d.firmware.version_number if d.firmware else "N/A",
+            "last_update": d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A",
+            "location": d.location,
+            "serial_number": d.serial_number,
+            "description": d.description,
+        }
+        for d in devices
+    ]
 
 # POST route that uses the Pydantic model to receive the request body.
 @app.post("/register")
