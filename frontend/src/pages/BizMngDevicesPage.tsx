@@ -21,6 +21,14 @@ const BizMngDevicesPage: React.FC = () => {
   const tableHeaders = ['Device Type', 'Firmware Version', 'Last Updated', 'Region', 'Serial Number', 'Device Description']
   const minRows = 3
 
+  const tdStyle = {
+    border: `1px solid ${COLORS.borderPrimary}`,
+    padding: '0.75rem 1rem',
+    color: COLORS.textPrimary,
+    height: '2rem',
+    minWidth: '8rem',
+  }
+
   useEffect(() => {
     fetch('/get_devices')
       .then(res => res.json())
@@ -124,12 +132,12 @@ const BizMngDevicesPage: React.FC = () => {
                 <tr key={rowIndex} style={{
                   backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary
                 }}>
-                  <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', color: COLORS.textPrimary }}>{device?.device_type ?? ''}</td>
-                  <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', color: COLORS.textPrimary }}>{device?.version_number ?? ''}</td>
-                  <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', color: COLORS.textPrimary }}>{device?.last_update ?? ''}</td>
-                  <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', color: COLORS.textPrimary }}>{device?.location ?? ''}</td>
-                  <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', color: COLORS.textPrimary }}>{device?.serial_number ?? ''}</td>
-                  <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', color: COLORS.textPrimary }}>{device?.description ?? ''}</td>
+                  <td style={tdStyle}>{device?.device_type ?? ''}</td>
+                  <td style={tdStyle}>{device?.version_number ?? ''}</td>
+                  <td style={tdStyle}>{device?.last_update ?? ''}</td>
+                  <td style={tdStyle}>{device?.location ?? ''}</td>
+                  <td style={tdStyle}>{device?.serial_number ?? ''}</td>
+                  <td style={tdStyle}>{device?.description ?? ''}</td>
                 </tr>
               ))}
             </tbody>
