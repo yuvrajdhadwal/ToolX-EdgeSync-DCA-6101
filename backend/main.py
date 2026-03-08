@@ -148,9 +148,11 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
     if existing_device:
         raise HTTPException(status_code=400, detail="Device with this serial number already exists")
     
-    # Create firmware entry if version doesn't exist
+    # Create firmware and device type entry if version doesn't exist
+    # Otherwise query existing entry
     firmware = db.query(FirmwareUpdate).filter(
-        FirmwareUpdate.version_number == device.version_number
+        FirmwareUpdate.version_number == device.version_number,
+        FirmwareUpdate.device_type == device.device_type
     ).first()
 
     if not firmware:
