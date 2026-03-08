@@ -10,6 +10,7 @@ export default defineConfig({
       '/token': 'http://localhost:8000',
       '/upload': 'http://localhost:8000',
       '/verify-token': "http://localhost:8000",
+      '/add_device': 'http://localhost:8000'
       
     }
   }

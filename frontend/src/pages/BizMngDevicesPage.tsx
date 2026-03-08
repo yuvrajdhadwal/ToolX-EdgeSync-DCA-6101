@@ -7,7 +7,7 @@ const BizMngDevicesPage: React.FC = () => {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState(0)
   // Table Headers
-  const tableHeaders = ['Device Type', 'Firmware Version', 'Last Updated', 'Region', 'Serial Number', 'Short Description']
+  const tableHeaders = ['Device Type', 'Firmware Version', 'Last Updated', 'Region', 'Serial Number', 'Device Description']
 
   // Minimum 3 empty rows
   const minRows = 3
@@ -54,7 +54,7 @@ const BizMngDevicesPage: React.FC = () => {
           }}>
         <button 
           type="button" 
-          onClick={() => navigate(ROUTES.UPLOAD)}
+          onClick={() => navigate(ROUTES.ADD_DEVICES)}
           style={{
             padding: '0.5rem 1.5rem',
             fontSize: '1rem',
