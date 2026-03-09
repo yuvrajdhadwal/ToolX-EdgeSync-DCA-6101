@@ -97,8 +97,24 @@ const getUsernameFromToken = (): string => {
   }
 };
 
+const getRoleFromToken = (): string => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return '';
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string };
+    return payload.role ?? '';
+  } catch {
+    return '';
+  }
+};
+
 const FirmwareDetailPage: React.FC = () => {
   const navigate = useNavigate();
+  const userRole = getRoleFromToken();
+  const canModerateFirmware = userRole === 'developer_manager';
   const { uploadId } = useParams<{ uploadId: string }>();
   const [firmware, setFirmware] = useState<UploadItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -294,42 +310,48 @@ const FirmwareDetailPage: React.FC = () => {
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                type="button"
-                onClick={() => setShowApprovePopup(true)}
-                disabled={isSubmitting || firmware.status !== 'pending'}
-                style={{
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: isSubmitting || firmware.status !== 'pending' ? 'not-allowed' : 'pointer',
-                  opacity: isSubmitting || firmware.status !== 'pending' ? 0.6 : 1,
-                  backgroundColor: COLORS.success,
-                  color: COLORS.white,
-                  fontWeight: 600,
-                }}
-              >
-                Accept
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowRejectPopup(true)}
-                style={{
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  backgroundColor: COLORS.danger,
-                  color: COLORS.white,
-                  fontWeight: 600,
-                }}
-              >
-                Reject
-              </button>
-            </div>
+            {canModerateFirmware ? (
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowApprovePopup(true)}
+                  disabled={isSubmitting || firmware.status !== 'pending'}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: isSubmitting || firmware.status !== 'pending' ? 'not-allowed' : 'pointer',
+                    opacity: isSubmitting || firmware.status !== 'pending' ? 0.6 : 1,
+                    backgroundColor: COLORS.success,
+                    color: COLORS.white,
+                    fontWeight: 600,
+                  }}
+                >
+                  Accept
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRejectPopup(true)}
+                  disabled={isSubmitting || firmware.status !== 'pending'}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: isSubmitting || firmware.status !== 'pending' ? 'not-allowed' : 'pointer',
+                    opacity: isSubmitting || firmware.status !== 'pending' ? 0.6 : 1,
+                    backgroundColor: COLORS.danger,
+                    color: COLORS.white,
+                    fontWeight: 600,
+                  }}
+                >
+                  Reject
+                </button>
+              </div>
+            ) : (
+              <p style={{ margin: 0, color: COLORS.textMuted }}>Only developer managers can approve or reject firmware.</p>
+            )}
 
-            {showApprovePopup && (
+            {canModerateFirmware && showApprovePopup && (
               <div
                 style={{
                   position: 'fixed',
@@ -437,7 +459,7 @@ const FirmwareDetailPage: React.FC = () => {
               </div>
             )}
 
-            {showRejectPopup && (
+            {canModerateFirmware && showRejectPopup && (
               <div
                 style={{
                   position: 'fixed',
