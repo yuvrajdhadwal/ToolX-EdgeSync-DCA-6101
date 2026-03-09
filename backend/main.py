@@ -66,6 +66,7 @@ class UserCreate(BaseModel):
     role: UserRole
     username: str
     password: str
+    developer_manager_id: Optional[int] = None
 
 
 class FirmwareCreate(BaseModel):
@@ -94,7 +95,12 @@ def create_user(db: Session, user: UserCreate):
 
     # Instantiate the correct SQLAlchemy polymorphic subclass
     if user.role == UserRole.developer:
-        db_user = Developer(username=user.username, hashed_password=hashed_password)
+        if not user.developer_manager_id:
+            raise HTTPException(status_code=400, detail="Developer must have a developer manager ID")
+        developer_manager = db.query(DeveloperManager).filter(DeveloperManager.id == user.developer_manager_id).first()
+        if not developer_manager:
+            raise HTTPException(status_code=404, detail="Developer manager not found")
+        db_user = Developer(username=user.username, hashed_password=hashed_password, manager_id=developer_manager.id)
     elif user.role == UserRole.developer_manager:
         db_user = DeveloperManager(username=user.username, hashed_password=hashed_password)
     elif user.role == UserRole.business_manager:
@@ -476,6 +482,10 @@ class RejectFirmwareRequest(BaseModel):
     rejection_reason: str
 
 
+class ApproveFirmwareRequest(BaseModel):
+    confirmation_text: str
+
+
 def get_firmware_status(firmware: FirmwareUpdate) -> str:
     if firmware.declined_by is not None:
         return "rejected"
@@ -570,6 +580,39 @@ def reject_firmware(
 
     firmware.declined_by = manager.id
     firmware.declined_comment = payload.rejection_reason.strip()
+
+    db.commit()
+    db.refresh(firmware)
+
+    return map_firmware_response(firmware)
+
+
+@app.post("/firmware/{firmware_id}/approve", response_model=FirmwareResponse)
+def approve_firmware(
+    firmware_id: int,
+    payload: ApproveFirmwareRequest,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    token_username = require_developer_manager(authorization)
+
+    if payload.confirmation_text.strip().upper() != "CONFIRM":
+        raise HTTPException(status_code=400, detail="Type CONFIRM to approve firmware")
+
+    manager = db.query(DeveloperManager).filter(DeveloperManager.username == token_username).first()
+    if not manager:
+        raise HTTPException(status_code=404, detail="Developer manager not found")
+
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if firmware.approved_by is not None or firmware.declined_by is not None:
+        raise HTTPException(status_code=400, detail="Only pending firmware can be approved")
+
+    firmware.approved_by = manager.id
+    firmware.declined_by = None
+    firmware.declined_comment = None
 
     db.commit()
     db.refresh(firmware)
