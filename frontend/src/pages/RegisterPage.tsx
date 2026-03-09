@@ -23,7 +23,7 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
+  const [developerManagerID, setDeveloperManagerID] = useState('');
   const navigate = useNavigate();
 
   const validateForm = () => {
@@ -37,6 +37,10 @@ const RegisterPage: React.FC = () => {
     }
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
+      return false;
+    }
+    if (role === 'developer' && !developerManagerID) {
+      setError('Developer must have a developer manager assigned');
       return false;
     }
     setError('');
@@ -58,6 +62,7 @@ const RegisterPage: React.FC = () => {
           role: role,
           username: username,
           password: password,
+          ...(role === 'developer' && { developer_manager_id: developerManagerID})
         }),
       });
 
@@ -104,6 +109,19 @@ const RegisterPage: React.FC = () => {
             ))}
           </select>
         </div>
+        {role === 'developer' && (
+          <div>
+            <label>
+              Developer Manager ID:
+            </label>
+            <input
+              type='text'
+              value={developerManagerID}
+              onChange={(e) => setDeveloperManagerID(e.target.value)}
+              placeholder='Developer Manager ID'
+              />
+          </div>
+        )}
         <div>
           <label>
             Username:
