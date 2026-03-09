@@ -66,6 +66,7 @@ class UserCreate(BaseModel):
     role: UserRole
     username: str
     password: str
+    developer_manager_id: Optional[int] = None
 
 
 class FirmwareCreate(BaseModel):
@@ -94,7 +95,12 @@ def create_user(db: Session, user: UserCreate):
 
     # Instantiate the correct SQLAlchemy polymorphic subclass
     if user.role == UserRole.developer:
-        db_user = Developer(username=user.username, hashed_password=hashed_password)
+        if not user.developer_manager_id:
+            raise HTTPException(status_code=400, detail="Developer must have a developer manager ID")
+        developer_manager = db.query(DeveloperManager).filter(DeveloperManager.id == user.developer_manager_id).first()
+        if not developer_manager:
+            raise HTTPException(status_code=404, detail="Developer manager not found")
+        db_user = Developer(username=user.username, hashed_password=hashed_password, manager_id=developer_manager.id)
     elif user.role == UserRole.developer_manager:
         db_user = DeveloperManager(username=user.username, hashed_password=hashed_password)
     elif user.role == UserRole.business_manager:
