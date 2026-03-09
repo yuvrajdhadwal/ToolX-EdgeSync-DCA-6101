@@ -610,9 +610,6 @@ def get_firmware_by_id(
     if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
         raise HTTPException(status_code=404, detail="Firmware not found")
 
-    if get_firmware_status(firmware) == "pending":
-        require_developer_manager(authorization)
-
     return map_firmware_response(firmware)
 
 

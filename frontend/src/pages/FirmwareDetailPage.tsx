@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { COLORS } from '../constants/colors';
 import { ROUTES } from '../constants/routes';
 
@@ -113,8 +113,10 @@ const getRoleFromToken = (): string => {
 
 const FirmwareDetailPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const userRole = getRoleFromToken();
-  const canModerateFirmware = userRole === 'developer_manager';
+  const navigationState = location.state as { returnTab?: number } | null;
+  const returnTab = typeof navigationState?.returnTab === 'number' ? navigationState.returnTab : 1;
   const { uploadId } = useParams<{ uploadId: string }>();
   const [firmware, setFirmware] = useState<UploadItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -125,6 +127,7 @@ const FirmwareDetailPage: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [approveConfirmationText, setApproveConfirmationText] = useState('');
   const [error, setError] = useState('');
+  const canModerateFirmware = userRole === 'developer_manager' && firmware?.status === 'pending';
 
   useEffect(() => {
     const loadFirmware = async () => {
@@ -267,7 +270,7 @@ const FirmwareDetailPage: React.FC = () => {
           <h2 style={{ margin: 0 }}>Firmware Details</h2>
           <button
             type="button"
-            onClick={() => navigate(ROUTES.HOME, { state: { activeTab: 1 } })}
+            onClick={() => navigate(ROUTES.HOME, { state: { activeTab: returnTab } })}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: 'transparent',
@@ -310,7 +313,7 @@ const FirmwareDetailPage: React.FC = () => {
               ))}
             </div>
 
-            {canModerateFirmware ? (
+            {canModerateFirmware && (
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <button
                   type="button"
@@ -347,8 +350,6 @@ const FirmwareDetailPage: React.FC = () => {
                   Reject
                 </button>
               </div>
-            ) : (
-              <p style={{ margin: 0, color: COLORS.textMuted }}>Only developer managers can approve or reject firmware.</p>
             )}
 
             {canModerateFirmware && showApprovePopup && (

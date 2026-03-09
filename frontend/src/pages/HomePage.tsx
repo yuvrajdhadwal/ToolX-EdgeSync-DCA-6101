@@ -58,7 +58,6 @@ const HomePage: React.FC = () => {
   const location = useLocation()
   const role = getRoleFromToken()
   const canUploadFirmware = role === 'developer'
-  const canOpenPendingDetails = role === 'developer_manager'
   const showFirmwareDashboard = role === 'developer' || role === 'developer_manager'
   const [activeTab, setActiveTab] = useState(() => {
     const navigationState = location.state as { activeTab?: number } | null
@@ -73,7 +72,6 @@ const HomePage: React.FC = () => {
   // Name of Tabs
   const tabs = ['Current', 'Pending', 'Rejected']
   const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
-  const isPendingTab = tabStatusMap[activeTab] === UPLOAD_STATUS.PENDING
 
   // Minimum 1 empty rows
   const minRows = 1
@@ -249,16 +247,16 @@ const HomePage: React.FC = () => {
                     <tr
                       key={`row-${rowIndex}`}
                       onClick={() => {
-                        if (!upload || !isPendingTab || !canOpenPendingDetails) {
+                        if (!upload) {
                           return
                         }
 
                         const detailRoute = ROUTES.FIRMWARE_DETAIL.replace(':uploadId', String(upload.id))
-                        navigate(detailRoute)
+                        navigate(detailRoute, { state: { returnTab: activeTab } })
                       }}
                       style={{
                         backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary,
-                        cursor: upload && isPendingTab && canOpenPendingDetails ? 'pointer' : 'default',
+                        cursor: upload ? 'pointer' : 'default',
                       }}
                     >
                       <td
