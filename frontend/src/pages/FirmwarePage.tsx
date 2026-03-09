@@ -12,6 +12,7 @@ interface ItemInfo {
     version_number: string;
     description: string;
     isEmergency: boolean;
+    developer: number;
     approved_by: number | null;
     declined_by: number | null;
     declined_comment: string |null;
@@ -27,6 +28,7 @@ const UploadPage: React.FC = () => {
   const [formData, setFormData] = useState<ItemInfo>({
     file: null,
     device_type: '',
+    developer: 0,
     version_number: '',
     isEmergency: false,
     description: '',
@@ -71,11 +73,10 @@ const UploadPage: React.FC = () => {
     data.append('version_number', formData.version_number);
     data.append('description', formData.description);
     data.append('isEmergency', String(formData.isEmergency));
-    const token = localStorage.getItem('token');
+    data.append('developer', String(formData.developer));
     try {
       const response = await fetch('/upload', {
           method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: data,
       });
       setLoading(false);
@@ -89,7 +90,7 @@ const UploadPage: React.FC = () => {
       console.error('An error occurred during info upload', error);
     }
   }
-  
+    
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -102,7 +103,7 @@ const UploadPage: React.FC = () => {
       boxSizing: 'border-box',
 
     }}>
-      {/* Header with SLB */}
+      {/* Header with SLB and Logout */}
       <header
         style={{
           display: 'flex',
@@ -124,7 +125,27 @@ const UploadPage: React.FC = () => {
           alt="SLB Logo" 
           style={{ width: '100px', height: 'auto' }} 
           />
+            
         </button>
+
+        <button 
+          type="button" 
+          onClick={() => navigate(ROUTES.LOGIN)}
+          style={{
+            padding: '0.5rem 1.5rem',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            borderRadius: '6px',
+            border: `1px solid ${COLORS.danger}`,
+            backgroundColor: 'transparent',
+            color: COLORS.dangerText,
+            fontWeight: 500,
+            transition: 'all 0.2s',
+          }}
+        >
+          Logout
+        </button>
+
       </header>
             <div style={{ 
                 minHeight: '100vh', 
@@ -201,6 +222,27 @@ const UploadPage: React.FC = () => {
                     type='text'
                     name='device_type'
                     value={formData.device_type}
+                    onChange={handleInputChange}>
+                </input>
+
+                <label style={{
+                    color: COLORS.textPrimary,
+                    fontSize:'1rem',
+                    fontWeight: 500,
+                    textAlign: 'right'
+                    }}>
+                        Developer:
+                </label>
+                <input style = {{
+                    padding: '0.5rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.borderPrimary}`,
+                    backgroundColor: COLORS.backgroundPrimary,
+                    width: '20rem',
+                    }}
+                    type='text'
+                    name='developer'
+                    value={formData.developer}
                     onChange={handleInputChange}>
                 </input>
 

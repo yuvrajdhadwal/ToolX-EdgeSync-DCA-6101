@@ -123,13 +123,20 @@ def create_user(db: Session, user: UserCreate):
 async def upload_firmware(
     file: UploadFile = File(...),
     device_type: str = Form(...),
-    developer: int = Form(...),
     version_number: str = Form(...),
     isEmergency: bool = Form(...),
     description: str = Form(...),
+    authorization: Optional[str] = Header(default=None),
     db: Session = Depends(get_db)
 ):
-    developer_user = db.query(Developer).filter(Developer.id == developer).first()
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    authenticated_user = get_authenticated_user(authorization, db)
+    if authenticated_user.type != UserRole.developer.value:
+        raise HTTPException(status_code=403, detail="Only developers can upload firmware")
+
+    developer_user = db.query(Developer).filter(Developer.id == authenticated_user.id).first()
     if not developer_user:
         raise HTTPException(status_code=404, detail="Developer not found")
 
@@ -146,7 +153,7 @@ async def upload_firmware(
         version_number=version_number,
         device_type=device_type,
         description=description,
-        uploaded_by=developer,
+        uploaded_by=developer_user.id,
         isEmergency=isEmergency,
     )
 
