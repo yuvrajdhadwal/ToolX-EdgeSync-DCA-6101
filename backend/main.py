@@ -123,13 +123,23 @@ def create_user(db: Session, user: UserCreate):
 async def upload_firmware(
     file: UploadFile = File(...),
     device_type: str = Form(...),
-    developer: int = Form(...),
     version_number: str = Form(...),
     isEmergency: bool = Form(...),
     description: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
 ):
-    developer_user = db.query(Developer).filter(Developer.id == developer).first()
+    payload = get_token_payload_from_header(authorization)
+    role = payload.get("role")
+    username = payload.get("sub")
+
+    if role != UserRole.developer.value:
+        raise HTTPException(status_code=403, detail="Only developers can upload firmware")
+
+    if not username:
+        raise HTTPException(status_code=403, detail="Token is invalid or expired")
+
+    developer_user = db.query(Developer).filter(Developer.username == username).first()
     if not developer_user:
         raise HTTPException(status_code=404, detail="Developer not found")
 
@@ -146,7 +156,7 @@ async def upload_firmware(
         version_number=version_number,
         device_type=device_type,
         description=description,
-        uploaded_by=developer,
+        uploaded_by=developer_user.id,
         isEmergency=isEmergency,
     )
 
@@ -274,7 +284,7 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         return payload
     except JWTError:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
-
+    
 
 
 def get_token_payload_from_header(authorization: Optional[str]) -> dict:
@@ -377,25 +387,46 @@ def get_firmware_by_status(
     authorization: Optional[str] = Header(default=None),
 ):
     user = get_authenticated_user(authorization, db)
-    
+
     if status == "pending":
-        firmware_list = [
-            firmware
-            for firmware in user.viewable_firmware
-            if firmware.approved_by is None and firmware.declined_by is None
-        ]
+        if user.type == UserRole.developer.value:
+            firmware_list = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.uploaded_by == user.id,
+                FirmwareUpdate.approved_by.is_(None),
+                FirmwareUpdate.declined_by.is_(None),
+            ).all()
+        else:
+            require_developer_manager(authorization)
+            firmware_list = [
+                firmware
+                for firmware in user.viewable_firmware
+                if firmware.approved_by is None and firmware.declined_by is None
+            ]
     elif status == "current":
-        firmware_list = [
-            firmware
-            for firmware in user.viewable_firmware
-            if firmware.approved_by is not None and firmware.declined_by is None
-        ]
+        if user.type == UserRole.developer.value:
+            firmware_list = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.uploaded_by == user.id,
+                FirmwareUpdate.approved_by.isnot(None),
+                FirmwareUpdate.declined_by.is_(None),
+            ).all()
+        else:
+            firmware_list = [
+                firmware
+                for firmware in user.viewable_firmware
+                if firmware.approved_by is not None and firmware.declined_by is None
+            ]
     elif status == "rejected":
-        firmware_list = [
-            firmware
-            for firmware in user.viewable_firmware
-            if firmware.declined_by is not None
-        ]
+        if user.type == UserRole.developer.value:
+            firmware_list = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.uploaded_by == user.id,
+                FirmwareUpdate.declined_by.isnot(None),
+            ).all()
+        else:
+            firmware_list = [
+                firmware
+                for firmware in user.viewable_firmware
+                if firmware.declined_by is not None
+            ]
     else:
         raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'current', or 'rejected'")
     
@@ -432,7 +463,7 @@ def get_firmware_by_id(
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")
 
-    if not user_can_view_firmware(user, firmware.id):
+    if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
         raise HTTPException(status_code=404, detail="Firmware not found")
     
     # Determine status
@@ -516,21 +547,50 @@ def get_firmware_by_status(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(default=None),
 ):
+    user = get_authenticated_user(authorization, db)
+
     if status not in {"current", "pending", "rejected"}:
         raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'current', or 'rejected'")
 
-    query = db.query(FirmwareUpdate)
-
     if status == "pending":
-        require_developer_manager(authorization)
-        records = query.filter(
-            FirmwareUpdate.approved_by.is_(None),
-            FirmwareUpdate.declined_by.is_(None),
-        ).all()
+        if user.type == UserRole.developer.value:
+            records = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.uploaded_by == user.id,
+                FirmwareUpdate.approved_by.is_(None),
+                FirmwareUpdate.declined_by.is_(None),
+            ).all()
+        else:
+            require_developer_manager(authorization)
+            records = [
+                firmware
+                for firmware in user.viewable_firmware
+                if firmware.approved_by is None and firmware.declined_by is None
+            ]
     elif status == "current":
-        records = query.filter(FirmwareUpdate.approved_by.isnot(None)).all()
+        if user.type == UserRole.developer.value:
+            records = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.uploaded_by == user.id,
+                FirmwareUpdate.approved_by.isnot(None),
+                FirmwareUpdate.declined_by.is_(None),
+            ).all()
+        else:
+            records = [
+                firmware
+                for firmware in user.viewable_firmware
+                if firmware.approved_by is not None and firmware.declined_by is None
+            ]
     else:
-        records = query.filter(FirmwareUpdate.declined_by.isnot(None)).all()
+        if user.type == UserRole.developer.value:
+            records = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.uploaded_by == user.id,
+                FirmwareUpdate.declined_by.isnot(None),
+            ).all()
+        else:
+            records = [
+                firmware
+                for firmware in user.viewable_firmware
+                if firmware.declined_by is not None
+            ]
 
     return [map_firmware_response(record) for record in records]
 
@@ -541,13 +601,14 @@ def get_firmware_by_id(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(default=None),
 ):
+    user = get_authenticated_user(authorization, db)
     firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
 
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")
 
-    if get_firmware_status(firmware) == "pending":
-        require_developer_manager(authorization)
+    if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
+        raise HTTPException(status_code=404, detail="Firmware not found")
 
     return map_firmware_response(firmware)
 
@@ -577,6 +638,13 @@ def reject_firmware(
 
     if firmware.approved_by is not None or firmware.declined_by is not None:
         raise HTTPException(status_code=400, detail="Only pending firmware can be rejected")
+
+    if not any(viewable.id == firmware.id for viewable in manager.viewable_firmware):
+        manager.viewable_firmware.append(firmware)
+
+    uploader = db.query(Developer).filter(Developer.id == firmware.uploaded_by).first()
+    if uploader and not any(viewable.id == firmware.id for viewable in uploader.viewable_firmware):
+        uploader.viewable_firmware.append(firmware)
 
     firmware.declined_by = manager.id
     firmware.declined_comment = payload.rejection_reason.strip()
@@ -609,6 +677,13 @@ def approve_firmware(
 
     if firmware.approved_by is not None or firmware.declined_by is not None:
         raise HTTPException(status_code=400, detail="Only pending firmware can be approved")
+
+    if not any(viewable.id == firmware.id for viewable in manager.viewable_firmware):
+        manager.viewable_firmware.append(firmware)
+
+    uploader = db.query(Developer).filter(Developer.id == firmware.uploaded_by).first()
+    if uploader and not any(viewable.id == firmware.id for viewable in uploader.viewable_firmware):
+        uploader.viewable_firmware.append(firmware)
 
     firmware.approved_by = manager.id
     firmware.declined_by = None
