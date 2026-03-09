@@ -8,7 +8,6 @@ import HomePage from './pages/HomePage';
 import UploadPage from './pages/UploadPage';
 import BizMngPage from './pages/BizMngPage';
 import FirmwareDetailPage from './pages/FirmwareDetailPage';
-import DeveloperPage from './pages/DeveloperPage';
 import BizMngDevicesPage from './pages/BizMngDevicesPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -39,7 +38,6 @@ function AppLayout() {
         <Routes>
           <Route path={ROUTES.HOME} element={<ProtectedRoute><HomePage></HomePage></ProtectedRoute>}></Route>
           <Route path={ROUTES.FIRMWARE_DETAIL} element={<ProtectedRoute><FirmwareDetailPage /></ProtectedRoute>}></Route>
-          <Route path={ROUTES.DEVELOPERPAGE} element={<ProtectedRoute><DeveloperPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.UPLOAD} element={<ProtectedRoute><UploadPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.BIZMNGPAGE} element={<ProtectedRoute><BizMngPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.DEVICES_BIZMNG} element={<ProtectedRoute><BizMngDevicesPage /></ProtectedRoute>}></Route>

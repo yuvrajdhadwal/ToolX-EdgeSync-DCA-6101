@@ -4,7 +4,6 @@ export const ROUTES = {
   REGISTER: '/register',
   HOME: '/home',
   FIRMWARE_DETAIL: '/home/firmware/:uploadId',
-  DEVELOPERPAGE: '/developer',
   UPLOAD: '/upload',
   BIZMNGPAGE: '/business_manager',
   DEVICES_BIZMNG: '/view_devices',
