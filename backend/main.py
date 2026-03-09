@@ -476,6 +476,10 @@ class RejectFirmwareRequest(BaseModel):
     rejection_reason: str
 
 
+class ApproveFirmwareRequest(BaseModel):
+    confirmation_text: str
+
+
 def get_firmware_status(firmware: FirmwareUpdate) -> str:
     if firmware.declined_by is not None:
         return "rejected"
@@ -570,6 +574,39 @@ def reject_firmware(
 
     firmware.declined_by = manager.id
     firmware.declined_comment = payload.rejection_reason.strip()
+
+    db.commit()
+    db.refresh(firmware)
+
+    return map_firmware_response(firmware)
+
+
+@app.post("/firmware/{firmware_id}/approve", response_model=FirmwareResponse)
+def approve_firmware(
+    firmware_id: int,
+    payload: ApproveFirmwareRequest,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    token_username = require_developer_manager(authorization)
+
+    if payload.confirmation_text.strip().upper() != "CONFIRM":
+        raise HTTPException(status_code=400, detail="Type CONFIRM to approve firmware")
+
+    manager = db.query(DeveloperManager).filter(DeveloperManager.username == token_username).first()
+    if not manager:
+        raise HTTPException(status_code=404, detail="Developer manager not found")
+
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if firmware.approved_by is not None or firmware.declined_by is not None:
+        raise HTTPException(status_code=400, detail="Only pending firmware can be approved")
+
+    firmware.approved_by = manager.id
+    firmware.declined_by = None
+    firmware.declined_comment = None
 
     db.commit()
     db.refresh(firmware)
