@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React, { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
@@ -21,6 +21,8 @@ interface ItemInfo {
 
 const UploadPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [canUpload, setCanUpload] = useState(false);
   const navigate = useNavigate()
   
 
@@ -36,6 +38,28 @@ const UploadPage: React.FC = () => {
 
 
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate(ROUTES.LOGIN);
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string };
+      if (payload.role !== 'developer') {
+        setError('Only developers can upload firmware.');
+        setCanUpload(false);
+      } else {
+        setCanUpload(true);
+      }
+    } catch {
+      setError('Unable to validate user role.');
+      setCanUpload(false);
+    }
+  }, [navigate]);
+
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, type } = event.target;
     let value: any;
@@ -57,6 +81,9 @@ const UploadPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!canUpload) {
+      return;
+    }
     if (!formData.file) {
       setLoading(false);
       console.error('Firmware file is required');
@@ -82,11 +109,14 @@ const UploadPage: React.FC = () => {
       if (response.ok) {
         navigate(ROUTES.HOME);
       } else {
-        console.error('Failed to upload data');
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.detail || 'Failed to upload data');
       }
       
     } catch (error) {
+      setLoading(false);
       console.error('An error occurred during info upload', error);
+      setError('An error occurred during upload');
     }
   }
   
@@ -138,6 +168,7 @@ const UploadPage: React.FC = () => {
           <h2 style={{ textAlign: 'left', marginBottom: '2.5rem', fontSize: '1.5rem', color: COLORS.textPrimary, paddingLeft: '5rem' }}>
             Create New Update
           </h2>
+            {error && <p style={{ color: COLORS.error, marginTop: 0, paddingLeft: '5rem' }}>{error}</p>}
             <form style={{display: 'grid', gridTemplateColumns: 'max-content 1fr max-content 1fr', gap: '.5rem', alignItems: 'center'}}
                 onSubmit={handleSubmit}>
                 <label style={{
@@ -254,9 +285,9 @@ const UploadPage: React.FC = () => {
                     placeSelf: 'center',
                     gridColumn: '4',
                     maxWidth: '10rem',
-                    cursor: loading ? 'not-allowed' : 'pointer',
+                    cursor: loading || !canUpload ? 'not-allowed' : 'pointer',
                   }}
-                  disabled={loading}
+                  disabled={loading || !canUpload}
                   type='submit'
                     >
                     {loading? 'Uploading...':'Submit Update'}
