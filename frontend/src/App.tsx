@@ -11,6 +11,7 @@ import FirmwareDetailPage from './pages/FirmwareDetailPage';
 import BizMngDevicesPage from './pages/BizMngDevicesPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 import ProtectedRoute from "./components/ProtectedRoute";
+import Profile from './components/Profile';
 import AddDevicePage from './pages/AddDevicePage';
 import Logout from './components/Logout';
 
