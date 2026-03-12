@@ -1,7 +1,5 @@
 import { useEffect, useState} from 'react'
 import { useLocation } from 'react-router-dom'
-import { COLORS } from '../constants/colors'
-
 
 interface Profiledata {
     user: String;
@@ -35,7 +33,6 @@ export default function Profile() {
                     borderRadius: '6px',
                     border: `1px solid`,
                     backgroundColor: 'transparent',
-                    //color: COLORS.dangerText,
                     fontWeight: 500,
                     transition: 'all 0.2s',
                     display: 'flex',
