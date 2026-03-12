@@ -226,6 +226,15 @@ def get_devices(db: Session = Depends(get_db)):
         for d in devices
     ]
 
+@app.delete("/remove_device/{serial_number}")
+def delete_device(serial_number: str, db: Session = Depends(get_db)):
+    device = db.query(Device).filter(Device.serial_number == serial_number).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    db.delete(device)
+    db.commit()
+    return {"message": "Device deleted successfully"}
+
 # POST route that uses the Pydantic model to receive the request body.
 @app.post("/register")
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
