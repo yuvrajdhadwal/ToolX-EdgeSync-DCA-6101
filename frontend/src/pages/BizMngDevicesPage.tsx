@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
-import Profile from '../components/Profile';
+import Logout from '../components/Logout'
+import Profile from '../components/Profile'
 
 interface Device {
   device_type: string;
@@ -59,7 +60,7 @@ const BizMngDevicesPage: React.FC = () => {
     }}>
       {/* Header with SLB */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center'}}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
@@ -71,9 +72,9 @@ const BizMngDevicesPage: React.FC = () => {
               style={{ width: '100px', height: 'auto' }} 
             />
           </button>
-          <Profile></Profile>
+          <Profile />
         </div>
-
+              
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button 
             type="button" 
@@ -86,7 +87,7 @@ const BizMngDevicesPage: React.FC = () => {
           >
             Add New Device
           </button>
-
+          <Logout/>
         </div>
       </header>
 
