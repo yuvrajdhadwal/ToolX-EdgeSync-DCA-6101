@@ -99,20 +99,11 @@ const UploadPage: React.FC = () => {
     data.append('version_number', formData.version_number);
     data.append('description', formData.description);
     data.append('isEmergency', String(formData.isEmergency));
-
     const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      setError('Missing authentication token');
-      return;
-    }
-
     try {
       const response = await fetch('/upload', {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: data,
       });
       setLoading(false);
