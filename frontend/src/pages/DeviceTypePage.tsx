@@ -3,7 +3,7 @@ import {useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 
-const UploadPage: React.FC = () => {
+const DeviceTypePage: React.FC = () => {
   const navigate = useNavigate()
   const tableHeaders = ['Device Type', 'Description', 'Number Deployed', ]
   const minRows = 1
@@ -129,4 +129,4 @@ const UploadPage: React.FC = () => {
   )
 }
 
-export default UploadPage
+export default DeviceTypePage
