@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
+import Logout from '../components/Logout'
 
 const UPLOAD_STATUS = {
   CURRENT: 'current',
@@ -67,14 +68,10 @@ const HomePage: React.FC = () => {
   const [uploads, setUploads] = useState<UploadItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  // Table Headers
-  const tableHeaders = ['ID', 'Version', 'Device Type', 'Emergency', 'Description']
 
-  // Name of Tabs
+  const tableHeaders = ['ID', 'Version', 'Device Type', 'Emergency', 'Description']
   const tabs = ['Current', 'Pending', 'Rejected']
   const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
-
-  // Minimum 1 empty rows
   const minRows = 1
 
   useEffect(() => {
@@ -108,7 +105,6 @@ const HomePage: React.FC = () => {
     ? uploads
     : [...uploads, ...Array.from({ length: minRows - uploads.length }, () => null)]
 
-
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -118,41 +114,27 @@ const HomePage: React.FC = () => {
       gap: '2rem',
       backgroundColor: COLORS.backgroundPrimary,
     }}>
-      {/* Header with SLB */}
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center'}}>
+      {/* Header */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Left side - Logo + Profile */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.HOME)}
-            style = {{
-              padding: '0.5rem 1.5rem',
-              backgroundColor: COLORS.backgroundPrimary,
-              border: 'none'
-            }}
+            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
           >
             <img 
-            src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
-            alt="SLB Logo" 
-            style={{ width: '100px', height: 'auto' }} 
+              src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
+              alt="SLB Logo" 
+              style={{ width: '100px', height: 'auto' }} 
             />
-              
           </button>
-          <Profile></Profile>
+          <Profile />
         </div>
-        
-        {canUploadFirmware && (
-          <div
-            style={{
-              display: 'flex',
-              gap: '1rem',
-            }}
-          >
+
+        {/* Right side - Upload button (developer only) + Logout */}
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {canUploadFirmware && (
             <button
               type="button"
               onClick={() => navigate(ROUTES.UPLOAD)}
@@ -170,8 +152,9 @@ const HomePage: React.FC = () => {
             >
               Upload New Firmware
             </button>
-          </div>
-        )}
+          )}
+          <Logout />
+        </div>
       </header>
 
       {showFirmwareDashboard ? (
@@ -205,43 +188,34 @@ const HomePage: React.FC = () => {
           </nav>
 
           {/* Main Content Area */}
-          <main
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1.5rem',
-              padding: '2rem',
-              backgroundColor: COLORS.backgroundSecondary,
-              borderRadius: '8px',
-              boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
-            }}
-          >
+          <main style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            padding: '2rem',
+            backgroundColor: COLORS.backgroundSecondary,
+            borderRadius: '8px',
+            boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
+          }}>
             <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>{tabs[activeTab]}</h2>
             {isLoading && <p style={{ margin: 0, color: COLORS.textMuted }}>Loading uploads...</p>}
             {error && <p style={{ margin: 0, color: COLORS.error }}>{error}</p>}
 
             <div style={{ overflow: 'auto' }}>
-              <table style={{
-                borderCollapse: 'collapse',
-                width: '100%',
-                backgroundColor: COLORS.backgroundSecondary,
-              }}>
+              <table style={{ borderCollapse: 'collapse', width: '100%', backgroundColor: COLORS.backgroundSecondary }}>
                 <thead>
                   <tr>
                     {tableHeaders.map((header) => (
-                      <th
-                        key={header}
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          backgroundColor: COLORS.backgroundTertiary,
-                          color: COLORS.textPrimary,
-                          fontWeight: 600,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
+                      <th key={header} style={{
+                        border: `1px solid ${COLORS.borderPrimary}`,
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        backgroundColor: COLORS.backgroundTertiary,
+                        color: COLORS.textPrimary,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                      }}>
                         {header}
                       </th>
                     ))}
@@ -252,10 +226,7 @@ const HomePage: React.FC = () => {
                     <tr
                       key={`row-${rowIndex}`}
                       onClick={() => {
-                        if (!upload) {
-                          return
-                        }
-
+                        if (!upload) return
                         const detailRoute = ROUTES.FIRMWARE_DETAIL.replace(':uploadId', String(upload.id))
                         navigate(detailRoute, { state: { returnTab: activeTab } })
                       }}
@@ -264,59 +235,19 @@ const HomePage: React.FC = () => {
                         cursor: upload ? 'pointer' : 'default',
                       }}
                     >
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.id ?? ''}
                       </td>
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.version_number ?? ''}
                       </td>
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.device_type ?? ''}
                       </td>
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.isEmergency ? 'Yes' : upload ? 'No' : ''}
                       </td>
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.description ?? ''}
                       </td>
                     </tr>
@@ -327,18 +258,16 @@ const HomePage: React.FC = () => {
           </main>
         </>
       ) : (
-        <main
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-            padding: '2rem',
-            backgroundColor: COLORS.backgroundSecondary,
-            borderRadius: '8px',
-            boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
-          }}
-        >
+        <main style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
+          padding: '2rem',
+          backgroundColor: COLORS.backgroundSecondary,
+          borderRadius: '8px',
+          boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
+        }}>
           <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>Dashboard</h2>
           <p style={{ margin: 0, color: COLORS.textMuted }}>No firmware dashboard is available for your role.</p>
         </main>

@@ -135,20 +135,17 @@ async def upload_firmware(
     version_number: str = Form(...),
     isEmergency: bool = Form(...),
     description: str = Form(...),
-    db: Session = Depends(get_db),
     authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db)
 ):
-    payload = get_token_payload_from_header(authorization)
-    role = payload.get("role")
-    username = payload.get("sub")
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
 
-    if role != UserRole.developer.value:
+    authenticated_user = get_authenticated_user(authorization, db)
+    if authenticated_user.type != UserRole.developer.value:
         raise HTTPException(status_code=403, detail="Only developers can upload firmware")
 
-    if not username:
-        raise HTTPException(status_code=403, detail="Token is invalid or expired")
-
-    developer_user = db.query(Developer).filter(Developer.username == username).first()
+    developer_user = db.query(Developer).filter(Developer.id == authenticated_user.id).first()
     if not developer_user:
         raise HTTPException(status_code=404, detail="Developer not found")
 

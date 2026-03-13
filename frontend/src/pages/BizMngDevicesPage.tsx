@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
-import Profile from '../components/Profile';
+import Logout from '../components/Logout'
+import Profile from '../components/Profile'
 
 interface Device {
   device_type: string;
@@ -94,7 +95,7 @@ const BizMngDevicesPage: React.FC = () => {
           </button>
           <Profile />
         </div>
-
+              
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button 
             type="button" 
@@ -107,6 +108,7 @@ const BizMngDevicesPage: React.FC = () => {
           >
             Add New Device
           </button>
+          <Logout/>
         </div>
       </header>
 
