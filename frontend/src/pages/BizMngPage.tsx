@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
+import Logout from '../components/Logout'
 
 const BizMngPage: React.FC = () => {
   const navigate = useNavigate()
@@ -37,6 +38,7 @@ const BizMngPage: React.FC = () => {
           </button>
           <Profile></Profile>
         </div>
+        <Logout/>
       </header>
 
       {/* Dashboard Header */}
