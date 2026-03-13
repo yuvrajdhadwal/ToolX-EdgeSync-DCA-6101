@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
-import { ROUTES } from '../constants/routes'
+import { getHomeRouteFromToken, ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 
 
@@ -117,7 +117,7 @@ const UploadPage: React.FC = () => {
       });
       setLoading(false);
       if (response.ok) {
-        navigate(ROUTES.HOME);
+        navigate(getHomeRouteFromToken());
       } else {
         const errorData = await response.json().catch(() => ({}));
         setError(errorData.detail || 'Failed to upload data');
@@ -153,7 +153,7 @@ const UploadPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center'}}>
           <button 
             type="button" 
-            onClick={() => navigate(ROUTES.BIZMNGPAGE)}
+            onClick={() => navigate(getHomeRouteFromToken())}
             style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
           >
             <img 

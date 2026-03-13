@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
-import { ROUTES } from '../constants/routes'
+import { getHomeRouteFromToken, ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 
 const UPLOAD_STATUS = {
@@ -129,7 +129,7 @@ const HomePage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center'}}>
           <button 
             type="button" 
-            onClick={() => navigate(ROUTES.HOME)}
+            onClick={() => navigate(getHomeRouteFromToken())}
             style = {{
               padding: '0.5rem 1.5rem',
               backgroundColor: COLORS.backgroundPrimary,
