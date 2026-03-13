@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
+import Logout from '../components/Logout'
+import Profile from '../components/Profile'
 
 interface Device {
   device_type: string;
@@ -58,18 +60,21 @@ const BizMngDevicesPage: React.FC = () => {
     }}>
       {/* Header with SLB */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button 
-          type="button" 
-          onClick={() => navigate(ROUTES.BIZMNGPAGE)}
-          style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
-        >
-          <img 
-            src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
-            alt="SLB Logo" 
-            style={{ width: '100px', height: 'auto' }} 
-          />
-        </button>
-
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button 
+            type="button" 
+            onClick={() => navigate(ROUTES.BIZMNGPAGE)}
+            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+          >
+            <img 
+              src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
+              alt="SLB Logo" 
+              style={{ width: '100px', height: 'auto' }} 
+            />
+          </button>
+          <Profile />
+        </div>
+              
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button 
             type="button" 
@@ -82,7 +87,7 @@ const BizMngDevicesPage: React.FC = () => {
           >
             Add New Device
           </button>
-
+          <Logout/>
         </div>
       </header>
 

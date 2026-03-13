@@ -49,7 +49,7 @@ const LoginPage: React.FC = () => {
         
         // Check and route based on role
         if (payload.role == 'developer') {
-          navigate(ROUTES.DEVELOPERPAGE);
+          navigate(ROUTES.HOME);
         } else if (payload.role == 'business_manager') {
           navigate(ROUTES.BIZMNGPAGE);
         } else {

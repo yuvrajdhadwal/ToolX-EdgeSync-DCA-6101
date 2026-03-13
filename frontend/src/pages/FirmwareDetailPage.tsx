@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { COLORS } from '../constants/colors';
 import { ROUTES } from '../constants/routes';
 
@@ -97,8 +97,26 @@ const getUsernameFromToken = (): string => {
   }
 };
 
+const getRoleFromToken = (): string => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return '';
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string };
+    return payload.role ?? '';
+  } catch {
+    return '';
+  }
+};
+
 const FirmwareDetailPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const userRole = getRoleFromToken();
+  const navigationState = location.state as { returnTab?: number } | null;
+  const returnTab = typeof navigationState?.returnTab === 'number' ? navigationState.returnTab : 1;
   const { uploadId } = useParams<{ uploadId: string }>();
   const [firmware, setFirmware] = useState<UploadItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -109,6 +127,7 @@ const FirmwareDetailPage: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [approveConfirmationText, setApproveConfirmationText] = useState('');
   const [error, setError] = useState('');
+  const canModerateFirmware = userRole === 'developer_manager' && firmware?.status === 'pending';
 
   useEffect(() => {
     const loadFirmware = async () => {
@@ -143,6 +162,8 @@ const FirmwareDetailPage: React.FC = () => {
     setRejectingManager(getUsernameFromToken());
   }, []);
 
+  const isApproved = firmware?.status === 'current';
+
   const detailRows: Array<{ label: string; value: string | number | boolean | null | undefined }> = [
     { label: 'ID', value: firmware?.id },
     { label: 'Version', value: firmware?.version_number },
@@ -153,8 +174,10 @@ const FirmwareDetailPage: React.FC = () => {
     { label: 'Uploaded By', value: firmware?.uploaded_by },
     { label: 'Upload Timestamp', value: firmware?.uploaded_timestamp },
     { label: 'Approved By', value: firmware?.approved_by },
-    { label: 'Declined By', value: firmware?.declined_by },
-    { label: 'Decline Comment', value: firmware?.declined_comment },
+    ...(!isApproved ? [
+      { label: 'Declined By', value: firmware?.declined_by },
+      { label: 'Decline Comment', value: firmware?.declined_comment },
+    ] : []),
   ];
 
   const rejectFields: Array<{ label: string; value: string }> = [
@@ -229,6 +252,7 @@ const FirmwareDetailPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
+        minWidth: '100%',
         padding: '2rem',
         backgroundColor: COLORS.backgroundPrimary,
         color: COLORS.textPrimary,
@@ -251,7 +275,7 @@ const FirmwareDetailPage: React.FC = () => {
           <h2 style={{ margin: 0 }}>Firmware Details</h2>
           <button
             type="button"
-            onClick={() => navigate(ROUTES.HOME, { state: { activeTab: 1 } })}
+            onClick={() => navigate(ROUTES.HOME, { state: { activeTab: returnTab } })}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: 'transparent',
@@ -294,42 +318,46 @@ const FirmwareDetailPage: React.FC = () => {
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                type="button"
-                onClick={() => setShowApprovePopup(true)}
-                disabled={isSubmitting || firmware.status !== 'pending'}
-                style={{
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: isSubmitting || firmware.status !== 'pending' ? 'not-allowed' : 'pointer',
-                  opacity: isSubmitting || firmware.status !== 'pending' ? 0.6 : 1,
-                  backgroundColor: COLORS.success,
-                  color: COLORS.white,
-                  fontWeight: 600,
-                }}
-              >
-                Accept
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowRejectPopup(true)}
-                style={{
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  backgroundColor: COLORS.danger,
-                  color: COLORS.white,
-                  fontWeight: 600,
-                }}
-              >
-                Reject
-              </button>
-            </div>
+            {canModerateFirmware && (
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowApprovePopup(true)}
+                  disabled={isSubmitting || firmware.status !== 'pending'}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: isSubmitting || firmware.status !== 'pending' ? 'not-allowed' : 'pointer',
+                    opacity: isSubmitting || firmware.status !== 'pending' ? 0.6 : 1,
+                    backgroundColor: COLORS.success,
+                    color: COLORS.white,
+                    fontWeight: 600,
+                  }}
+                >
+                  Accept
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRejectPopup(true)}
+                  disabled={isSubmitting || firmware.status !== 'pending'}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: isSubmitting || firmware.status !== 'pending' ? 'not-allowed' : 'pointer',
+                    opacity: isSubmitting || firmware.status !== 'pending' ? 0.6 : 1,
+                    backgroundColor: COLORS.danger,
+                    color: COLORS.white,
+                    fontWeight: 600,
+                  }}
+                >
+                  Reject
+                </button>
+              </div>
+            )}
 
-            {showApprovePopup && (
+            {canModerateFirmware && showApprovePopup && (
               <div
                 style={{
                   position: 'fixed',
@@ -437,7 +465,7 @@ const FirmwareDetailPage: React.FC = () => {
               </div>
             )}
 
-            {showRejectPopup && (
+            {canModerateFirmware && showRejectPopup && (
               <div
                 style={{
                   position: 'fixed',
