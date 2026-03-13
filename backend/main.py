@@ -20,6 +20,8 @@ from typing import List, Optional
 
 from iot import deploy_helper, FirmwareOverview
 
+from pydantic import BaseModel, field_validator
+
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -84,6 +86,13 @@ class DeviceCreate(BaseModel):
     description: str
     location: str
     developer_manager: str
+
+    @field_validator('device_type', 'serial_number', 'version_number', 'description', 'location', 'developer_manager')
+    @classmethod
+    def fields_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise ValueError('Field must not be empty')
+        return v
 
 def get_user_by_username(db: Session, username: str):
     # This will search the base User table and return the correct subclass automatically
@@ -222,6 +231,15 @@ def get_devices(db: Session = Depends(get_db)):
         }
         for d in devices
     ]
+
+@app.delete("/remove_device/{serial_number}")
+def delete_device(serial_number: str, db: Session = Depends(get_db)):
+    device = db.query(Device).filter(Device.serial_number == serial_number).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    db.delete(device)
+    db.commit()
+    return {"message": "Device deleted successfully"}
 
 # POST route that uses the Pydantic model to receive the request body.
 @app.post("/register")

@@ -49,6 +49,21 @@ const AddDevicePage: React.FC = () => {
     event.preventDefault();
     setLoading(true);
     setError('');
+    
+    // Validate all fields are filled in
+    if (
+      !formData.device_type.trim() ||
+      !formData.serial_number.trim() ||
+      !formData.version_number.trim() ||
+      !formData.location.trim() ||
+      !formData.developer_manager.trim() ||
+      !formData.description.trim()
+    ) {
+      setError('All fields are required. Please fill in every field before submitting.');
+      setLoading(false);
+      return;
+    }
+    
     try {
         const response = await fetch('/add_device', {
             method: 'POST',
