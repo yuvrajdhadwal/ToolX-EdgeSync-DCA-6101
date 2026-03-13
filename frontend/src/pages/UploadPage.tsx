@@ -153,7 +153,7 @@ const UploadPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center'}}>
           <button 
             type="button" 
-            onClick={() => navigate(ROUTES.BIZMNGPAGE)}
+            onClick={() => navigate(ROUTES.HOME)}
             style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
           >
             <img 
