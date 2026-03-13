@@ -19,6 +19,7 @@ function AppLayout() {
   const showAuthNav = AUTH_ROUTES.includes(location.pathname as (typeof AUTH_ROUTES)[number]);
 
   return (
+    
     <>
       {!showAuthNav && <Logout />}
       {showAuthNav ? (
@@ -45,6 +46,7 @@ function AppLayout() {
 
         </Routes>
       )}
+      
     </>
   )
 }

@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
+import Profile from '../components/Profile'
 
 
 
@@ -149,21 +150,20 @@ const UploadPage: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        <button 
-          type="button" 
-          onClick={() => navigate(ROUTES.HOME)}
-          style = {{
-            padding: '0.5rem 1.5rem',
-            backgroundColor: COLORS.backgroundPrimary,
-            border: 'none'
-          }}
-        >
-          <img 
-          src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
-          alt="SLB Logo" 
-          style={{ width: '100px', height: 'auto' }} 
-          />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center'}}>
+          <button 
+            type="button" 
+            onClick={() => navigate(ROUTES.BIZMNGPAGE)}
+            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+          >
+            <img 
+              src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
+              alt="SLB Logo" 
+              style={{ width: '100px', height: 'auto' }} 
+            />
+          </button>
+          <Profile></Profile>
+        </div>
       </header>
             <div style={{ 
                 minHeight: '100vh', 
