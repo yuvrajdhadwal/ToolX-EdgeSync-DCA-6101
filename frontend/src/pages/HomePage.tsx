@@ -59,7 +59,7 @@ const HomePage: React.FC = () => {
   const location = useLocation()
   const role = getRoleFromToken()
   const canUploadFirmware = role === 'developer'
-  const showFirmwareDashboard = role === 'developer' || role === 'developer_manager'
+  const showFirmwareDashboard = role === 'developer' || role === 'developer_manager' || role === 'business_manager'
   const [activeTab, setActiveTab] = useState(() => {
     const navigationState = location.state as { activeTab?: number } | null
     return typeof navigationState?.activeTab === 'number' ? navigationState.activeTab : 0
