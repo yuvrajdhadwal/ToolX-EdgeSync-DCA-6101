@@ -296,6 +296,7 @@ const HomePage: React.FC = () => {
                 </select>
               </div>
             </div>
+
             {isLoading && <p style={{ margin: 0, color: COLORS.textMuted }}>Loading uploads...</p>}
             {error && <p style={{ margin: 0, color: COLORS.error }}>{error}</p>}
 
