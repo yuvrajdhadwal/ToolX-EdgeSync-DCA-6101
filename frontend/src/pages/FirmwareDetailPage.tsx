@@ -380,7 +380,7 @@ const FirmwareDetailPage: React.FC = () => {
                   fontWeight: 500,
                 }}
               >
-                Download .bin
+                Download
               </button>
             )}
           <button
