@@ -324,6 +324,21 @@ def require_developer_manager(authorization: Optional[str]) -> str:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
 
     return username
+
+
+@app.get("/users/{user_id}/username")
+def get_username_by_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    get_authenticated_user(authorization, db)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"id": user.id, "username": user.username}
     
 @app.post("/deploy-to-one-device")
 def cloud_to_device(device_id: str, firmware: FirmwareOverview):
