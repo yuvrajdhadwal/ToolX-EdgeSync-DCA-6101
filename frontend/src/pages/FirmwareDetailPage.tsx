@@ -305,7 +305,7 @@ const FirmwareDetailPage: React.FC = () => {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <h2 style={{ margin: 0 }}>Firmware Details</h2>
-            {!isLoading && firmware && isApproved && (
+            {!isLoading && firmware && (
               <button
                 type="button"
                 onClick={handleDownload}
