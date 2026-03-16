@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { COLORS } from '../constants/colors';
-import { ROUTES } from '../constants/routes';
+import { getHomeRouteFromToken } from '../constants/routes';
 
 type UploadStatus = 'current' | 'pending' | 'rejected';
 
@@ -28,6 +28,11 @@ type ApproveFirmwarePayload = {
   confirmation_text: string;
 };
 
+type UserLookupResponse = {
+  id: number;
+  username: string;
+};
+
 const getUploadById = async (uploadId: number): Promise<UploadItem | null> => {
   const token = localStorage.getItem('token');
   const response = await fetch(`/firmware/${uploadId}`, {
@@ -43,6 +48,20 @@ const getUploadById = async (uploadId: number): Promise<UploadItem | null> => {
   }
 
   return response.json();
+};
+
+const getUsernameById = async (userId: number): Promise<string> => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`/users/${userId}/username`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch username');
+  }
+
+  const payload = await response.json() as UserLookupResponse;
+  return payload.username;
 };
 
 const rejectUpload = async (uploadId: number, payload: RejectFirmwarePayload): Promise<UploadItem> => {
@@ -126,6 +145,7 @@ const FirmwareDetailPage: React.FC = () => {
   const [rejectingManager, setRejectingManager] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [approveConfirmationText, setApproveConfirmationText] = useState('');
+  const [resolvedUsernames, setResolvedUsernames] = useState<Record<number, string>>({});
   const [error, setError] = useState('');
   const canModerateFirmware = userRole === 'developer_manager' && firmware?.status === 'pending';
 
@@ -162,7 +182,50 @@ const FirmwareDetailPage: React.FC = () => {
     setRejectingManager(getUsernameFromToken());
   }, []);
 
-  const isApproved = firmware?.status === 'current';
+  useEffect(() => {
+    if (!firmware) {
+      return;
+    }
+
+    const userIds = [firmware.uploaded_by, firmware.approved_by, firmware.declined_by]
+      .filter((id): id is number => typeof id === 'number');
+
+    const missingIds = Array.from(new Set(userIds)).filter((id) => !resolvedUsernames[id]);
+    if (missingIds.length === 0) {
+      return;
+    }
+
+    const loadUsernames = async () => {
+      const resolvedEntries = await Promise.all(
+        missingIds.map(async (id) => {
+          try {
+            const username = await getUsernameById(id);
+            return [id, username] as const;
+          } catch {
+            return [id, String(id)] as const;
+          }
+        }),
+      );
+
+      setResolvedUsernames((previous) => {
+        const updated = { ...previous };
+        resolvedEntries.forEach(([id, username]) => {
+          updated[id] = username;
+        });
+        return updated;
+      });
+    };
+
+    loadUsernames();
+  }, [firmware, resolvedUsernames]);
+
+  const getDisplayNameById = (userId: number | null | undefined): string => {
+    if (typeof userId !== 'number') {
+      return '-';
+    }
+
+    return resolvedUsernames[userId] ?? String(userId);
+  };
 
   const detailRows: Array<{ label: string; value: string | number | boolean | null | undefined }> = [
     { label: 'ID', value: firmware?.id },
@@ -171,13 +234,11 @@ const FirmwareDetailPage: React.FC = () => {
     { label: 'Emergency', value: firmware?.isEmergency ? 'Yes' : 'No' },
     { label: 'Description', value: firmware?.description },
     { label: 'Status', value: firmware?.status },
-    { label: 'Uploaded By', value: firmware?.uploaded_by },
+    { label: 'Uploaded By', value: getDisplayNameById(firmware?.uploaded_by) },
     { label: 'Upload Timestamp', value: firmware?.uploaded_timestamp },
-    { label: 'Approved By', value: firmware?.approved_by },
-    ...(!isApproved ? [
-      { label: 'Declined By', value: firmware?.declined_by },
-      { label: 'Decline Comment', value: firmware?.declined_comment },
-    ] : []),
+    { label: 'Approved By', value: getDisplayNameById(firmware?.approved_by) },
+    { label: 'Declined By', value: getDisplayNameById(firmware?.declined_by) },
+    { label: 'Decline Comment', value: firmware?.declined_comment },
   ];
 
   const rejectFields: Array<{ label: string; value: string }> = [
@@ -207,7 +268,7 @@ const FirmwareDetailPage: React.FC = () => {
         rejecting_manager_username: rejectingManager.trim(),
         rejection_reason: rejectionReason.trim(),
       });
-      navigate(ROUTES.HOME, { state: { activeTab: 2 } });
+      navigate(getHomeRouteFromToken(), { state: { activeTab: 2 } });
     } catch (rejectError) {
       if (rejectError instanceof Error) {
         setError(rejectError.message);
@@ -236,7 +297,7 @@ const FirmwareDetailPage: React.FC = () => {
       await approveUpload(firmware.id, {
         confirmation_text: approveConfirmationText.trim(),
       });
-      navigate(ROUTES.HOME, { state: { activeTab: 0 } });
+      navigate(getHomeRouteFromToken(), { state: { activeTab: 0 } });
     } catch (approveError) {
       if (approveError instanceof Error) {
         setError(approveError.message);
@@ -275,7 +336,7 @@ const FirmwareDetailPage: React.FC = () => {
           <h2 style={{ margin: 0 }}>Firmware Details</h2>
           <button
             type="button"
-            onClick={() => navigate(ROUTES.HOME, { state: { activeTab: returnTab } })}
+            onClick={() => navigate(getHomeRouteFromToken(), { state: { activeTab: returnTab } })}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: 'transparent',
@@ -295,9 +356,9 @@ const FirmwareDetailPage: React.FC = () => {
         {!isLoading && firmware && (
           <>
             <div style={{ border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
-              {detailRows.map((row) => (
+              {detailRows.map((row, index) => (
                 <div
-                  key={row.label}
+                  key={`${row.label}-${index}`}
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '220px 1fr',
