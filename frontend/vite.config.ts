@@ -13,7 +13,8 @@ export default defineConfig({
       '/add_device': 'http://localhost:8000',
       '/get_devices': 'http://localhost:8000',
       '/remove_device': 'http://localhost:8000',
-      '/firmware': 'http://localhost:8000'    
+      '/firmware': 'http://localhost:8000', 
+      '/devmng': 'http://localhost:8000',
     }
   }
 })
