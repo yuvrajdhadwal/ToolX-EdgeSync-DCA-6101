@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors';
 import { ROUTES } from '../constants/routes';
@@ -6,6 +6,11 @@ import { ROUTES } from '../constants/routes';
 type roleOption = {
   role: string;
   label: string;
+}
+
+type devmngOption = {
+  username: string;
+  id: number;
 }
 
 const options: roleOption[] = [
@@ -24,7 +29,20 @@ const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [developerManagerID, setDeveloperManagerID] = useState('');
+  const [developerManagers, setDeveloperManagers] = useState<devmngOption[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (role === 'developer') {
+      fetch('/devmng')
+        .then((res) => res.json())
+        .then((data: devmngOption[]) => setDeveloperManagers(data))
+        .catch(() => setError('Failed to load developer managers'));
+    } else {
+      setDeveloperManagers([]);
+      setDeveloperManagerID('');
+    }
+  }, [role]);
 
   const validateForm = () => {
     if (!role || !username || !password || !confirmPassword) {
@@ -112,14 +130,19 @@ const RegisterPage: React.FC = () => {
         {role === 'developer' && (
           <div>
             <label>
-              Developer Manager ID:
+              Developer Manager Username:
             </label>
-            <input
-              type='text'
+            <select
               value={developerManagerID}
               onChange={(e) => setDeveloperManagerID(e.target.value)}
-              placeholder='Developer Manager ID'
-              />
+            >
+              <option value="" disabled>Select a Developer Manager</option>
+              {developerManagers.map((mgr) => (
+                <option key={mgr.id} value={mgr.id}>
+                  {mgr.username}
+                </option>
+              ))}
+            </select>
           </div>
         )}
         <div>

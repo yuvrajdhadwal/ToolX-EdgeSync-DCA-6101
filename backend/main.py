@@ -98,6 +98,10 @@ def get_user_by_username(db: Session, username: str):
     # This will search the base User table and return the correct subclass automatically
     return db.query(User).filter(User.username == username).first()
 
+@app.get("/devmng")
+def get_devmng(db: Session = Depends(get_db)):
+    managers = db.query(DeveloperManager).all()
+    return [{"id": mng.id, "username": mng.username} for mng in managers]
 
 def create_user(db: Session, user: UserCreate):
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
