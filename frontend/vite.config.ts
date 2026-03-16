@@ -15,6 +15,9 @@ export default defineConfig({
       '/remove_device': 'http://localhost:8000',
       '/firmware': 'http://localhost:8000', 
       '/devmng': 'http://localhost:8000',
+      '/firmware': 'http://localhost:8000',
+      '/firmware-device-types': 'http://localhost:8000',
+      '/users': 'http://localhost:8000',
     }
   }
 })

@@ -343,6 +343,21 @@ def require_developer_manager(authorization: Optional[str]) -> str:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
 
     return username
+
+
+@app.get("/users/{user_id}/username")
+def get_username_by_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    get_authenticated_user(authorization, db)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"id": user.id, "username": user.username}
     
 @app.post("/deploy-to-one-device")
 def cloud_to_device(device_id: str, firmware: FirmwareOverview):
@@ -558,6 +573,37 @@ def map_firmware_response(firmware: FirmwareUpdate) -> FirmwareResponse:
         declined_comment=firmware.declined_comment,
         status=get_firmware_status(firmware),
     )
+
+
+@app.get("/firmware-device-types", response_model=List[str])
+def get_firmware_device_types(
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+
+    if user.type == UserRole.developer.value:
+        device_types = [
+            device_type
+            for (device_type,) in db.query(FirmwareUpdate.device_type)
+            .filter(FirmwareUpdate.uploaded_by == user.id)
+            .distinct()
+            .order_by(FirmwareUpdate.device_type)
+            .all()
+        ]
+    else:
+        require_developer_manager(authorization)
+        device_types = [
+            device_type
+            for (device_type,) in db.query(FirmwareUpdate.device_type)
+            .join(Developer, FirmwareUpdate.uploaded_by == Developer.id)
+            .filter(Developer.manager_id == user.id)
+            .distinct()
+            .order_by(FirmwareUpdate.device_type)
+            .all()
+        ]
+
+    return device_types
 
 
 @app.get("/firmware/status/{status}", response_model=List[FirmwareResponse])

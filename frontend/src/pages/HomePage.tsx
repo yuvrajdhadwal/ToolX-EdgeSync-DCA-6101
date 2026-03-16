@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
-import { ROUTES } from '../constants/routes'
+import { getHomeRouteFromToken, ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 import Logout from '../components/Logout'
 
@@ -26,6 +26,19 @@ type UploadItem = {
   declined_by: number | null
   declined_comment: string | null
   status: UploadStatus
+}
+
+const getFirmwareDeviceTypes = async (): Promise<string[]> => {
+  const token = localStorage.getItem('token')
+  const response = await fetch('/firmware-device-types', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch device types: ${response.statusText}`)
+  }
+
+  return response.json()
 }
 
 const getUploadsByStatus = async (status: UploadStatus): Promise<UploadItem[]> => {
@@ -60,12 +73,14 @@ const HomePage: React.FC = () => {
   const location = useLocation()
   const role = getRoleFromToken()
   const canUploadFirmware = role === 'developer'
-  const showFirmwareDashboard = role === 'developer' || role === 'developer_manager'
+  const showFirmwareDashboard = role === 'developer' || role === 'developer_manager' || role === 'business_manager'
   const [activeTab, setActiveTab] = useState(() => {
     const navigationState = location.state as { activeTab?: number } | null
     return typeof navigationState?.activeTab === 'number' ? navigationState.activeTab : 0
   })
   const [uploads, setUploads] = useState<UploadItem[]>([])
+  const [deviceTypes, setDeviceTypes] = useState<string[]>([])
+  const [selectedDeviceType, setSelectedDeviceType] = useState('All Device Types')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -77,6 +92,8 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     if (!showFirmwareDashboard) {
       setUploads([])
+      setDeviceTypes([])
+      setSelectedDeviceType('All Device Types')
       setError('')
       setIsLoading(false)
       return
@@ -101,9 +118,41 @@ const HomePage: React.FC = () => {
     loadUploads()
   }, [activeTab, showFirmwareDashboard])
 
-  const tableRows = uploads.length >= minRows
+  useEffect(() => {
+    if (!showFirmwareDashboard) {
+      return
+    }
+
+    const loadDeviceTypes = async () => {
+      try {
+        const records = await getFirmwareDeviceTypes()
+        setDeviceTypes(records)
+      } catch {
+        setDeviceTypes([])
+      }
+    }
+
+    loadDeviceTypes()
+  }, [showFirmwareDashboard])
+
+  useEffect(() => {
+    if (selectedDeviceType === 'All Device Types') {
+      return
+    }
+
+    if (!deviceTypes.includes(selectedDeviceType)) {
+      setSelectedDeviceType('All Device Types')
+    }
+  }, [deviceTypes, selectedDeviceType])
+
+  const filteredUploads = selectedDeviceType === 'All Device Types'
     ? uploads
-    : [...uploads, ...Array.from({ length: minRows - uploads.length }, () => null)]
+    : uploads.filter((upload) => upload.device_type === selectedDeviceType)
+
+  const tableRows = filteredUploads.length >= minRows
+    ? filteredUploads
+    : [...filteredUploads, ...Array.from({ length: minRows - filteredUploads.length }, () => null)]
+
 
   return (
     <div style={{ 
@@ -120,8 +169,13 @@ const HomePage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <button 
             type="button" 
-            onClick={() => navigate(ROUTES.HOME)}
-            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+            onClick={() => navigate(getHomeRouteFromToken())}
+            style = {{
+              padding: '0.5rem 1.5rem',
+              backgroundColor: COLORS.backgroundPrimary,
+              border: 'none'
+            }}
+
           >
             <img 
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
@@ -188,17 +242,61 @@ const HomePage: React.FC = () => {
           </nav>
 
           {/* Main Content Area */}
-          <main style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-            padding: '2rem',
-            backgroundColor: COLORS.backgroundSecondary,
-            borderRadius: '8px',
-            boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
-          }}>
-            <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>{tabs[activeTab]}</h2>
+          <main
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem',
+              padding: '2rem',
+              backgroundColor: COLORS.backgroundSecondary,
+              borderRadius: '8px',
+              boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>{tabs[activeTab]}</h2>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                }}
+              >
+                <label htmlFor="device-type-filter" style={{ color: COLORS.textPrimary, fontWeight: 500 }}>
+                  Device Type:
+                </label>
+                <select
+                  id="device-type-filter"
+                  value={selectedDeviceType}
+                  onChange={(event) => setSelectedDeviceType(event.target.value)}
+                  style={{
+                    minWidth: '220px',
+                    padding: '0.6rem 0.75rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.borderPrimary}`,
+                    backgroundColor: COLORS.backgroundPrimary,
+                    color: COLORS.textPrimary,
+                  }}
+                >
+                  <option value="All Device Types">All Device Types</option>
+                  {deviceTypes.map((deviceType) => (
+                    <option key={deviceType} value={deviceType}>
+                      {deviceType}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {isLoading && <p style={{ margin: 0, color: COLORS.textMuted }}>Loading uploads...</p>}
             {error && <p style={{ margin: 0, color: COLORS.error }}>{error}</p>}
 
