@@ -541,7 +541,7 @@ def map_firmware_response(firmware: FirmwareUpdate) -> FirmwareResponse:
     )
 
 
-@app.get("/firmware/device-types", response_model=List[str])
+@app.get("/firmware-device-types", response_model=List[str])
 def get_firmware_device_types(
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(default=None),
@@ -559,11 +559,15 @@ def get_firmware_device_types(
         ]
     else:
         require_developer_manager(authorization)
-        device_types = sorted({
-            firmware.device_type
-            for firmware in user.viewable_firmware
-            if firmware.device_type
-        })
+        device_types = [
+            device_type
+            for (device_type,) in db.query(FirmwareUpdate.device_type)
+            .join(Developer, FirmwareUpdate.uploaded_by == Developer.id)
+            .filter(Developer.manager_id == user.id)
+            .distinct()
+            .order_by(FirmwareUpdate.device_type)
+            .all()
+        ]
 
     return device_types
 

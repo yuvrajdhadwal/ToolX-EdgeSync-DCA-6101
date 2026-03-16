@@ -29,7 +29,7 @@ type UploadItem = {
 
 const getFirmwareDeviceTypes = async (): Promise<string[]> => {
   const token = localStorage.getItem('token')
-  const response = await fetch('/firmware/device-types', {
+  const response = await fetch('/firmware-device-types', {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
 
