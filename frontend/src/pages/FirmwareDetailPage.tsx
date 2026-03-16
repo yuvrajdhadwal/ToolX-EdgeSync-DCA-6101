@@ -227,6 +227,8 @@ const FirmwareDetailPage: React.FC = () => {
     return resolvedUsernames[userId] ?? String(userId);
   };
 
+  const isApproved = firmware?.status === 'current';
+
   const detailRows: Array<{ label: string; value: string | number | boolean | null | undefined }> = [
     { label: 'ID', value: firmware?.id },
     { label: 'Version', value: firmware?.version_number },
@@ -239,6 +241,11 @@ const FirmwareDetailPage: React.FC = () => {
     { label: 'Approved By', value: getDisplayNameById(firmware?.approved_by) },
     { label: 'Declined By', value: getDisplayNameById(firmware?.declined_by) },
     { label: 'Decline Comment', value: firmware?.declined_comment },
+    { label: 'Approved By', value: firmware?.approved_by },
+    ...(!isApproved ? [
+      { label: 'Declined By', value: firmware?.declined_by },
+      { label: 'Decline Comment', value: firmware?.declined_comment },
+    ] : []),
   ];
 
   const rejectFields: Array<{ label: string; value: string }> = [
@@ -313,6 +320,7 @@ const FirmwareDetailPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
+        minWidth: '100%',
         padding: '2rem',
         backgroundColor: COLORS.backgroundPrimary,
         color: COLORS.textPrimary,
