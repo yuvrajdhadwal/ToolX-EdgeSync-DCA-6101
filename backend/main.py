@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Header, Form, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, status, Header, Form, File, UploadFile, Response
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -523,8 +523,22 @@ def get_firmware_by_id(
     }
     
     return FirmwareResponse(**firmware_dict)
-
-
+@app.post("/firmware/{firmware_id}/download")
+def download_firmware(
+    firmware_id: int,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),):
+    user = get_authenticated_user(authorization, db)
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+    if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+    return Response(
+        content=firmware.objectBinary,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"}
+    )
 class FirmwareResponse(BaseModel):
     id: int
     version_number: str

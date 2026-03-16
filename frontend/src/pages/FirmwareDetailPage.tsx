@@ -28,6 +28,28 @@ type ApproveFirmwarePayload = {
   confirmation_text: string;
 };
 
+const downloadFirmware = async (firmwareId: number) => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`/firmware/${firmwareId}/download`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    throw new Error('Failed to download firmware');
+  }
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `firmware_${firmwareId}.bin`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
+
+  
 type UserLookupResponse = {
   id: number;
   username: string;
@@ -279,6 +301,16 @@ const FirmwareDetailPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+  const handleDownload = async () => {
+    if (!firmware) {
+      return;
+    }
+    try {
+      await downloadFirmware(firmware.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Download failed');
+    }
+  };
 
   const handleApproveConfirm = async () => {
     if (!firmware) {
@@ -334,6 +366,23 @@ const FirmwareDetailPage: React.FC = () => {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <h2 style={{ margin: 0 }}>Firmware Details</h2>
+            {!isLoading && firmware && (
+              <button
+                type="button"
+                onClick={handleDownload}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: COLORS.backgroundTertiary,
+                  border: `1px solid ${COLORS.borderPrimary}`,
+                  color: COLORS.textPrimary,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
+              >
+                Download
+              </button>
+            )}
           <button
             type="button"
             onClick={() => navigate(getHomeRouteFromToken(), { state: { activeTab: returnTab } })}

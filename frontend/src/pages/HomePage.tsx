@@ -85,7 +85,7 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState('')
 
   const tableHeaders = ['ID', 'Version', 'Device Type', 'Emergency', 'Description']
-  const tabs = ['Current', 'Pending', 'Rejected']
+  const tabs = ['Approved', 'Pending', 'Rejected']
   const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
   const minRows = 1
 
