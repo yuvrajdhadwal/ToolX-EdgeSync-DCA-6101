@@ -541,6 +541,33 @@ def map_firmware_response(firmware: FirmwareUpdate) -> FirmwareResponse:
     )
 
 
+@app.get("/firmware/device-types", response_model=List[str])
+def get_firmware_device_types(
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+
+    if user.type == UserRole.developer.value:
+        device_types = [
+            device_type
+            for (device_type,) in db.query(FirmwareUpdate.device_type)
+            .filter(FirmwareUpdate.uploaded_by == user.id)
+            .distinct()
+            .order_by(FirmwareUpdate.device_type)
+            .all()
+        ]
+    else:
+        require_developer_manager(authorization)
+        device_types = sorted({
+            firmware.device_type
+            for firmware in user.viewable_firmware
+            if firmware.device_type
+        })
+
+    return device_types
+
+
 @app.get("/firmware/status/{status}", response_model=List[FirmwareResponse])
 def get_firmware_by_status(
     status: str,
