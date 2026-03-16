@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
-import { ROUTES } from '../constants/routes'
+import { getHomeRouteFromToken, ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 import Logout from '../components/Logout'
 
@@ -60,7 +60,7 @@ const HomePage: React.FC = () => {
   const location = useLocation()
   const role = getRoleFromToken()
   const canUploadFirmware = role === 'developer'
-  const showFirmwareDashboard = role === 'developer' || role === 'developer_manager'
+  const showFirmwareDashboard = role === 'developer' || role === 'developer_manager' || role === 'business_manager'
   const [activeTab, setActiveTab] = useState(() => {
     const navigationState = location.state as { activeTab?: number } | null
     return typeof navigationState?.activeTab === 'number' ? navigationState.activeTab : 0
@@ -120,8 +120,13 @@ const HomePage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <button 
             type="button" 
-            onClick={() => navigate(ROUTES.HOME)}
-            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+            onClick={() => navigate(getHomeRouteFromToken())}
+            style = {{
+              padding: '0.5rem 1.5rem',
+              backgroundColor: COLORS.backgroundPrimary,
+              border: 'none'
+            }}
+
           >
             <img 
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"

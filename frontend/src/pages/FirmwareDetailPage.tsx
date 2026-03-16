@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { COLORS } from '../constants/colors';
-import { ROUTES } from '../constants/routes';
+import { getHomeRouteFromToken } from '../constants/routes';
 
 type UploadStatus = 'current' | 'pending' | 'rejected';
 
@@ -207,7 +207,7 @@ const FirmwareDetailPage: React.FC = () => {
         rejecting_manager_username: rejectingManager.trim(),
         rejection_reason: rejectionReason.trim(),
       });
-      navigate(ROUTES.HOME, { state: { activeTab: 2 } });
+      navigate(getHomeRouteFromToken(), { state: { activeTab: 2 } });
     } catch (rejectError) {
       if (rejectError instanceof Error) {
         setError(rejectError.message);
@@ -236,7 +236,7 @@ const FirmwareDetailPage: React.FC = () => {
       await approveUpload(firmware.id, {
         confirmation_text: approveConfirmationText.trim(),
       });
-      navigate(ROUTES.HOME, { state: { activeTab: 0 } });
+      navigate(getHomeRouteFromToken(), { state: { activeTab: 0 } });
     } catch (approveError) {
       if (approveError instanceof Error) {
         setError(approveError.message);
@@ -275,7 +275,7 @@ const FirmwareDetailPage: React.FC = () => {
           <h2 style={{ margin: 0 }}>Firmware Details</h2>
           <button
             type="button"
-            onClick={() => navigate(ROUTES.HOME, { state: { activeTab: returnTab } })}
+            onClick={() => navigate(getHomeRouteFromToken(), { state: { activeTab: returnTab } })}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: 'transparent',
