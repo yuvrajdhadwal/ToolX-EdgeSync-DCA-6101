@@ -7,6 +7,7 @@ export const ROUTES = {
   UPLOAD: '/upload',
   BIZMNGPAGE: '/business_manager',
   DEVICES_BIZMNG: '/view_devices',
+  DEVICE_DETAIL: '/view_devices/:serialNumber',
   ADD_DEVICES: '/add_device'
 
 } as const;
