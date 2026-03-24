@@ -1,9 +1,14 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { MapContainer, TileLayer, useMap } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 import Logout from '../components/Logout'
+
+const DEFAULT_CENTER: [number, number] = [20, 0]
+const DEFAULT_ZOOM = 2
 
 const getRoleFromToken = (): string | null => {
   const token = localStorage.getItem('token')
@@ -17,9 +22,26 @@ const getRoleFromToken = (): string | null => {
   }
 }
 
+type ResetMapControlProps = {
+  center: [number, number]
+  zoom: number
+  resetSignal: number
+}
+
+const ResetMapControl: React.FC<ResetMapControlProps> = ({ center, zoom, resetSignal }) => {
+  const map = useMap()
+
+  React.useEffect(() => {
+    map.setView(center, zoom)
+  }, [center, zoom, resetSignal, map])
+
+  return null
+}
+
 const WorldMapPage: React.FC = () => {
   const navigate = useNavigate()
   const role = getRoleFromToken()
+  const [resetSignal, setResetSignal] = React.useState(0)
 
   if (role !== 'business_manager') {
     return null
@@ -61,16 +83,45 @@ const WorldMapPage: React.FC = () => {
       <main style={{
         flex: 1,
         padding: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
         backgroundColor: COLORS.backgroundSecondary,
         borderRadius: '8px',
         boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
       }}>
-        <iframe
-          title="World Map"
-          src="https://www.openstreetmap.org/export/embed.html?bbox=-140%2C-60%2C140%2C75&layer=mapnik"
-          style={{ width: '100%', height: '100%', minHeight: '600px', border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px' }}
-          loading="lazy"
-        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={() => setResetSignal(prev => prev + 1)}
+            style={{
+              padding: '0.5rem 1.5rem',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              border: `1px solid ${COLORS.accentPrimary}`,
+              backgroundColor: 'transparent',
+              color: COLORS.textPrimary,
+              fontWeight: 500,
+            }}
+          >
+            Reset
+          </button>
+        </div>
+        <div style={{ width: '77%', margin: '0 auto', minHeight: '600px', border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
+          <MapContainer
+            center={DEFAULT_CENTER}
+            zoom={DEFAULT_ZOOM}
+            style={{ height: '600px', width: '100%' }}
+            zoomControl={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <ResetMapControl center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} resetSignal={resetSignal} />
+          </MapContainer>
+        </div>
       </main>
     </div>
   )
