@@ -28,5 +28,9 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4"
-  }
+  },
+  "description": "## Run Frontend ```bash npm run dev ```",
+  "main": "eslint.config.js",
+  "author": "",
+  "license": "ISC"
 }
