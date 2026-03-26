@@ -12,6 +12,7 @@ import BizMngDevicesPage from './pages/BizMngDevicesPage';
 import { AUTH_ROUTES, ROUTES } from './constants/routes';
 import ProtectedRoute from "./components/ProtectedRoute";
 import AddDevicePage from './pages/AddDevicePage';
+import WorldMapPage from './pages/WorldMapPage';
 
 function AppLayout() {
   const location = useLocation();
@@ -38,6 +39,7 @@ function AppLayout() {
           <Route path={ROUTES.FIRMWARE_DETAIL} element={<ProtectedRoute><FirmwareDetailPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.UPLOAD} element={<ProtectedRoute><UploadPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.BIZMNGPAGE} element={<ProtectedRoute><BizMngPage /></ProtectedRoute>}></Route>
+          <Route path={ROUTES.WORLD_MAP} element={<ProtectedRoute><WorldMapPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.DEVICES_BIZMNG} element={<ProtectedRoute><BizMngDevicesPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.ADD_DEVICES} element={<ProtectedRoute><AddDevicePage /></ProtectedRoute>}></Route>
 
