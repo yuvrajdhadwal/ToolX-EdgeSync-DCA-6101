@@ -28,7 +28,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 load_dotenv()
 
 origins = [ 
-    os.getenv('LOCAL_ORIGIN', 'http://localhost:5173'), # Defaulted just in case env missing
+    os.getenv('LOCAL_ORIGIN', 'http://localhost:5173'),
 ]
 
 app.add_middleware( 
@@ -40,7 +40,6 @@ app.add_middleware(
 )
 
 
-# Database dependency injection function to manage the lifecycle of a database session
 def get_db():
     db = SessionLocal()
     try:
@@ -49,13 +48,11 @@ def get_db():
         db.close()
 
 
-# JWT Secret and Algorithm
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
 ALGORITHM = os.getenv('ALGORITHM', 'HS256')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-# Define UserRole enum locally for Pydantic validation
 class UserRole(str, Enum):
     developer = "developer"
     developer_manager = "developer_manager"
@@ -63,7 +60,6 @@ class UserRole(str, Enum):
     field_shop_professional = "field_shop_professional"
 
 
-# Define a Pydantic Model for User Registration
 class UserCreate(BaseModel):
     role: UserRole
     username: str
@@ -95,7 +91,6 @@ class DeviceCreate(BaseModel):
         return v
 
 def get_user_by_username(db: Session, username: str):
-    # This will search the base User table and return the correct subclass automatically
     return db.query(User).filter(User.username == username).first()
 
 @app.get("/devmng")
@@ -106,7 +101,6 @@ def get_devmng(db: Session = Depends(get_db)):
 def create_user(db: Session, user: UserCreate):
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    # Instantiate the correct SQLAlchemy polymorphic subclass
     if user.role == UserRole.developer:
         if not user.developer_manager_id:
             raise HTTPException(status_code=400, detail="Developer must have a developer manager ID")
@@ -123,7 +117,6 @@ def create_user(db: Session, user: UserCreate):
     else:
         raise HTTPException(status_code=400, detail="Invalid role type")
 
-    # SQLAlchemy handles cascading the insertion into both tables (users + subclass table)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -131,7 +124,6 @@ def create_user(db: Session, user: UserCreate):
     return "complete"
 
 
-#POST for firmware upload
 @app.post("/upload")
 async def upload_firmware(
     file: UploadFile = File(...),
@@ -177,18 +169,15 @@ async def upload_firmware(
     db.refresh(firmware)
     return {'message': 'upload successful'}
   
-# POST for add new device
+
 @app.post("/add_device")
 def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
-    # Check for duplicate serial number first
     existing_device = db.query(Device).filter(
         Device.serial_number == device.serial_number
     ).first()
     if existing_device:
         raise HTTPException(status_code=400, detail="Device with this serial number already exists")
     
-    # Create firmware and device type entry if version doesn't exist
-    # Otherwise query existing entry
     firmware = db.query(FirmwareUpdate).filter(
         FirmwareUpdate.version_number == device.version_number,
         FirmwareUpdate.device_type == device.device_type
@@ -220,7 +209,7 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
     db.refresh(db_device)
     return {"message": "Device added successfully"}
 
-# Get device info from backend
+
 @app.get("/get_devices")
 def get_devices(db: Session = Depends(get_db)):
     devices = db.query(Device).all()
@@ -245,16 +234,15 @@ def delete_device(serial_number: str, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Device deleted successfully"}
 
-# POST route that uses the Pydantic model to receive the request body.
+
 @app.post("/register")
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = get_user_by_username(db, username=user.username)
-    if db_user: # if username is in use
+    if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
     return create_user(db=db, user=user)
 
 
-# Authenticate the user
 def authenticate_user(username: str, password: str, db: Session):
     user = db.query(User).filter(User.username == username).first()
     if not user:
@@ -263,7 +251,6 @@ def authenticate_user(username: str, password: str, db: Session):
         return False
     return user
 
-# Create access token
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
@@ -285,8 +272,6 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    # Store the role type in the JWT payload so the frontend knows what role the user is
     access_token = create_access_token(
         data={"sub": user.username, "role": user.type}, 
         expires_delta=access_token_expires
@@ -303,7 +288,6 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         return payload
     except JWTError:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
-    
 
 
 def get_token_payload_from_header(authorization: Optional[str]) -> dict:
@@ -359,11 +343,9 @@ def get_username_by_id(
 
     return {"id": user.id, "username": user.username}
     
+
 @app.post("/deploy-to-one-device")
 def cloud_to_device(device_id: str, firmware: FirmwareOverview):
-    """
-    @brief Sends a Deployement message to selected edge device
-    """
     connection_str = os.getenv('IOT_CONNECTION')
     iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
     if not deploy_helper(device_id, iot_hub, firmware):
@@ -376,9 +358,6 @@ def cloud_to_device(device_id: str, firmware: FirmwareOverview):
 
 @app.post("/deploy-to-many-devices")
 def cloud_to_many_device(device_ids: list[str], firmware: FirmwareOverview):
-    """
-    @brief Sends a Deployment Message to all selected edge devices
-    """
     connection_str = os.getenv('IOT_CONNECTION')
     iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
 
@@ -389,156 +368,14 @@ def cloud_to_many_device(device_ids: list[str], firmware: FirmwareOverview):
                 detail="Device not found or invalid DeviceID"
             )
     return {"status": "sent to all devices"}
-   
+
 
 @app.get("/verify-token/{token}")
 async def verify_user_token(token: str):
     payload = verify_token(token=token)
     return {"message": "Token is valid", "user": payload.get("sub"), "role": payload.get("role")}
 
-# Pydantic model for firmware response
-class FirmwareResponse(BaseModel):
-    id: int
-    version_number: str
-    device_type: str
-    description: Optional[str]
-    isEmergency: bool
-    uploaded_by: Optional[int]
-    uploaded_timestamp: Optional[datetime]
-    approved_by: Optional[int]
-    declined_by: Optional[int]
-    declined_comment: Optional[str]
-    status: str  # 'pending', 'current', 'rejected'
-    
-    class Config:
-        from_attributes = True
 
-# Get firmware by status
-@app.get("/firmware/status/{status}", response_model=List[FirmwareResponse])
-def get_firmware_by_status(
-    status: str,
-    db: Session = Depends(get_db),
-    authorization: Optional[str] = Header(default=None),
-):
-    user = get_authenticated_user(authorization, db)
-
-    if status == "pending":
-        if user.type == UserRole.developer.value:
-            firmware_list = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.uploaded_by == user.id,
-                FirmwareUpdate.approved_by.is_(None),
-                FirmwareUpdate.declined_by.is_(None),
-            ).all()
-        else:
-            require_developer_manager(authorization)
-            firmware_list = [
-                firmware
-                for firmware in user.viewable_firmware
-                if firmware.approved_by is None and firmware.declined_by is None
-            ]
-    elif status == "current":
-        if user.type == UserRole.developer.value:
-            firmware_list = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.uploaded_by == user.id,
-                FirmwareUpdate.approved_by.isnot(None),
-                FirmwareUpdate.declined_by.is_(None),
-            ).all()
-        else:
-            firmware_list = [
-                firmware
-                for firmware in user.viewable_firmware
-                if firmware.approved_by is not None and firmware.declined_by is None
-            ]
-    elif status == "rejected":
-        if user.type == UserRole.developer.value:
-            firmware_list = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.uploaded_by == user.id,
-                FirmwareUpdate.declined_by.isnot(None),
-            ).all()
-        else:
-            firmware_list = [
-                firmware
-                for firmware in user.viewable_firmware
-                if firmware.declined_by is not None
-            ]
-    else:
-        raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'current', or 'rejected'")
-    
-    # Map to response model with status field
-    result = []
-    for firmware in firmware_list:
-        firmware_dict = {
-            "id": firmware.id,
-            "version_number": firmware.version_number,
-            "device_type": firmware.device_type,
-            "description": firmware.description,
-            "isEmergency": firmware.isEmergency,
-            "uploaded_by": firmware.uploaded_by,
-            "uploaded_timestamp": firmware.uploaded_timestamp,
-            "approved_by": firmware.approved_by,
-            "declined_by": firmware.declined_by,
-            "declined_comment": firmware.declined_comment,
-            "status": status
-        }
-        result.append(FirmwareResponse(**firmware_dict))
-    
-    return result
-
-# Get firmware by ID
-@app.get("/firmware/{firmware_id}", response_model=FirmwareResponse)
-def get_firmware_by_id(
-    firmware_id: int,
-    db: Session = Depends(get_db),
-    authorization: Optional[str] = Header(default=None),
-):
-    user = get_authenticated_user(authorization, db)
-    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
-    
-    if not firmware:
-        raise HTTPException(status_code=404, detail="Firmware not found")
-
-    if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
-        raise HTTPException(status_code=404, detail="Firmware not found")
-    
-    # Determine status
-    if firmware.declined_by is not None:
-        status = "rejected"
-    elif firmware.approved_by is not None:
-        status = "current"
-    else:
-        status = "pending"
-
-    firmware_dict = {
-        "id": firmware.id,
-        "version_number": firmware.version_number,
-        "device_type": firmware.device_type,
-        "description": firmware.description,
-        "isEmergency": firmware.isEmergency,
-        "uploaded_by": firmware.uploaded_by,
-        "uploaded_timestamp": firmware.uploaded_timestamp,
-        "approved_by": firmware.approved_by,
-        "declined_by": firmware.declined_by,
-        "declined_comment": firmware.declined_comment,
-        "status": status
-    }
-    
-    return FirmwareResponse(**firmware_dict)
-@app.post("/firmware/{firmware_id}/download")
-def download_firmware(
-    firmware_id: int,
-    db: Session = Depends(get_db),
-    authorization: Optional[str] = Header(default=None),):
-    user = get_authenticated_user(authorization, db)
-    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
-    if not firmware:
-        raise HTTPException(status_code=404, detail="Firmware not found")
-    if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
-        raise HTTPException(status_code=404, detail="Firmware not found")
-    return Response(
-        content=firmware.objectBinary,
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"}
-    )
 class FirmwareResponse(BaseModel):
     id: int
     version_number: str
@@ -605,13 +442,21 @@ def get_firmware_device_types(
             .order_by(FirmwareUpdate.device_type)
             .all()
         ]
-    else:
-        require_developer_manager(authorization)
+    elif user.type == UserRole.developer_manager.value:
         device_types = [
             device_type
             for (device_type,) in db.query(FirmwareUpdate.device_type)
             .join(Developer, FirmwareUpdate.uploaded_by == Developer.id)
             .filter(Developer.manager_id == user.id)
+            .distinct()
+            .order_by(FirmwareUpdate.device_type)
+            .all()
+        ]
+    else:
+        # business_manager sees all device types
+        device_types = [
+            device_type
+            for (device_type,) in db.query(FirmwareUpdate.device_type)
             .distinct()
             .order_by(FirmwareUpdate.device_type)
             .all()
@@ -638,13 +483,19 @@ def get_firmware_by_status(
                 FirmwareUpdate.approved_by.is_(None),
                 FirmwareUpdate.declined_by.is_(None),
             ).all()
-        else:
-            require_developer_manager(authorization)
+        elif user.type == UserRole.developer_manager.value:
             records = [
                 firmware
                 for firmware in user.viewable_firmware
                 if firmware.approved_by is None and firmware.declined_by is None
             ]
+        else:
+            # business_manager sees all pending firmware
+            records = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.approved_by.is_(None),
+                FirmwareUpdate.declined_by.is_(None),
+            ).all()
+
     elif status == "current":
         if user.type == UserRole.developer.value:
             records = db.query(FirmwareUpdate).filter(
@@ -652,24 +503,36 @@ def get_firmware_by_status(
                 FirmwareUpdate.approved_by.isnot(None),
                 FirmwareUpdate.declined_by.is_(None),
             ).all()
-        else:
+        elif user.type == UserRole.developer_manager.value:
             records = [
                 firmware
                 for firmware in user.viewable_firmware
                 if firmware.approved_by is not None and firmware.declined_by is None
             ]
-    else:
+        else:
+            # business_manager sees all approved firmware
+            records = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.approved_by.isnot(None),
+                FirmwareUpdate.declined_by.is_(None),
+            ).all()
+
+    else:  # rejected
         if user.type == UserRole.developer.value:
             records = db.query(FirmwareUpdate).filter(
                 FirmwareUpdate.uploaded_by == user.id,
                 FirmwareUpdate.declined_by.isnot(None),
             ).all()
-        else:
+        elif user.type == UserRole.developer_manager.value:
             records = [
                 firmware
                 for firmware in user.viewable_firmware
                 if firmware.declined_by is not None
             ]
+        else:
+            # business_manager sees all rejected firmware
+            records = db.query(FirmwareUpdate).filter(
+                FirmwareUpdate.declined_by.isnot(None),
+            ).all()
 
     return [map_firmware_response(record) for record in records]
 
@@ -690,6 +553,25 @@ def get_firmware_by_id(
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     return map_firmware_response(firmware)
+
+
+@app.post("/firmware/{firmware_id}/download")
+def download_firmware(
+    firmware_id: int,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+    if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+    return Response(
+        content=firmware.objectBinary,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"}
+    )
 
 
 @app.post("/firmware/{firmware_id}/reject", response_model=FirmwareResponse)
