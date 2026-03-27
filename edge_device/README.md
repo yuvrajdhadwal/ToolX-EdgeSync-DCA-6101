@@ -27,4 +27,8 @@ or corruption or security issues
 **Confirmation:** If new firmware binary execs without issue, delete old binary and send
 installation confirmation device to cloud message
 
+## Device StartUp
+
+`docker build -t edge-device:v1 .`
+`docker run -it --name simulated-device-1 edge-device:v1`
 
