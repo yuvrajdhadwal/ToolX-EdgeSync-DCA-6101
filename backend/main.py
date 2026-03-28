@@ -12,7 +12,7 @@ import os
 from enum import Enum
 from azure.iot.hub import IoTHubRegistryManager
 
-from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate, Device
+from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate, Device, Deploy
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -89,6 +89,10 @@ class DeviceCreate(BaseModel):
         if not v.strip():
             raise ValueError('Field must not be empty')
         return v
+    
+# Add Pydantic model for deploy request
+class DeployFirmwareRequest(BaseModel):
+    serial_number: str
 
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
@@ -123,6 +127,88 @@ def create_user(db: Session, user: UserCreate):
     
     return "complete"
 
+# Add deploy endpoint
+@app.post("/firmware/{firmware_id}/deploy")
+def deploy_firmware(
+    firmware_id: int,
+    payload: DeployFirmwareRequest,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+
+    if user.type != UserRole.business_manager.value:
+        raise HTTPException(status_code=403, detail="Only business managers can deploy firmware")
+
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if firmware.approved_by is None or firmware.declined_by is not None:
+        raise HTTPException(status_code=400, detail="Only approved firmware can be deployed")
+
+    device = db.query(Device).filter(Device.serial_number == payload.serial_number).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    # Check if already deployed to this device
+    existing_deploy = db.query(Deploy).filter(
+        Deploy.target_firmware_id == firmware_id,
+        Deploy.device_serial == payload.serial_number,
+    ).first()
+    if existing_deploy:
+        raise HTTPException(status_code=400, detail="Firmware already deployed to this device")
+
+    business_manager = db.query(BusinessManager).filter(BusinessManager.id == user.id).first()
+    if not business_manager:
+        raise HTTPException(status_code=404, detail="Business manager not found")
+
+    deploy = Deploy(
+        manager_id=business_manager.id,
+        target_firmware_id=firmware_id,
+        device_serial=device.serial_number,
+        device_firmware_id=device.firmware_id,
+        timestamp=datetime.now(timezone.utc),
+    )
+    db.add(deploy)
+    db.commit()
+    db.refresh(deploy)
+
+    return {"message": f"Firmware successfully deployed to device {payload.serial_number}"}
+
+
+# Add endpoint to get devices compatible with a firmware (matching device_type)
+@app.get("/firmware/{firmware_id}/compatible-devices")
+def get_compatible_devices(
+    firmware_id: int,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+
+    if user.type != UserRole.business_manager.value:
+        raise HTTPException(status_code=403, detail="Only business managers can view compatible devices")
+
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    devices = db.query(Device).filter(Device.device_type == firmware.device_type).all()
+
+    # Get already-deployed serial numbers for this firmware
+    deployed_serials = {
+        d.device_serial for d in db.query(Deploy).filter(Deploy.target_firmware_id == firmware_id).all()
+    }
+
+    return [
+        {
+            "serial_number": d.serial_number,
+            "device_type": d.device_type,
+            "location": d.location,
+            "already_deployed": d.serial_number in deployed_serials,
+        }
+        for d in devices
+    ]
 
 @app.post("/upload")
 async def upload_firmware(
@@ -402,15 +488,20 @@ class ApproveFirmwareRequest(BaseModel):
     confirmation_text: str
 
 
-def get_firmware_status(firmware: FirmwareUpdate) -> str:
+# Update firmware status to reflect deployed status
+def get_firmware_status(firmware: FirmwareUpdate, db: Session = None) -> str:
     if firmware.declined_by is not None:
         return "rejected"
     if firmware.approved_by is not None:
+        if db:
+            deployed = db.query(Deploy).filter(Deploy.target_firmware_id == firmware.id).first()
+            if deployed:
+                return "deployed"
         return "current"
     return "pending"
 
 
-def map_firmware_response(firmware: FirmwareUpdate) -> FirmwareResponse:
+def map_firmware_response(firmware: FirmwareUpdate, db: Session = None) -> FirmwareResponse:
     return FirmwareResponse(
         id=firmware.id,
         version_number=firmware.version_number,
@@ -422,7 +513,7 @@ def map_firmware_response(firmware: FirmwareUpdate) -> FirmwareResponse:
         approved_by=firmware.approved_by,
         declined_by=firmware.declined_by,
         declined_comment=firmware.declined_comment,
-        status=get_firmware_status(firmware),
+        status=get_firmware_status(firmware, db),
     )
 
 
