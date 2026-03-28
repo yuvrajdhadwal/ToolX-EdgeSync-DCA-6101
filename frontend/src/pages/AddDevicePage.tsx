@@ -1,11 +1,9 @@
-import React, {useState} from 'react'
+import React, { useState, useEffect } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
-
-
 
 interface ItemInfo {
     device_type: string;
@@ -15,16 +13,26 @@ interface ItemInfo {
     location: string;
     developer_manager: string;
 }
+
+type devmngOption = {
+  username: string;
+  id: number;
+}
     
-
-
 const AddDevicePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate()
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [developerManagers, setDeveloperManagers] = useState<devmngOption[]>([]);
   
-
+  useEffect(() => {
+    fetch('/devmng')
+      .then((res) => res.json())
+      .then((data: devmngOption[]) => setDeveloperManagers(data))
+      .catch(() => setError('Failed to load developer managers'));
+  }, []);
+  
   const [formData, setFormData] = useState<ItemInfo>({
     device_type: '',
     serial_number: '',
@@ -32,9 +40,8 @@ const AddDevicePage: React.FC = () => {
     version_number: '',
     location: '',
     description: ''
-
-
   });
+
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
     setFormData({
@@ -42,8 +49,6 @@ const AddDevicePage: React.FC = () => {
         [name]: value,
     });
   };
-
-
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -111,7 +116,6 @@ const AddDevicePage: React.FC = () => {
       backgroundColor: COLORS.backgroundPrimary,
       width: '100%',
       boxSizing: 'border-box',
-
     }}>
       {/* Header with SLB */}
       <header
@@ -196,12 +200,17 @@ const AddDevicePage: React.FC = () => {
                 <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
                     Developer Manager:
                 </label>
-                <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
-                    type='text'
-                    name='developer_manager'
-                    value={formData.developer_manager}
-                    onChange={handleInputChange}
-                />
+                <select
+                  value={formData.developer_manager}
+                  onChange={(e) => setFormData({ ...formData, developer_manager: e.target.value })}
+                >
+                  <option value="" disabled>Select a Developer Manager</option>
+                  {developerManagers.map((mgr) => (
+                    <option key={mgr.id} value={mgr.id}>
+                      {mgr.username}
+                    </option>
+                  ))}
+                </select>
 
                 <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right', gridColumnStart: 1, alignSelf: 'start' }}>
                     Device Description:
