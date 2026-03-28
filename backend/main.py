@@ -201,13 +201,14 @@ def get_compatible_devices(
     }
 
     return [
-        {
-            "serial_number": d.serial_number,
-            "device_type": d.device_type,
-            "location": d.location,
-            "already_deployed": d.serial_number in deployed_serials,
-        }
-        for d in devices
+    {
+        "serial_number": d.serial_number,
+        "device_type": d.device_type,
+        "location": d.location,
+        "current_version": d.firmware.version_number if d.firmware else None,
+        "already_deployed": d.serial_number in deployed_serials,
+    }
+    for d in devices
     ]
 
 @app.post("/upload")

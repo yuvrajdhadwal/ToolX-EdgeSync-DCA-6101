@@ -32,6 +32,7 @@ type CompatibleDevice = {
   serial_number: string;
   device_type: string;
   location: string;
+  current_version: string | null;
   already_deployed: boolean;
 };
 
@@ -41,9 +42,7 @@ const downloadFirmware = async (firmwareId: number) => {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!response.ok) {
-    throw new Error('Failed to download firmware');
-  }
+  if (!response.ok) throw new Error('Failed to download firmware');
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -65,7 +64,6 @@ const getUploadById = async (uploadId: number): Promise<UploadItem | null> => {
   const response = await fetch(`/firmware/${uploadId}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Failed to fetch firmware: ${response.statusText}`);
   return response.json();
@@ -146,6 +144,18 @@ const getRoleFromToken = (): string => {
   }
 };
 
+const compareVersions = (a: string, b: string): number => {
+  const aParts = a.split('.').map(Number);
+  const bParts = b.split('.').map(Number);
+  const maxLen = Math.max(aParts.length, bParts.length);
+  for (let i = 0; i < maxLen; i++) {
+    const aVal = aParts[i] ?? 0;
+    const bVal = bParts[i] ?? 0;
+    if (aVal !== bVal) return aVal - bVal;
+  }
+  return 0;
+};
+
 const FirmwareDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,6 +169,7 @@ const FirmwareDetailPage: React.FC = () => {
   const [showRejectPopup, setShowRejectPopup] = useState(false);
   const [showApprovePopup, setShowApprovePopup] = useState(false);
   const [showDeployPopup, setShowDeployPopup] = useState(false);
+  const [showRevertConfirm, setShowRevertConfirm] = useState(false);
   const [rejectingManager, setRejectingManager] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [approveConfirmationText, setApproveConfirmationText] = useState('');
@@ -178,21 +189,21 @@ const FirmwareDetailPage: React.FC = () => {
     return getHomeRouteFromToken();
   };
 
+  const isRevert = (): boolean => {
+    if (!firmware || !selectedSerial) return false;
+    const selectedDevice = compatibleDevices.find(d => d.serial_number === selectedSerial);
+    if (!selectedDevice?.current_version) return false;
+    return compareVersions(firmware.version_number, selectedDevice.current_version) < 0;
+  };
+
   useEffect(() => {
     const loadFirmware = async () => {
-      if (!uploadId) {
-        setError('Firmware not found');
-        return;
-      }
+      if (!uploadId) { setError('Firmware not found'); return; }
       setIsLoading(true);
       setError('');
       try {
         const upload = await getUploadById(Number(uploadId));
-        if (!upload) {
-          setError('Firmware not found');
-          setFirmware(null);
-          return;
-        }
+        if (!upload) { setError('Firmware not found'); setFirmware(null); return; }
         setFirmware(upload);
       } catch {
         setError('Failed to load firmware');
@@ -209,13 +220,10 @@ const FirmwareDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!firmware) return;
-
     const userIds = [firmware.uploaded_by, firmware.approved_by, firmware.declined_by]
       .filter((id): id is number => typeof id === 'number');
-
     const missingIds = Array.from(new Set(userIds)).filter((id) => !resolvedUsernames[id]);
     if (missingIds.length === 0) return;
-
     const loadUsernames = async () => {
       const resolvedEntries = await Promise.all(
         missingIds.map(async (id) => {
@@ -342,28 +350,16 @@ const FirmwareDetailPage: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        minWidth: '100%',
-        padding: '2rem',
-        backgroundColor: COLORS.backgroundPrimary,
-        color: COLORS.textPrimary,
-      }}
-    >
-      <main
-        style={{
-          maxWidth: '900px',
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.5rem',
-          backgroundColor: COLORS.backgroundSecondary,
-          borderRadius: '8px',
-          border: `1px solid ${COLORS.borderPrimary}`,
-          padding: '2rem',
-        }}
-      >
+    <div style={{
+      minHeight: '100vh', minWidth: '100%', padding: '2rem',
+      backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary,
+    }}>
+      <main style={{
+        maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column',
+        gap: '1.5rem', backgroundColor: COLORS.backgroundSecondary, borderRadius: '8px',
+        border: `1px solid ${COLORS.borderPrimary}`, padding: '2rem',
+      }}>
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <h2 style={{ margin: 0 }}>Firmware Details</h2>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -382,13 +378,9 @@ const FirmwareDetailPage: React.FC = () => {
                   }
                 }}
                 style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: COLORS.success,
-                  border: 'none',
-                  color: COLORS.white,
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 500,
+                  padding: '0.5rem 1rem', backgroundColor: COLORS.success,
+                  border: 'none', color: COLORS.white, borderRadius: '6px',
+                  cursor: 'pointer', fontWeight: 500,
                 }}
               >
                 Deploy
@@ -399,13 +391,9 @@ const FirmwareDetailPage: React.FC = () => {
                 type="button"
                 onClick={handleDownload}
                 style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: COLORS.backgroundTertiary,
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  color: COLORS.textPrimary,
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 500,
+                  padding: '0.5rem 1rem', backgroundColor: COLORS.backgroundTertiary,
+                  border: `1px solid ${COLORS.borderPrimary}`, color: COLORS.textPrimary,
+                  borderRadius: '6px', cursor: 'pointer', fontWeight: 500,
                 }}
               >
                 Download
@@ -415,12 +403,9 @@ const FirmwareDetailPage: React.FC = () => {
               type="button"
               onClick={() => navigate(getReturnRoute(), { state: { activeTab: returnTab } })}
               style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: 'transparent',
-                border: `1px solid ${COLORS.borderPrimary}`,
-                color: COLORS.textPrimary,
-                borderRadius: '6px',
-                cursor: 'pointer',
+                padding: '0.5rem 1rem', backgroundColor: 'transparent',
+                border: `1px solid ${COLORS.borderPrimary}`, color: COLORS.textPrimary,
+                borderRadius: '6px', cursor: 'pointer',
               }}
             >
               Back
@@ -433,15 +418,12 @@ const FirmwareDetailPage: React.FC = () => {
 
         {!isLoading && firmware && (
           <>
+            {/* Detail Table */}
             <div style={{ border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
               {detailRows.map((row, index) => (
                 <div
                   key={`${row.label}-${index}`}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '220px 1fr',
-                    borderBottom: `1px solid ${COLORS.borderPrimary}`,
-                  }}
+                  style={{ display: 'grid', gridTemplateColumns: '220px 1fr', borderBottom: `1px solid ${COLORS.borderPrimary}` }}
                 >
                   <div style={{ padding: '0.75rem 1rem', backgroundColor: COLORS.backgroundTertiary, fontWeight: 600 }}>
                     {row.label}
@@ -451,6 +433,7 @@ const FirmwareDetailPage: React.FC = () => {
               ))}
             </div>
 
+            {/* Approve/Reject Buttons */}
             {canModerateFirmware && (
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <button
@@ -490,10 +473,9 @@ const FirmwareDetailPage: React.FC = () => {
                 padding: '1rem', zIndex: 1000,
               }}>
                 <div style={{
-                  width: '100%', maxWidth: '520px',
-                  backgroundColor: COLORS.backgroundSecondary,
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  borderRadius: '8px', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                  width: '100%', maxWidth: '520px', backgroundColor: COLORS.backgroundSecondary,
+                  border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px',
+                  display: 'flex', flexDirection: 'column', overflow: 'hidden',
                 }}>
                   <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
                     <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Approve Pending Firmware</h3>
@@ -557,8 +539,8 @@ const FirmwareDetailPage: React.FC = () => {
                 <div style={{
                   width: '100%', maxWidth: '760px', maxHeight: '90vh',
                   backgroundColor: COLORS.backgroundSecondary,
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  borderRadius: '8px', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                  border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px',
+                  display: 'flex', flexDirection: 'column', overflow: 'hidden',
                 }}>
                   <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
                     <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Reject Pending Firmware</h3>
@@ -652,17 +634,16 @@ const FirmwareDetailPage: React.FC = () => {
                 padding: '1rem', zIndex: 1000,
               }}>
                 <div style={{
-                  width: '100%', maxWidth: '560px',
-                  backgroundColor: COLORS.backgroundSecondary,
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  borderRadius: '8px', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                  width: '100%', maxWidth: '560px', backgroundColor: COLORS.backgroundSecondary,
+                  border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px',
+                  display: 'flex', flexDirection: 'column', overflow: 'hidden',
                 }}>
                   <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
                     <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Deploy Firmware</h3>
                   </div>
                   <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <p style={{ margin: 0, color: COLORS.textMuted }}>
-                      Select a compatible device to deploy <strong>{firmware?.version_number}</strong> ({firmware?.device_type}):
+                      Select a compatible {firmware?.device_type} device to deploy firmware version <strong>{firmware?.version_number}</strong>:
                     </p>
                     {compatibleDevices.length === 0 ? (
                       <p style={{ color: COLORS.textMuted }}>No compatible devices found.</p>
@@ -683,7 +664,7 @@ const FirmwareDetailPage: React.FC = () => {
                             value={device.serial_number}
                             disabled={device.already_deployed}
                           >
-                            {device.serial_number} — {device.location}
+                            Serial #{device.serial_number} — {device.location}
                             {device.already_deployed ? ' (already deployed)' : ''}
                           </option>
                         ))}
@@ -698,6 +679,25 @@ const FirmwareDetailPage: React.FC = () => {
                   }}>
                     <button
                       type="button"
+                      disabled={isDeploying || !selectedSerial}
+                      onClick={() => {
+                        if (isRevert()) {
+                          setShowRevertConfirm(true);
+                        } else {
+                          handleDeployConfirm();
+                        }
+                      }}
+                      style={{
+                        padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
+                        backgroundColor: COLORS.success, color: COLORS.white,
+                        cursor: isDeploying || !selectedSerial ? 'not-allowed' : 'pointer',
+                        fontWeight: 600, opacity: isDeploying || !selectedSerial ? 0.6 : 1,
+                      }}
+                    >
+                      {isDeploying ? 'Deploying...' : 'Confirm Deploy'}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => { setShowDeployPopup(false); setSelectedSerial(''); setDeployError(''); setDeploySuccess(''); }}
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
@@ -707,22 +707,64 @@ const FirmwareDetailPage: React.FC = () => {
                     >
                       Close
                     </button>
-                    <button
-                      type="button"
-                      disabled={isDeploying || !selectedSerial}
-                      onClick={handleDeployConfirm}
-                      style={{
-                        padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
-                        backgroundColor: COLORS.success, color: COLORS.white,
-                        cursor: isDeploying || !selectedSerial ? 'not-allowed' : 'pointer',
-                        fontWeight: 600,
-                        opacity: isDeploying || !selectedSerial ? 0.6 : 1,
-                      }}
-                    >
-                      {isDeploying ? 'Deploying...' : 'Confirm Deploy'}
-                    </button>
                   </div>
                 </div>
+
+                {/* Revert Confirmation Modal */}
+                {showRevertConfirm && (
+                  <div style={{
+                    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '1rem', zIndex: 1100,
+                  }}>
+                    <div style={{
+                      width: '100%', maxWidth: '460px', backgroundColor: COLORS.backgroundSecondary,
+                      border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px',
+                      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                    }}>
+                      <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
+                        <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Revert Firmware</h3>
+                      </div>
+                      <div style={{ padding: '1rem 1.25rem' }}>
+                        <p style={{ margin: 0, color: COLORS.textPrimary }}>
+                          Are you sure you want to revert to firmware version{' '}
+                          <strong>{firmware?.version_number}</strong>?
+                        </p>
+                      </div>
+                      <div style={{
+                        display: 'flex', justifyContent: 'flex-end', gap: '0.75rem',
+                        padding: '1rem 1.25rem', borderTop: `1px solid ${COLORS.borderPrimary}`,
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowRevertConfirm(false)}
+                          style={{
+                            padding: '0.55rem 1rem', borderRadius: '6px',
+                            border: `1px solid ${COLORS.borderPrimary}`,
+                            backgroundColor: 'transparent', color: COLORS.textPrimary, cursor: 'pointer',
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isDeploying}
+                          onClick={() => {
+                            setShowRevertConfirm(false);
+                            handleDeployConfirm();
+                          }}
+                          style={{
+                            padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
+                            backgroundColor: COLORS.danger, color: COLORS.white,
+                            cursor: isDeploying ? 'not-allowed' : 'pointer', fontWeight: 600,
+                          }}
+                        >
+                          Revert
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
