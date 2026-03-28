@@ -660,8 +660,18 @@ def download_firmware(
     firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")
+
+    # Business managers can download all firmware
+    if user.type == UserRole.business_manager.value:
+        return Response(
+            content=firmware.objectBinary,
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"}
+        )
+
     if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
         raise HTTPException(status_code=404, detail="Firmware not found")
+
     return Response(
         content=firmware.objectBinary,
         media_type="application/octet-stream",
