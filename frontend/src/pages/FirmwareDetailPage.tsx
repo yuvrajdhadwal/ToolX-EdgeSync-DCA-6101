@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { COLORS } from '../constants/colors';
-import { getHomeRouteFromToken } from '../constants/routes';
+import { getHomeRouteFromToken, ROUTES } from '../constants/routes';
 
 type UploadStatus = 'current' | 'pending' | 'rejected';
 
@@ -46,10 +46,8 @@ const downloadFirmware = async (firmwareId: number) => {
   link.click();
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
-}
+};
 
-
-  
 type UserLookupResponse = {
   id: number;
   username: string;
@@ -126,10 +124,7 @@ const approveUpload = async (uploadId: number, payload: ApproveFirmwarePayload):
 
 const getUsernameFromToken = (): string => {
   const token = localStorage.getItem('token');
-  if (!token) {
-    return '';
-  }
-
+  if (!token) return '';
   try {
     const payload = JSON.parse(atob(token.split('.')[1])) as { sub?: string };
     return payload.sub ?? '';
@@ -140,10 +135,7 @@ const getUsernameFromToken = (): string => {
 
 const getRoleFromToken = (): string => {
   const token = localStorage.getItem('token');
-  if (!token) {
-    return '';
-  }
-
+  if (!token) return '';
   try {
     const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string };
     return payload.role ?? '';
@@ -170,6 +162,11 @@ const FirmwareDetailPage: React.FC = () => {
   const [resolvedUsernames, setResolvedUsernames] = useState<Record<number, string>>({});
   const [error, setError] = useState('');
   const canModerateFirmware = userRole === 'developer_manager' && firmware?.status === 'pending';
+
+  const getReturnRoute = () => {
+    if (userRole === 'business_manager') return ROUTES.HOME;
+    return getHomeRouteFromToken();
+  };
 
   useEffect(() => {
     const loadFirmware = async () => {
@@ -205,17 +202,13 @@ const FirmwareDetailPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!firmware) {
-      return;
-    }
+    if (!firmware) return;
 
     const userIds = [firmware.uploaded_by, firmware.approved_by, firmware.declined_by]
       .filter((id): id is number => typeof id === 'number');
 
     const missingIds = Array.from(new Set(userIds)).filter((id) => !resolvedUsernames[id]);
-    if (missingIds.length === 0) {
-      return;
-    }
+    if (missingIds.length === 0) return;
 
     const loadUsernames = async () => {
       const resolvedEntries = await Promise.all(
@@ -242,10 +235,7 @@ const FirmwareDetailPage: React.FC = () => {
   }, [firmware, resolvedUsernames]);
 
   const getDisplayNameById = (userId: number | null | undefined): string => {
-    if (typeof userId !== 'number') {
-      return '-';
-    }
-
+    if (typeof userId !== 'number') return '-';
     return resolvedUsernames[userId] ?? String(userId);
   };
 
@@ -273,9 +263,7 @@ const FirmwareDetailPage: React.FC = () => {
   ];
 
   const handleRejectConfirm = async () => {
-    if (!firmware) {
-      return;
-    }
+    if (!firmware) return;
 
     if (!rejectingManager.trim() || !rejectionReason.trim()) {
       setError('Rejecting manager and rejection reason are required');
@@ -290,7 +278,7 @@ const FirmwareDetailPage: React.FC = () => {
         rejecting_manager_username: rejectingManager.trim(),
         rejection_reason: rejectionReason.trim(),
       });
-      navigate(getHomeRouteFromToken(), { state: { activeTab: 2 } });
+      navigate(getReturnRoute(), { state: { activeTab: 2 } });
     } catch (rejectError) {
       if (rejectError instanceof Error) {
         setError(rejectError.message);
@@ -301,10 +289,9 @@ const FirmwareDetailPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
   const handleDownload = async () => {
-    if (!firmware) {
-      return;
-    }
+    if (!firmware) return;
     try {
       await downloadFirmware(firmware.id);
     } catch (err) {
@@ -313,9 +300,7 @@ const FirmwareDetailPage: React.FC = () => {
   };
 
   const handleApproveConfirm = async () => {
-    if (!firmware) {
-      return;
-    }
+    if (!firmware) return;
 
     if (approveConfirmationText.trim().toUpperCase() !== 'CONFIRM') {
       setError('Type CONFIRM to approve firmware');
@@ -329,7 +314,7 @@ const FirmwareDetailPage: React.FC = () => {
       await approveUpload(firmware.id, {
         confirmation_text: approveConfirmationText.trim(),
       });
-      navigate(getHomeRouteFromToken(), { state: { activeTab: 0 } });
+      navigate(getReturnRoute(), { state: { activeTab: 0 } });
     } catch (approveError) {
       if (approveError instanceof Error) {
         setError(approveError.message);
@@ -366,26 +351,26 @@ const FirmwareDetailPage: React.FC = () => {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <h2 style={{ margin: 0 }}>Firmware Details</h2>
-            {!isLoading && firmware && (
-              <button
-                type="button"
-                onClick={handleDownload}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: COLORS.backgroundTertiary,
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  color: COLORS.textPrimary,
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 500,
-                }}
-              >
-                Download
-              </button>
-            )}
+          {!isLoading && firmware && (
+            <button
+              type="button"
+              onClick={handleDownload}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: COLORS.backgroundTertiary,
+                border: `1px solid ${COLORS.borderPrimary}`,
+                color: COLORS.textPrimary,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 500,
+              }}
+            >
+              Download
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => navigate(getHomeRouteFromToken(), { state: { activeTab: returnTab } })}
+            onClick={() => navigate(getReturnRoute(), { state: { activeTab: returnTab } })}
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: 'transparent',
@@ -492,23 +477,11 @@ const FirmwareDetailPage: React.FC = () => {
                     overflow: 'hidden',
                   }}
                 >
-                  <div
-                    style={{
-                      padding: '1rem 1.25rem',
-                      borderBottom: `1px solid ${COLORS.borderPrimary}`,
-                    }}
-                  >
+                  <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
                     <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Approve Pending Firmware</h3>
                   </div>
 
-                  <div
-                    style={{
-                      padding: '1rem 1.25rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
-                    }}
-                  >
+                  <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <p style={{ margin: 0, color: COLORS.textMuted }}>
                       Type <strong>CONFIRM</strong> to approve this pending firmware upload.
                     </p>
@@ -601,12 +574,7 @@ const FirmwareDetailPage: React.FC = () => {
                     overflow: 'hidden',
                   }}
                 >
-                  <div
-                    style={{
-                      padding: '1rem 1.25rem',
-                      borderBottom: `1px solid ${COLORS.borderPrimary}`,
-                    }}
-                  >
+                  <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
                     <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Reject Pending Firmware</h3>
                   </div>
 
