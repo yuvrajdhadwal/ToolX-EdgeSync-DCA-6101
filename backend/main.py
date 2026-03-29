@@ -151,29 +151,35 @@ def deploy_firmware(
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
 
-    # Check if already deployed to this device
-    existing_deploy = db.query(Deploy).filter(
-        Deploy.target_firmware_id == firmware_id,
-        Deploy.device_serial == payload.serial_number,
-    ).first()
-    if existing_deploy:
-        raise HTTPException(status_code=400, detail="Firmware already deployed to this device")
-
     business_manager = db.query(BusinessManager).filter(BusinessManager.id == user.id).first()
     if not business_manager:
         raise HTTPException(status_code=404, detail="Business manager not found")
 
-    deploy = Deploy(
-        manager_id=business_manager.id,
-        target_firmware_id=firmware_id,
-        device_serial=device.serial_number,
-        device_firmware_id=device.firmware_id,
-        timestamp=datetime.now(timezone.utc),
-    )
-    db.add(deploy)
-    db.commit()
-    db.refresh(deploy)
+    # Update device's firmware to the deployed firmware
+    device.firmware_id = firmware_id
+    device.last_update = datetime.now(timezone.utc)
 
+    # Upsert deploy record
+    existing_deploy = db.query(Deploy).filter(
+        Deploy.device_serial == payload.serial_number,
+    ).first()
+
+    if existing_deploy:
+        existing_deploy.manager_id = business_manager.id
+        existing_deploy.target_firmware_id = firmware_id
+        existing_deploy.device_firmware_id = firmware_id
+        existing_deploy.timestamp = datetime.now(timezone.utc)
+    else:
+        deploy = Deploy(
+            manager_id=business_manager.id,
+            target_firmware_id=firmware_id,
+            device_serial=device.serial_number,
+            device_firmware_id=firmware_id,
+            timestamp=datetime.now(timezone.utc),
+        )
+        db.add(deploy)
+
+    db.commit()
     return {"message": f"Firmware successfully deployed to device {payload.serial_number}"}
 
 
@@ -193,22 +199,21 @@ def get_compatible_devices(
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")
 
+    # Only return devices of matching type that don't already have this exact firmware version
     devices = db.query(Device).filter(Device.device_type == firmware.device_type).all()
-
-    # Get already-deployed serial numbers for this firmware
-    deployed_serials = {
-        d.device_serial for d in db.query(Deploy).filter(Deploy.target_firmware_id == firmware_id).all()
-    }
+    compatible = [
+        d for d in devices
+        if not d.firmware or d.firmware.version_number != firmware.version_number
+    ]
 
     return [
-    {
-        "serial_number": d.serial_number,
-        "device_type": d.device_type,
-        "location": d.location,
-        "current_version": d.firmware.version_number if d.firmware else None,
-        "already_deployed": d.serial_number in deployed_serials,
-    }
-    for d in devices
+        {
+            "serial_number": d.serial_number,
+            "device_type": d.device_type,
+            "location": d.location,
+            "current_version": d.firmware.version_number if d.firmware else None,
+        }
+        for d in compatible
     ]
 
 @app.post("/upload")

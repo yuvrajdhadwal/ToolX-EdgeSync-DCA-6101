@@ -33,7 +33,6 @@ type CompatibleDevice = {
   device_type: string;
   location: string;
   current_version: string | null;
-  already_deployed: boolean;
 };
 
 const downloadFirmware = async (firmwareId: number) => {
@@ -662,10 +661,8 @@ const FirmwareDetailPage: React.FC = () => {
                           <option
                             key={device.serial_number}
                             value={device.serial_number}
-                            disabled={device.already_deployed}
                           >
-                            Serial #{device.serial_number} — {device.location}
-                            {device.already_deployed ? ' (already deployed)' : ''}
+                            Serial #{device.serial_number} - [ Location: {device.location} | {device.current_version ? `Version: ${device.current_version}` : ''} ]
                           </option>
                         ))}
                       </select>
@@ -737,17 +734,6 @@ const FirmwareDetailPage: React.FC = () => {
                       }}>
                         <button
                           type="button"
-                          onClick={() => setShowRevertConfirm(false)}
-                          style={{
-                            padding: '0.55rem 1rem', borderRadius: '6px',
-                            border: `1px solid ${COLORS.borderPrimary}`,
-                            backgroundColor: 'transparent', color: COLORS.textPrimary, cursor: 'pointer',
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
                           disabled={isDeploying}
                           onClick={() => {
                             setShowRevertConfirm(false);
@@ -760,6 +746,17 @@ const FirmwareDetailPage: React.FC = () => {
                           }}
                         >
                           Revert
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowRevertConfirm(false)}
+                          style={{
+                            padding: '0.55rem 1rem', borderRadius: '6px',
+                            border: `1px solid ${COLORS.borderPrimary}`,
+                            backgroundColor: 'transparent', color: COLORS.textPrimary, cursor: 'pointer',
+                          }}
+                        >
+                          Cancel
                         </button>
                       </div>
                     </div>
