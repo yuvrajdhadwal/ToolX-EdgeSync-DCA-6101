@@ -86,6 +86,8 @@ class DeviceCreate(BaseModel):
     description: str
     location: str
     developer_manager: str
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None
 
     @field_validator('device_type', 'serial_number', 'version_number', 'description', 'location', 'developer_manager')
     @classmethod

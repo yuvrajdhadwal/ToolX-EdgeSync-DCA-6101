@@ -12,6 +12,8 @@ interface ItemInfo {
     description: string;
     location: string;
     developer_manager: string;
+  latitude: string;
+  longitude: string;
 }
 
 type devmngOption = {
@@ -39,7 +41,9 @@ const AddDevicePage: React.FC = () => {
     developer_manager: '',
     version_number: '',
     location: '',
-    description: ''
+    description: '',
+    latitude: '',
+    longitude: '',
   });
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -80,6 +84,8 @@ const AddDevicePage: React.FC = () => {
                 description: formData.description,
                 developer_manager: formData.developer_manager,
                 location: formData.location,
+                latitude: formData.latitude.trim() ? Number(formData.latitude) : null,
+                longitude: formData.longitude.trim() ? Number(formData.longitude) : null,
             }),
         });
         setLoading(false);
@@ -211,6 +217,28 @@ const AddDevicePage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+
+                  <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
+                    Latitude / Longitude:
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
+                      type='number'
+                      step='any'
+                      name='latitude'
+                      value={formData.latitude}
+                      onChange={handleInputChange}
+                      placeholder='Latitude (e.g. 29.7604)'
+                    />
+                    <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
+                      type='number'
+                      step='any'
+                      name='longitude'
+                      value={formData.longitude}
+                      onChange={handleInputChange}
+                      placeholder='Longitude (e.g. -95.3698)'
+                    />
+                  </div>
 
                 <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right', gridColumnStart: 1, alignSelf: 'start' }}>
                     Device Description:
