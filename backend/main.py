@@ -215,6 +215,8 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
         location=device.location,
         developer_manager=device.developer_manager,
         description=device.description,
+        latitude=device.latitude,
+        longitude=device.longitude,
         last_update=datetime.now(timezone.utc),
     )
     db.add(db_device)
@@ -234,6 +236,8 @@ def get_devices(db: Session = Depends(get_db)):
             "location": d.location,
             "serial_number": d.serial_number,
             "description": d.description,
+            "latitude": d.latitude,
+            "longitude": d.longitude,
         }
         for d in devices
     ]
