@@ -25,6 +25,7 @@ const DeviceDetailPage: React.FC = () => {
   const [device, setDevice] = useState<Device | null>(navigationState?.device ?? null)
   const [isLoading, setIsLoading] = useState(!navigationState?.device)
   const [isRemoving, setIsRemoving] = useState(false)
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const [error, setError] = useState('')
 
   const decodedSerial = useMemo(() => (serialNumber ? decodeURIComponent(serialNumber) : ''), [serialNumber])
@@ -71,13 +72,8 @@ const DeviceDetailPage: React.FC = () => {
     { label: 'Description', value: device?.description },
   ]
 
-  const handleRemove = async () => {
+  const handleConfirmRemove = async () => {
     if (!device || isRemoving) {
-      return
-    }
-
-    const confirmed = window.confirm(`Remove device ${device.serial_number}?`)
-    if (!confirmed) {
       return
     }
 
@@ -94,6 +90,7 @@ const DeviceDetailPage: React.FC = () => {
         throw new Error(payload.detail ?? 'Failed to remove device')
       }
 
+      setShowRemoveConfirm(false)
       navigate(ROUTES.DEVICES_BIZMNG)
     } catch (removeError) {
       if (removeError instanceof Error) {
@@ -136,7 +133,7 @@ const DeviceDetailPage: React.FC = () => {
             {device ? (
               <button
                 type="button"
-                onClick={handleRemove}
+                onClick={() => setShowRemoveConfirm(true)}
                 disabled={isRemoving}
                 style={{
                   padding: '0.5rem 1rem',
@@ -195,6 +192,84 @@ const DeviceDetailPage: React.FC = () => {
           </div>
         ) : null}
       </main>
+
+      {showRemoveConfirm && device ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: COLORS.backgroundSecondary,
+              border: `1px solid ${COLORS.borderPrimary}`,
+              borderRadius: '10px',
+              padding: '2rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem',
+              minWidth: '320px',
+              textAlign: 'center',
+            }}
+          >
+            <h3 style={{ margin: 0, color: COLORS.textPrimary, fontSize: '1.2rem' }}>
+              Remove Device
+            </h3>
+            <p style={{ margin: 0, color: COLORS.textPrimary }}>
+              Are you sure you want to remove the following device?
+              <br />
+              <br />
+              Device Type: <strong>{device.device_type}</strong>
+              <br />
+              Serial Number: <strong>{device.serial_number}</strong>
+              <br />
+              Firmware Version: <strong>{device.version_number}</strong>
+              <br />
+              Region: <strong>{device.location}</strong>
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={handleConfirmRemove}
+                disabled={isRemoving}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '6px',
+                  cursor: isRemoving ? 'not-allowed' : 'pointer',
+                  border: `1px solid ${COLORS.danger}`,
+                  backgroundColor: 'transparent',
+                  color: COLORS.dangerText,
+                  fontWeight: 500,
+                }}
+              >
+                {isRemoving ? 'Removing...' : 'Remove'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRemoveConfirm(false)}
+                disabled={isRemoving}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '6px',
+                  cursor: isRemoving ? 'not-allowed' : 'pointer',
+                  border: `1px solid ${COLORS.white}`,
+                  backgroundColor: 'transparent',
+                  color: COLORS.textPrimary,
+                  fontWeight: 500,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
