@@ -8,6 +8,7 @@ export const ROUTES = {
   BIZMNGPAGE: '/business_manager',
   WORLD_MAP: '/world_map',
   DEVICES_BIZMNG: '/view_devices',
+  DEVICE_DETAIL: '/view_devices/:serialNumber',
   ADD_DEVICES: '/add_device'
 
 } as const;
