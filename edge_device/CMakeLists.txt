@@ -13,15 +13,19 @@ link_directories(/usr/local/lib)
 add_executable(base_firmware base_firmware.cpp)
 
 # 3. Explicitly link every required library component
-# This avoids the "azure_iot_sdks::" namespace issue
-target_link_libraries(base_firmware PRIVATE 
+target_link_libraries(base_firmware PRIVATE
     iothub_client
     iothub_client_mqtt_transport
-    aziotsharedutil
+    prov_auth_client 
+    hsm_security_client
+    utpm
     umqtt
+    aziotsharedutil
+    parson
     curl
     ssl
     crypto
     uuid
     pthread
+    m
 )
