@@ -24,8 +24,12 @@ RUN git clone -b lts_03_2025 https://github.com/Azure/azure-iot-sdk-c.git && \
 	cmake --install . && \
 	cd ../..
 
-COPY base_firmware.cpp .
 COPY CMakeLists.txt .
+COPY include/common.hpp .
+COPY main.cpp .
+COPY setup.cpp .
+COPY shutdown.cpp .
+COPY stable.cpp .
 
 RUN cmake -S . -B build -DCMAKE_PREFIX_PATH=/usr/local && \
     cmake --build build --config Release
@@ -40,6 +44,6 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY --from=builder /app/build/base_firmware .
+COPY --from=builder /app/build/main .
 
-CMD ["./base_firmware"]
+CMD ["./main"]
