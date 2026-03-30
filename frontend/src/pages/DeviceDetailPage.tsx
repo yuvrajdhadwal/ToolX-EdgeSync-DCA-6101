@@ -8,8 +8,11 @@ type Device = {
   version_number: string
   last_update: string
   location: string
+  developer_manager: string
   serial_number: string
   description: string
+  latitude: number | null
+  longitude: number | null
 }
 
 type DeviceDetailLocationState = {
@@ -75,6 +78,15 @@ const DeviceDetailPage: React.FC = () => {
     { label: 'Firmware Version', value: device?.version_number },
     { label: 'Last Updated', value: device?.last_update },
     { label: 'Region', value: device?.location },
+    { label: 'Developer Manager', value: device?.developer_manager },
+    {
+      label: 'Latitude',
+      value: device?.latitude === null || device?.latitude === undefined ? '-' : String(device.latitude),
+    },
+    {
+      label: 'Longitude',
+      value: device?.longitude === null || device?.longitude === undefined ? '-' : String(device.longitude),
+    },
     { label: 'Serial Number', value: device?.serial_number },
     { label: 'Description', value: device?.description },
   ]
@@ -117,13 +129,24 @@ const DeviceDetailPage: React.FC = () => {
         minWidth: '100%',
         padding: '2rem',
         backgroundColor: COLORS.backgroundPrimary,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         color: COLORS.textPrimary,
       }}
     >
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.55)',
+          zIndex: 900,
+        }}
+      />
       <main
         style={{
+          width: '100%',
           maxWidth: '900px',
-          margin: '0 auto',
           backgroundColor: COLORS.backgroundSecondary,
           border: `1px solid ${COLORS.borderPrimary}`,
           borderRadius: '10px',
@@ -132,6 +155,9 @@ const DeviceDetailPage: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
+          maxHeight: '85vh',
+          overflow: 'auto',
+          zIndex: 1000,
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

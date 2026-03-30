@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 import os
 from enum import Enum
 from azure.iot.hub import IoTHubRegistryManager
-
 from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate, Device, Deploy
 
 from fastapi.staticfiles import StaticFiles
@@ -308,6 +307,21 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
 
 @app.get("/get_devices")
 def get_devices(db: Session = Depends(get_db)):
+    manager_lookup = {
+        manager.id: manager.username
+        for manager in db.query(DeveloperManager).all()
+    }
+
+    def resolve_manager_name(value: Optional[str]) -> str:
+        if value is None:
+            return ""
+        raw_value = str(value).strip()
+        if not raw_value:
+            return ""
+        if raw_value.isdigit():
+            return manager_lookup.get(int(raw_value), raw_value)
+        return raw_value
+
     devices = db.query(Device).all()
     return [
         {
@@ -317,6 +331,7 @@ def get_devices(db: Session = Depends(get_db)):
             "location": d.location,
             "serial_number": d.serial_number,
             "description": d.description,
+            "developer_manager": resolve_manager_name(d.developer_manager),
             "latitude": d.latitude,
             "longitude": d.longitude,
         }
