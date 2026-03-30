@@ -147,7 +147,7 @@ const BizMngDevicesPage: React.FC = () => {
             <tbody>
               {rows.map((device, rowIndex) => (
                 <tr key={rowIndex} style={{
-                  backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary
+                  backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary,
                 }}>
                   <td style={tdStyle}>{device?.device_type ?? ''}</td>
                   <td style={tdStyle}>{device?.version_number ?? ''}</td>
@@ -159,7 +159,10 @@ const BizMngDevicesPage: React.FC = () => {
                     {device && (
                       <button
                         type="button"
-                        onClick={() => setConfirmDevice(device)}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setConfirmDevice(device)
+                        }}
                         style={{
                           padding: '0.25rem 0.75rem',
                           fontSize: '0.85rem',

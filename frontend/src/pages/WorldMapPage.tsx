@@ -189,6 +189,16 @@ const WorldMapPage: React.FC = () => {
                 key={device.serial_number}
                 position={[device.latitude as number, device.longitude as number]}
                 icon={pinIcon}
+                eventHandlers={{
+                  click: () => {
+                    navigate(ROUTES.DEVICE_DETAIL.replace(':serialNumber', encodeURIComponent(device.serial_number)), {
+                      state: {
+                        device,
+                        fromRoute: ROUTES.WORLD_MAP,
+                      },
+                    })
+                  },
+                }}
               >
                 <Tooltip direction="top" offset={[0, -10]}>
                   {device.device_type}
