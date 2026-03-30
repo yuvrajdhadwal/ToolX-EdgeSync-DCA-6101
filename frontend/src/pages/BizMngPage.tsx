@@ -9,8 +9,9 @@ const BizMngPage: React.FC = () => {
   const navigate = useNavigate()
 
   const handleButtonClick = (value: 'worldmap' | 'devices' | 'firmware') => {
+    if (value === 'worldmap') navigate(ROUTES.WORLD_MAP)
     if (value === 'devices') navigate(ROUTES.DEVICES_BIZMNG)
-    // worldmap and firmware navigation can be added here later
+    if (value === 'firmware') navigate(ROUTES.HOME)
   }
 
   return (
