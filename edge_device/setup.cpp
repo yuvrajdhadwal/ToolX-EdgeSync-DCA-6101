@@ -1,24 +1,24 @@
 #include "common.hpp"
 
-IOTHUB_DEVICE_CLIENT_LL_HANDLE setup() {
+IOTHUB_DEVICE_CLIENT_LL_HANDLE setup(const char* connectionString, IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol) {
   // Used to initialize IoTHub SDK subsystem
   (void)IoTHub_Init();
 
   IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle;
-  (void)printf("Creating IoTHub Device handle\r\n");
+  std::cout << "Creating IoTHub Device handle\n";
   // Create the iothub handle here
   device_ll_handle = IoTHubDeviceClient_LL_CreateFromConnectionString(
       connectionString, protocol);
   if (device_ll_handle == NULL) {
-    (void)printf("Failure creating IotHub device. Hint: Check your connection "
-                 "string.\r\n");
+		std::cout << "Failure creating IotHub device. Hint: Check your connection "
+                 "string.\n";
     return NULL;
   }
 
   bool traceOn = true;
   IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_LOG_TRACE, &traceOn);
 
-  bool urlEncodeOn = true;
+  bool urlEncodeOn = false;
   (void)IoTHubDeviceClient_LL_SetOption(
       device_ll_handle, OPTION_AUTO_URL_ENCODE_DECODE, &urlEncodeOn);
 

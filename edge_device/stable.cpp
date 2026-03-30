@@ -7,8 +7,7 @@ static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result,
   (void)printf("Confirmation callback received for message");
 }
 
-static void
-connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
+void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
                            IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
                            void *user_context) {
   (void)reason;
@@ -41,10 +40,4 @@ void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   // The message is copied to the sdk so the we can destroy it
   IoTHubMessage_Destroy(message_handle);
 
-  // TODO: Temporary while stable, setup, and shutdown are only states
-  static int i = 0;
-  if (i == 10) {
-    isStable = false;
-  }
-  ++i;
 }

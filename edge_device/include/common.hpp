@@ -13,11 +13,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <iostream>
 
-IOTHUB_DEVICE_CLIENT_LL_HANDLE setup();
+IOTHUB_DEVICE_CLIENT_LL_HANDLE setup(const char* connectionString, IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol);
+void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
+                           IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
+                           void *user_context);
 void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 void shutdown();
 
-std::string connectionString;
-IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol;
-bool isStable;

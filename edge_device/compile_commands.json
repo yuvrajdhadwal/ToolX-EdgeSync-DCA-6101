@@ -1,0 +1,22 @@
+[
+{
+  "directory": "/app/build",
+  "command": "/usr/bin/c++  -I/usr/local/include/azureiot -I/app/include  -o CMakeFiles/main.dir/main.cpp.o -c /app/main.cpp",
+  "file": "/app/main.cpp"
+},
+{
+  "directory": "/app/build",
+  "command": "/usr/bin/c++  -I/usr/local/include/azureiot -I/app/include  -o CMakeFiles/main.dir/setup.cpp.o -c /app/setup.cpp",
+  "file": "/app/setup.cpp"
+},
+{
+  "directory": "/app/build",
+  "command": "/usr/bin/c++  -I/usr/local/include/azureiot -I/app/include  -o CMakeFiles/main.dir/shutdown.cpp.o -c /app/shutdown.cpp",
+  "file": "/app/shutdown.cpp"
+},
+{
+  "directory": "/app/build",
+  "command": "/usr/bin/c++  -I/usr/local/include/azureiot -I/app/include  -o CMakeFiles/main.dir/stable.cpp.o -c /app/stable.cpp",
+  "file": "/app/stable.cpp"
+}
+]
