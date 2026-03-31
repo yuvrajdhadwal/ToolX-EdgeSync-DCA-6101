@@ -1,8 +1,0 @@
-CompileFlags:
-  CompilationDatabase: "."
-  # Add local includes if you have the headers on your host
-  Add: [-I/\\wsl.localhost\Ubuntu-22.04\home\ydhadwal\azure-iot-sdk-c]
-
-PathMappings:
-  - From: /app
-    To: . # Maps the container's /app to your current directory
