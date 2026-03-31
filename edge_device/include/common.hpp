@@ -22,7 +22,15 @@ void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
                                 IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
                                 void *user_context);
 void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
+
+void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
+void deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 IOTHUBMESSAGE_DISPOSITION_RESULT
 receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context);
 void shutdown();
 void shutdown(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
+
+inline std::string getEnvVar(const std::string &key) {
+  const char *val{std::getenv(key.c_str())};
+  return (val == nullptr) ? "" : std::string{val};
+}

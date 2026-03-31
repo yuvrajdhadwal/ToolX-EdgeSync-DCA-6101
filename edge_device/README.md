@@ -30,5 +30,6 @@ installation confirmation device to cloud message
 ## Device StartUp
 
 `docker build -t edge-device:v1 .` \
-`docker run -it --name simulated-device-1 edge-device:v1`
-
+Device 1: `docker run --rm -it -e IOTHUB_CONNECTION_STRING="HostName=ToolXEdgeSyncIoT.azure-devices.net;DeviceId=test1;SharedAccessKey=erLT7iwT5BY3byTPT0GqzAGygkE3RlSLMm6G9dZIMBk=" edge-device:v1`
+Device 2: `docker run --rm -it -e IOTHUB_CONNECTION_STRING="HostName=ToolXEdgeSyncIoT.azure-devices.net;DeviceId=test2;SharedAccessKey=d208FSJykChN2kkuSnpd9JAuz7vuw7BGuhYrZvF7knM=" edge-device:v1`
+Device 3: `docker run --rm -it -e IOTHUB_CONNECTION_STRING="HostName=ToolXEdgeSyncIoT.azure-devices.net;DeviceId=test3;SharedAccessKey=3Bo5w9yF6DOAUI8jdgvPY5FlcigMS6liCitEVtVMR9A=" edge-device:v1`

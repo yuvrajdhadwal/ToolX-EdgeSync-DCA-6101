@@ -4,7 +4,7 @@ static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result,
                                   void *userContextCallback) {
   (void)userContextCallback;
   // When a message is sent this callback will get invoked
-  (void)printf("Confirmation callback received for message\n");
+  // (void)printf("Confirmation callback received for message\n");
 }
 
 void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
@@ -20,30 +20,34 @@ void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
   }
 }
 
-void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
-  // TODO: Make this an env variable as well
+void publishMessage(const std::string &msg,
+                    IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
+  std::cout << "Sending Message: " << msg << '\n';
   IOTHUB_MESSAGE_HANDLE message_handle =
-      IoTHubMessage_CreateFromString("Device is Online");
-
-  //(void)IoTHubMessage_SetMessageCreationTimeUtcSystemProperty(
-  //   message_handle, "2020-07-01T01:00:00.346Z");
-
-  // Add custom properties to message
-  // (void)IoTHubMessage_SetProperty(message_handle, "Latitude", "37.334789");
-  // (void)IoTHubMessage_SetProperty(message_handle, "Longitude",
-  // "-121.888138");
-
-  std::cout << "Sending message to IoTHub\n";
+      IoTHubMessage_CreateFromString(msg.data());
   IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle,
                                        send_confirm_callback, nullptr);
-
-  // The message is copied to the sdk so the we can destroy it
   IoTHubMessage_Destroy(message_handle);
+}
+
+void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
+  publishMessage("Device is Online", device_ll_handle);
+}
+
+void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
+  publishMessage("Firmware Deployment Rejected by Field Technician",
+                 device_ll_handle);
+}
+
+void deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
+  // TODO: Handle firmware installation and further states
+  publishMessage(
+      "Firmware Deployment Accepted by Field Technician ... Installing Now",
+      device_ll_handle);
 }
 
 auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
     -> IOTHUBMESSAGE_DISPOSITION_RESULT {
-  *static_cast<bool*>(user_context) = true;
   const char *messageId{IoTHubMessage_GetMessageId(message)};
   const char *correlationId{IoTHubMessage_GetCorrelationId(message)};
 
@@ -67,7 +71,8 @@ auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
     std::cout << "Failure retrieving byte array message\n";
   } else {
     std::string msg{(char *)buff_msg, buff_len};
-    std::cout << "Received Binary message\nMessage ID: " << messageId
+    std::cout << "==================================";
+    std::cout << "\n\n\nReceived Binary message\nMessage ID: " << messageId
               << "\n Correlation "
                  "ID: "
               << correlationId << "\n Data: <<<" << msg
@@ -84,6 +89,8 @@ auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
   }
 
   MAP_HANDLE non_system_properties = IoTHubMessage_Properties(message);
+  bool isDeployment = false;
+  bool isEmergency = false;
 
   if (non_system_properties != nullptr) {
     const char *const *keys;
@@ -100,8 +107,27 @@ auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
         (void)printf("\tKey: %s Value: %s\r\n", (char *)keys[i],
                      (char *)values[i]);
       }
+
+      if (strcmp("true", (char *)values[0]) == 0) {
+        isDeployment = true;
+      }
+      if (strcmp("true", (char *)values[2]) == 0) {
+        isEmergency = true;
+      }
     }
   }
+
+  if (isDeployment) {
+    *static_cast<bool *>(user_context) = true; // subscription acknowledge
+    if (isEmergency) {
+      std::cout << "\n===================================\n";
+      std::cout << "THIS IS AN EMERGENCY DEPLOYMENT";
+      std::cout << "\n===================================\n";
+    }
+    std::cout << "NEW FIRMWARE DEPLOYMENT. INSTALL? [Y/N]\n\n\n";
+  }
+
+  std::cout << "==================================\n\n";
 
   return IOTHUBMESSAGE_ACCEPTED;
 }

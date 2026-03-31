@@ -4,14 +4,13 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-/* Paste in the your iothub connection string  */
-// TODO: make this an environment variable that is input when docker container
-// is run
-
+// TODO: Handle default firmware/current/latest incoming one
 auto main() -> int {
-  std::string connectionString{
-      "HostName=ToolXEdgeSyncIoT.azure-devices.net;DeviceId=test1;"
-      "SharedAccessKey=erLT7iwT5BY3byTPT0GqzAGygkE3RlSLMm6G9dZIMBk="};
+  std::string connectionString{getEnvVar("IOTHUB_CONNECTION_STRING")};
+  if (connectionString == "") {
+    std::cerr << "Please set env var for connection string - check readme\n";
+    return 1;
+  }
 
   IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol{MQTT_Protocol};
   bool isStable{true};
@@ -66,7 +65,18 @@ auto main() -> int {
         continue;
       }
 
-      std::cout << "we got your response boss! " << buffer[0] << '\n';
+      if (response == 'y' || response == 'Y') {
+        std::cout << "Installing Firmware from Cloud Now ...\n";
+        // NOTE: Going to Accepted State
+        deploymentInstallation(device_ll_handle);
+      } else {
+        // NOTE: Going to Rejected State
+        
+        // TODO: Handle rejection comment
+        std::cout << "Rejected Firmware Deployment from Cloud ... \n";
+        deploymentRejection(device_ll_handle);
+      }
+
       incomingDeployment = false;
     }
     auto now{std::chrono::steady_clock::now()};
