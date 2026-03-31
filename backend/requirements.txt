@@ -9,3 +9,5 @@ passlib
 aiofiles
 gunicorn
 dotenv
+azure-iot-hub
+pytest

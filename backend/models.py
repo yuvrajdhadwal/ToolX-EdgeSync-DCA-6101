@@ -1,5 +1,5 @@
 from sqlalchemy import (Column, Integer, String, Boolean, Float, LargeBinary,
-    ForeignKey, DateTime, Table, ForeignKeyConstraint)
+    ForeignKey, DateTime, Table, ForeignKeyConstraint, UniqueConstraint)
 from sqlalchemy.orm import relationship, backref
 from database import Base
 from datetime import datetime
@@ -106,6 +106,9 @@ class FirmwareUpdate(Base):
     declined_by = Column(Integer, ForeignKey("developer_managers.id", ondelete="SET NULL"))
     declined_comment = Column(String(255))
 
+    __table_args__ = (
+        UniqueConstraint('version_number', 'device_type'),
+    )
 
 class Device(Base):
     __tablename__ = "devices"
@@ -113,6 +116,9 @@ class Device(Base):
     serial_number = Column(String(100), primary_key=True)
     firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="RESTRICT"), primary_key=True, autoincrement=False)
 
+    device_type = Column(String(50))
+    location = Column(String(255))
+    developer_manager = Column(String(100))
     description = Column(String(255))
     last_update = Column(DateTime)
     last_online = Column(DateTime)

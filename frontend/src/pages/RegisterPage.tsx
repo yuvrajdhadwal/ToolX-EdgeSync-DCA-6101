@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors';
 import { ROUTES } from '../constants/routes';
@@ -6,6 +6,11 @@ import { ROUTES } from '../constants/routes';
 type roleOption = {
   role: string;
   label: string;
+}
+
+type devmngOption = {
+  username: string;
+  id: number;
 }
 
 const options: roleOption[] = [
@@ -23,8 +28,21 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
+  const [developerManagerID, setDeveloperManagerID] = useState('');
+  const [developerManagers, setDeveloperManagers] = useState<devmngOption[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (role === 'developer') {
+      fetch('/devmng')
+        .then((res) => res.json())
+        .then((data: devmngOption[]) => setDeveloperManagers(data))
+        .catch(() => setError('Failed to load developer managers'));
+    } else {
+      setDeveloperManagers([]);
+      setDeveloperManagerID('');
+    }
+  }, [role]);
 
   const validateForm = () => {
     if (!role || !username || !password || !confirmPassword) {
@@ -37,6 +55,10 @@ const RegisterPage: React.FC = () => {
     }
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
+      return false;
+    }
+    if (role === 'developer' && !developerManagerID) {
+      setError('Developer must have a developer manager assigned');
       return false;
     }
     setError('');
@@ -58,6 +80,7 @@ const RegisterPage: React.FC = () => {
           role: role,
           username: username,
           password: password,
+          ...(role === 'developer' && { developer_manager_id: developerManagerID})
         }),
       });
 
@@ -104,6 +127,24 @@ const RegisterPage: React.FC = () => {
             ))}
           </select>
         </div>
+        {role === 'developer' && (
+          <div>
+            <label>
+              Developer Manager Username:
+            </label>
+            <select
+              value={developerManagerID}
+              onChange={(e) => setDeveloperManagerID(e.target.value)}
+            >
+              <option value="" disabled>Select a Developer Manager</option>
+              {developerManagers.map((mgr) => (
+                <option key={mgr.id} value={mgr.id}>
+                  {mgr.username}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label>
             Username:
