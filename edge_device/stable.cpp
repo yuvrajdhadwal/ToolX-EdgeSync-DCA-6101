@@ -118,6 +118,7 @@ auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
   }
 
   if (isDeployment) {
+    // TODO: Data race ... oops
     *static_cast<bool *>(user_context) = true; // subscription acknowledge
     if (isEmergency) {
       std::cout << "\n===================================\n";
