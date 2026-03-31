@@ -1,7 +1,7 @@
 #include "common.hpp"
 
 auto setup(const char *connectionString,
-           IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol)
+           IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol, void *incomingDeployment)
     -> IOTHUB_DEVICE_CLIENT_LL_HANDLE {
   // Used to initialize IoTHub SDK subsystem
   (void)IoTHub_Init();
@@ -29,9 +29,9 @@ auto setup(const char *connectionString,
   (void)IoTHubDeviceClient_LL_SetConnectionStatusCallback(
       device_ll_handle, connection_status_callback, nullptr);
 
-  if (IoTHubDeviceClient_LL_SetMessageCallback(device_ll_handle,
-                                               receive_msg_callback,
-                                               nullptr) != IOTHUB_CLIENT_OK) {
+  if (IoTHubDeviceClient_LL_SetMessageCallback(
+          device_ll_handle, receive_msg_callback, incomingDeployment) !=
+      IOTHUB_CLIENT_OK) {
     std::cout << "ERROR: IoTHubClient_LL_SetMessageCallback..........FAILED!\n";
     return nullptr;
   }

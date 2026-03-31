@@ -10,17 +10,19 @@
 
 #include "iothubtransportmqtt.h"
 
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include <iostream>
 
-IOTHUB_DEVICE_CLIENT_LL_HANDLE setup(const char* connectionString, IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol);
+IOTHUB_DEVICE_CLIENT_LL_HANDLE setup(const char *connectionString,
+                                     IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol,
+                                     void *incomingDeployment);
 void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
-                           IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
-                           void *user_context);
+                                IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
+                                void *user_context);
 void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 IOTHUBMESSAGE_DISPOSITION_RESULT
 receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context);
 void shutdown();
-
+void shutdown(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);

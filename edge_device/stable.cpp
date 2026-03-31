@@ -4,7 +4,7 @@ static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result,
                                   void *userContextCallback) {
   (void)userContextCallback;
   // When a message is sent this callback will get invoked
-  (void)printf("Confirmation callback received for message");
+  (void)printf("Confirmation callback received for message\n");
 }
 
 void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
@@ -43,7 +43,7 @@ void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
 
 auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
     -> IOTHUBMESSAGE_DISPOSITION_RESULT {
-  (void)user_context;
+  *static_cast<bool*>(user_context) = true;
   const char *messageId{IoTHubMessage_GetMessageId(message)};
   const char *correlationId{IoTHubMessage_GetCorrelationId(message)};
 
