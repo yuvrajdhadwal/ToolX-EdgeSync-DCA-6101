@@ -137,12 +137,11 @@ class Device(Base):
 class Deploy(Base):
     __tablename__ = "deploys"
 
-    manager_id = Column(Integer, ForeignKey("business_managers.id"), primary_key=True)
-    target_firmware_id = Column(Integer, ForeignKey("firmware_updates.id"), primary_key=True)
-
-    device_serial = Column(String(100), primary_key=True)
-    device_firmware_id = Column(Integer, primary_key=True)
-
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    manager_id = Column(Integer, ForeignKey("business_managers.id"), nullable=False)
+    target_firmware_id = Column(Integer, ForeignKey("firmware_updates.id"), nullable=False)
+    device_serial = Column(String(100), nullable=False)
+    device_firmware_id = Column(Integer, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
     isActive = Column(Boolean, default=False)
 
