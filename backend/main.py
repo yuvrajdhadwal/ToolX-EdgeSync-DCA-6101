@@ -159,25 +159,24 @@ def deploy_firmware(
     device.firmware_id = firmware_id
     device.last_update = datetime.now(timezone.utc)
 
-    # Upsert deploy record
+    # Insert deploy record
     existing_deploy = db.query(Deploy).filter(
         Deploy.device_serial == payload.serial_number,
+        Deploy.isActive == True,
     ).first()
 
     if existing_deploy:
-        existing_deploy.manager_id = business_manager.id
-        existing_deploy.target_firmware_id = firmware_id
-        existing_deploy.device_firmware_id = firmware_id
-        existing_deploy.timestamp = datetime.now(timezone.utc)
-    else:
-        deploy = Deploy(
-            manager_id=business_manager.id,
-            target_firmware_id=firmware_id,
-            device_serial=device.serial_number,
-            device_firmware_id=firmware_id,
-            timestamp=datetime.now(timezone.utc),
-        )
-        db.add(deploy)
+        existing_deploy.isActive = False
+
+    deploy = Deploy(
+        manager_id=business_manager.id,
+        target_firmware_id=firmware_id,
+        device_serial=device.serial_number,
+        device_firmware_id=firmware_id,
+        timestamp=datetime.now(timezone.utc),
+        isActive=True,
+    )
+    db.add(deploy)
 
     db.commit()
     return {"message": f"Firmware successfully deployed to device {payload.serial_number}"}
