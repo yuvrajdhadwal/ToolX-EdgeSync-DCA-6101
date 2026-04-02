@@ -10,3 +10,5 @@ aiofiles
 gunicorn
 dotenv
 azure-iot-hub
+azure-eventhub
+pytest

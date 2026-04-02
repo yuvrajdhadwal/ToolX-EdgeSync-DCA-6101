@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
-import { ROUTES } from '../constants/routes'
+import { getHomeRouteFromToken, ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
+import Logout from '../components/Logout'
 
 const UPLOAD_STATUS = {
   CURRENT: 'current',
@@ -25,6 +26,19 @@ type UploadItem = {
   declined_by: number | null
   declined_comment: string | null
   status: UploadStatus
+}
+
+const getFirmwareDeviceTypes = async (): Promise<string[]> => {
+  const token = localStorage.getItem('token')
+  const response = await fetch('/firmware-device-types', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch device types: ${response.statusText}`)
+  }
+
+  return response.json()
 }
 
 const getUploadsByStatus = async (status: UploadStatus): Promise<UploadItem[]> => {
@@ -59,27 +73,27 @@ const HomePage: React.FC = () => {
   const location = useLocation()
   const role = getRoleFromToken()
   const canUploadFirmware = role === 'developer'
-  const showFirmwareDashboard = role === 'developer' || role === 'developer_manager'
+  const showFirmwareDashboard = role === 'developer' || role === 'developer_manager' || role === 'business_manager'
   const [activeTab, setActiveTab] = useState(() => {
     const navigationState = location.state as { activeTab?: number } | null
     return typeof navigationState?.activeTab === 'number' ? navigationState.activeTab : 0
   })
   const [uploads, setUploads] = useState<UploadItem[]>([])
+  const [deviceTypes, setDeviceTypes] = useState<string[]>([])
+  const [selectedDeviceType, setSelectedDeviceType] = useState('All Device Types')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  // Table Headers
+
   const tableHeaders = ['ID', 'Version', 'Device Type', 'Emergency', 'Description']
-
-  // Name of Tabs
-  const tabs = ['Current', 'Pending', 'Rejected']
+  const tabs = ['Approved', 'Pending', 'Rejected']
   const tabStatusMap: UploadStatus[] = [UPLOAD_STATUS.CURRENT, UPLOAD_STATUS.PENDING, UPLOAD_STATUS.REJECTED]
-
-  // Minimum 1 empty rows
   const minRows = 1
 
   useEffect(() => {
     if (!showFirmwareDashboard) {
       setUploads([])
+      setDeviceTypes([])
+      setSelectedDeviceType('All Device Types')
       setError('')
       setIsLoading(false)
       return
@@ -104,9 +118,40 @@ const HomePage: React.FC = () => {
     loadUploads()
   }, [activeTab, showFirmwareDashboard])
 
-  const tableRows = uploads.length >= minRows
+  useEffect(() => {
+    if (!showFirmwareDashboard) {
+      return
+    }
+
+    const loadDeviceTypes = async () => {
+      try {
+        const records = await getFirmwareDeviceTypes()
+        setDeviceTypes(records)
+      } catch {
+        setDeviceTypes([])
+      }
+    }
+
+    loadDeviceTypes()
+  }, [showFirmwareDashboard])
+
+  useEffect(() => {
+    if (selectedDeviceType === 'All Device Types') {
+      return
+    }
+
+    if (!deviceTypes.includes(selectedDeviceType)) {
+      setSelectedDeviceType('All Device Types')
+    }
+  }, [deviceTypes, selectedDeviceType])
+
+  const filteredUploads = selectedDeviceType === 'All Device Types'
     ? uploads
-    : [...uploads, ...Array.from({ length: minRows - uploads.length }, () => null)]
+    : uploads.filter((upload) => upload.device_type === selectedDeviceType)
+
+  const tableRows = filteredUploads.length >= minRows
+    ? filteredUploads
+    : [...filteredUploads, ...Array.from({ length: minRows - filteredUploads.length }, () => null)]
 
 
   return (
@@ -118,41 +163,32 @@ const HomePage: React.FC = () => {
       gap: '2rem',
       backgroundColor: COLORS.backgroundPrimary,
     }}>
-      {/* Header with SLB */}
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center'}}>
+      {/* Header */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Left side - Logo + Profile */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <button 
             type="button" 
-            onClick={() => navigate(ROUTES.HOME)}
+            onClick={() => navigate(getHomeRouteFromToken())}
             style = {{
               padding: '0.5rem 1.5rem',
               backgroundColor: COLORS.backgroundPrimary,
               border: 'none'
             }}
+
           >
             <img 
-            src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
-            alt="SLB Logo" 
-            style={{ width: '100px', height: 'auto' }} 
+              src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
+              alt="SLB Logo" 
+              style={{ width: '100px', height: 'auto' }} 
             />
-              
           </button>
-          <Profile></Profile>
+          <Profile />
         </div>
-        
-        {canUploadFirmware && (
-          <div
-            style={{
-              display: 'flex',
-              gap: '1rem',
-            }}
-          >
+
+        {/* Right side - Upload button (developer only) + Logout */}
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {canUploadFirmware && (
             <button
               type="button"
               onClick={() => navigate(ROUTES.UPLOAD)}
@@ -170,8 +206,9 @@ const HomePage: React.FC = () => {
             >
               Upload New Firmware
             </button>
-          </div>
-        )}
+          )}
+          <Logout />
+        </div>
       </header>
 
       {showFirmwareDashboard ? (
@@ -217,31 +254,66 @@ const HomePage: React.FC = () => {
               boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
             }}
           >
-            <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>{tabs[activeTab]}</h2>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>{tabs[activeTab]}</h2>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                }}
+              >
+                <label htmlFor="device-type-filter" style={{ color: COLORS.textPrimary, fontWeight: 500 }}>
+                  Device Type:
+                </label>
+                <select
+                  id="device-type-filter"
+                  value={selectedDeviceType}
+                  onChange={(event) => setSelectedDeviceType(event.target.value)}
+                  style={{
+                    minWidth: '220px',
+                    padding: '0.6rem 0.75rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.borderPrimary}`,
+                    backgroundColor: COLORS.backgroundPrimary,
+                    color: COLORS.textPrimary,
+                  }}
+                >
+                  <option value="All Device Types">All Device Types</option>
+                  {deviceTypes.map((deviceType) => (
+                    <option key={deviceType} value={deviceType}>
+                      {deviceType}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {isLoading && <p style={{ margin: 0, color: COLORS.textMuted }}>Loading uploads...</p>}
             {error && <p style={{ margin: 0, color: COLORS.error }}>{error}</p>}
 
             <div style={{ overflow: 'auto' }}>
-              <table style={{
-                borderCollapse: 'collapse',
-                width: '100%',
-                backgroundColor: COLORS.backgroundSecondary,
-              }}>
+              <table style={{ borderCollapse: 'collapse', width: '100%', backgroundColor: COLORS.backgroundSecondary }}>
                 <thead>
                   <tr>
                     {tableHeaders.map((header) => (
-                      <th
-                        key={header}
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          textAlign: 'left',
-                          backgroundColor: COLORS.backgroundTertiary,
-                          color: COLORS.textPrimary,
-                          fontWeight: 600,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
+                      <th key={header} style={{
+                        border: `1px solid ${COLORS.borderPrimary}`,
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        backgroundColor: COLORS.backgroundTertiary,
+                        color: COLORS.textPrimary,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                      }}>
                         {header}
                       </th>
                     ))}
@@ -252,10 +324,7 @@ const HomePage: React.FC = () => {
                     <tr
                       key={`row-${rowIndex}`}
                       onClick={() => {
-                        if (!upload) {
-                          return
-                        }
-
+                        if (!upload) return
                         const detailRoute = ROUTES.FIRMWARE_DETAIL.replace(':uploadId', String(upload.id))
                         navigate(detailRoute, { state: { returnTab: activeTab } })
                       }}
@@ -264,59 +333,19 @@ const HomePage: React.FC = () => {
                         cursor: upload ? 'pointer' : 'default',
                       }}
                     >
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.id ?? ''}
                       </td>
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.version_number ?? ''}
                       </td>
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.device_type ?? ''}
                       </td>
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.isEmergency ? 'Yes' : upload ? 'No' : ''}
                       </td>
-                      <td
-                        style={{
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          padding: '0.75rem 1rem',
-                          minHeight: '3rem',
-                          textAlign: 'left',
-                          color: COLORS.textPrimary,
-                        }}
-                      >
+                      <td style={{ border: `1px solid ${COLORS.borderPrimary}`, padding: '0.75rem 1rem', minHeight: '3rem', textAlign: 'left', color: COLORS.textPrimary }}>
                         {upload?.description ?? ''}
                       </td>
                     </tr>
@@ -327,18 +356,16 @@ const HomePage: React.FC = () => {
           </main>
         </>
       ) : (
-        <main
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-            padding: '2rem',
-            backgroundColor: COLORS.backgroundSecondary,
-            borderRadius: '8px',
-            boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
-          }}
-        >
+        <main style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
+          padding: '2rem',
+          backgroundColor: COLORS.backgroundSecondary,
+          borderRadius: '8px',
+          boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
+        }}>
           <h2 style={{ margin: 0, fontSize: '1.5rem', color: COLORS.textPrimary }}>Dashboard</h2>
           <p style={{ margin: 0, color: COLORS.textMuted }}>No firmware dashboard is available for your role.</p>
         </main>

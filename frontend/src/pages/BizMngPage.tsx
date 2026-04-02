@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
+import Logout from '../components/Logout'
 
 const BizMngPage: React.FC = () => {
   const navigate = useNavigate()
 
   const handleButtonClick = (value: 'worldmap' | 'devices' | 'firmware') => {
+    if (value === 'worldmap') navigate(ROUTES.WORLD_MAP)
     if (value === 'devices') navigate(ROUTES.DEVICES_BIZMNG)
-    // worldmap and firmware navigation can be added here later
+    if (value === 'firmware') navigate(ROUTES.HOME)
   }
 
   return (
@@ -37,6 +39,7 @@ const BizMngPage: React.FC = () => {
           </button>
           <Profile></Profile>
         </div>
+        <Logout/>
       </header>
 
       {/* Dashboard Header */}
