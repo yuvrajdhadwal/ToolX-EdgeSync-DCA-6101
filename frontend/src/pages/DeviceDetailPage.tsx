@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
+import DeployHistory from '../components/DeployHistory'
 
 type Device = {
   device_type: string
@@ -130,7 +131,10 @@ const DeviceDetailPage: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0, color: COLORS.textPrimary }}>Device Information</h2>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
+            
             {device ? (
+              <>
+              <DeployHistory serialNumber={device.serial_number} />
               <button
                 type="button"
                 onClick={() => setShowRemoveConfirm(true)}
@@ -146,6 +150,7 @@ const DeviceDetailPage: React.FC = () => {
               >
                 {isRemoving ? 'Removing...' : 'Remove'}
               </button>
+            </>
             ) : null}
             <button
               type="button"
