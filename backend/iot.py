@@ -73,6 +73,6 @@ def listen_for_device(
             )
 
     thread = threading.Thread(target=run_client, daemon=True)
-    thread.start
+    thread.start()
     received_event.wait(timeout=timeout)
 
