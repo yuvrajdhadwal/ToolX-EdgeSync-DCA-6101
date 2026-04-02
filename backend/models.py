@@ -145,6 +145,7 @@ class Deploy(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     isActive = Column(Boolean, default=False)
 
+
     __table_args__ = (
         ForeignKeyConstraint(
             ["device_serial", "device_firmware_id"],
