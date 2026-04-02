@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 import os
 from enum import Enum
 from azure.iot.hub import IoTHubRegistryManager
+from iot import deploy_helper, listen_for_device, FirmwareOverview
+import threading
 
 from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate, Device, Deploy
 
@@ -155,19 +157,51 @@ def deploy_firmware(
     if not business_manager:
         raise HTTPException(status_code=404, detail="Business manager not found")
 
-    # Update device's firmware to the deployed firmware
-    device.firmware_id = firmware_id
-    device.last_update = datetime.now(timezone.utc)
+    # Send IoT C2D notification to device
+    iot_notification_status = "Not Configured"
+    connection_str = os.getenv('IOT_CONNECTION')
+    eventhub_connection_str = os.getenv('EVENTHUB_CONNECTION')
 
-    # Insert deploy record
+    if connection_str:
+        try:
+            iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
+            firmware_overview = FirmwareOverview(
+                device_type=firmware.device_type,
+                developer=str(firmware.uploaded_by or ''),
+                version_number=firmware.version_number,
+                isEmergency=firmware.isEmergency,
+                description=firmware.description or '',
+            )
+            message_sent = deploy_helper(payload.serial_number, iot_hub, firmware_overview)
+            iot_notification_status = "sent" if message_sent else "failed"
+        except Exception as e:
+            print(f"IoT notification error: {e}")
+            iot_notification_status = "failed"
+
+    # Listen for telemetry response in background
+    if eventhub_connection_str and iot_notification_status == "sent":
+        def on_telemetry_received(data: str):
+            print(f"Telemetry received from {payload.serial_number}: {data}")
+
+        threading.Thread(
+            target=listen_for_device,
+            args=(eventhub_connection_str, payload.serial_number, on_telemetry_received),
+            daemon=True
+        ).start()
+
+    # Deactivate existing active deploy for this device
     existing_deploy = db.query(Deploy).filter(
         Deploy.device_serial == payload.serial_number,
         Deploy.isActive == True,
     ).first()
-
     if existing_deploy:
         existing_deploy.isActive = False
 
+    # Update device firmware
+    device.firmware_id = firmware_id
+    device.last_update = datetime.now(timezone.utc)
+
+    # Create new active deploy record
     deploy = Deploy(
         manager_id=business_manager.id,
         target_firmware_id=firmware_id,
@@ -177,9 +211,13 @@ def deploy_firmware(
         isActive=True,
     )
     db.add(deploy)
-
     db.commit()
-    return {"message": f"Firmware successfully deployed to device {payload.serial_number}"}
+
+    return {
+        "message": f"Firmware successfully deployed to device {payload.serial_number}",
+        "iot_notification": iot_notification_status,
+        "telemetry_listener": "active" if eventhub_connection_str and iot_notification_status == "sent" else "not configured",
+    }
 
 
 # Add endpoint to get devices compatible with a firmware (matching device_type)

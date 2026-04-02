@@ -145,12 +145,14 @@ class Deploy(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     isActive = Column(Boolean, default=False)
 
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["device_serial", "device_firmware_id"],
-            ["devices.serial_number", "devices.firmware_id"]
-        ),
-    )
+    # Disabled for firmware -> edge device testing purposes
+
+    # __table_args__ = (
+    #    ForeignKeyConstraint(
+    #        ["device_serial", "device_firmware_id"],
+    #        ["devices.serial_number", "devices.firmware_id"]
+    #    ),
+    #)
 
 
 class Install(Base):
