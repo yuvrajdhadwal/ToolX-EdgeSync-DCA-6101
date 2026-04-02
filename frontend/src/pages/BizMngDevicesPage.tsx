@@ -164,7 +164,6 @@ const BizMngDevicesPage: React.FC = () => {
                   <td style={tdStyle} onClick={() => device && handleOpenDevice(device)}>{device?.description ?? ''}</td>
                   <td style={tdStyle}>
                     {device && (
-                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setConfirmDevice(device) }}
@@ -176,7 +175,6 @@ const BizMngDevicesPage: React.FC = () => {
                         >
                           X
                         </button>
-                      </div>
                     )}
                   </td>
                 </tr>
