@@ -14,6 +14,13 @@ interface Device {
   description: string;
 }
 
+interface DeployRecord {
+  id: number;
+  firmware_version: string;
+  timestamp: string;
+  isActive: boolean;
+}
+
 const tdStyle = {
   border: `1px solid ${COLORS.borderPrimary}`,
   padding: '0.75rem 0.5rem',
@@ -30,8 +37,11 @@ const BizMngDevicesPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [confirmDevice, setConfirmDevice] = useState<Device | null>(null)
+  const [historyDevice, setHistoryDevice] = useState<Device | null>(null)
+  const [deployHistory, setDeployHistory] = useState<DeployRecord[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
-  const tableHeaders = ['Device Type', 'Firmware Version', 'Last Updated', 'Region', 'Serial Number', 'Device Description', 'Remove']
+  const tableHeaders = ['Device Type', 'Firmware Version', 'Last Updated', 'Region', 'Serial Number', 'Device Description', 'Actions']
   const minRows = 3
 
   const handleOpenDevice = (device: Device) => {
@@ -55,6 +65,20 @@ const BizMngDevicesPage: React.FC = () => {
       setError('An error occurred while deleting the device.')
     } finally {
       setConfirmDevice(null)
+    }
+  }
+
+  const handleOpenHistory = async (device: Device) => {
+    setHistoryDevice(device)
+    setHistoryLoading(true)
+    try {
+      const res = await fetch(`/device/${encodeURIComponent(device.serial_number)}/deploy-history`)
+      const data = await res.json()
+      setDeployHistory(data)
+    } catch {
+      setDeployHistory([])
+    } finally {
+      setHistoryLoading(false)
     }
   }
 
@@ -164,25 +188,30 @@ const BizMngDevicesPage: React.FC = () => {
                   <td style={tdStyle} onClick={() => device && handleOpenDevice(device)}>{device?.description ?? ''}</td>
                   <td style={tdStyle}>
                     {device && (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setConfirmDevice(device)
-                        }}
-                        style={{
-                          padding: '0.25rem 0.75rem',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          borderRadius: '4px',
-                          border: `1px solid ${COLORS.danger}`,
-                          backgroundColor: 'transparent',
-                          color: COLORS.dangerText,
-                          fontWeight: 500,
-                        }}
-                      >
-                        X
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleOpenHistory(device) }}
+                          style={{
+                            padding: '0.25rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
+                            borderRadius: '4px', border: `1px solid ${COLORS.borderPrimary}`,
+                            backgroundColor: 'transparent', color: COLORS.textPrimary, fontWeight: 500,
+                          }}
+                        >
+                          History
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setConfirmDevice(device) }}
+                          style={{
+                            padding: '0.25rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
+                            borderRadius: '4px', border: `1px solid ${COLORS.danger}`,
+                            backgroundColor: 'transparent', color: COLORS.dangerText, fontWeight: 500,
+                          }}
+                        >
+                          X
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -247,6 +276,69 @@ const BizMngDevicesPage: React.FC = () => {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {historyDevice && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: COLORS.backgroundSecondary, border: `1px solid ${COLORS.borderPrimary}`,
+            borderRadius: '10px', padding: '2rem', display: 'flex', flexDirection: 'column',
+            gap: '1.5rem', minWidth: '500px', maxHeight: '80vh', overflowY: 'auto',
+          }}>
+            <h3 style={{ margin: 0, color: COLORS.textPrimary }}>
+              Deploy History — {historyDevice.serial_number}
+            </h3>
+
+            {historyLoading ? (
+              <p style={{ color: COLORS.textMuted }}>Loading...</p>
+            ) : deployHistory.length === 0 ? (
+              <p style={{ color: COLORS.textMuted }}>No deployment history found.</p>
+            ) : (
+              <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                <thead>
+                  <tr>
+                    {['Deploy ID', 'Firmware Version', 'Timestamp', 'Status'].map(h => (
+                      <th key={h} style={{
+                        border: `1px solid ${COLORS.borderPrimary}`, padding: '0.5rem',
+                        backgroundColor: COLORS.backgroundTertiary, color: COLORS.textPrimary,
+                      }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {deployHistory.map((record, i) => (
+                    <tr key={i}>
+                      <td style={tdStyle}>{record.id}</td>
+                      <td style={tdStyle}>{record.firmware_version}</td>
+                      <td style={tdStyle}>{record.timestamp}</td>
+                      <td style={tdStyle}>
+                        <span style={{ color: record.isActive ? COLORS.success : COLORS.textMuted }}>
+                          {record.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <button
+              type="button"
+              onClick={() => { setHistoryDevice(null); setDeployHistory([]) }}
+              style={{
+                alignSelf: 'flex-end', padding: '0.5rem 1.5rem', borderRadius: '6px',
+                cursor: 'pointer', border: `1px solid ${COLORS.white}`,
+                backgroundColor: 'transparent', color: COLORS.textPrimary, fontWeight: 500,
+              }}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

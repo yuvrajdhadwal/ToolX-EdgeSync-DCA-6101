@@ -17,6 +17,7 @@ export default defineConfig({
       '/devmng': 'http://localhost:8000',
       '/firmware-device-types': 'http://localhost:8000',
       '/users': 'http://localhost:8000',
+      '/device': 'http://localhost:8000',
     }
   }
 })
