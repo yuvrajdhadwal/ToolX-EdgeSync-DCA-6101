@@ -316,6 +316,32 @@ def get_devices(db: Session = Depends(get_db)):
         for d in devices
     ]
 
+@app.get("/device/{serial_number}/deploy-history")
+def get_deploy_history(
+    serial_number: str,
+    db: Session = Depends(get_db),
+):
+    device = db.query(Device).filter(Device.serial_number == serial_number).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    deploys = (
+        db.query(Deploy)
+        .filter(Deploy.device_serial == serial_number)
+        .order_by(Deploy.timestamp.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": d.id,
+            "firmware_version": db.query(FirmwareUpdate).filter(FirmwareUpdate.id == d.target_firmware_id).first().version_number,
+            "timestamp": d.timestamp.strftime("%Y-%m-%d %H:%M"),
+            "isActive": d.isActive,
+        }
+        for d in deploys
+    ]
+
 @app.delete("/remove_device/{serial_number}")
 def delete_device(serial_number: str, db: Session = Depends(get_db)):
     device = db.query(Device).filter(Device.serial_number == serial_number).first()
