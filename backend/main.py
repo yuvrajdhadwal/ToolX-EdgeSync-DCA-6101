@@ -129,8 +129,8 @@ def create_user(db: Session, user: UserCreate):
     
     return "complete"
 
-# Add deploy endpoint
-@app.post("/firmware/{firmware_id}/deploy")
+# Update deploy-to-one-device endpoint
+@app.post("/firmware/{firmware_id}/deploy-to-one-device")
 def deploy_firmware(
     firmware_id: int,
     payload: DeployFirmwareRequest,
@@ -181,7 +181,15 @@ def deploy_firmware(
     # Listen for telemetry response in background
     if eventhub_connection_str and iot_notification_status == "sent":
         def on_telemetry_received(data: str):
-            print(f"Telemetry received from {payload.serial_number}: {data}")
+            # Create a new session that ONLY exists for this update (Prevent existing db session from being passed in event handler)
+            new_session = SessionLocal()
+            try:
+                device = new_session.query(Device).filter(Device.serial_number == payload.serial_number).first()
+                if device:
+                    device.last_online = datetime.now(timezone.utc)
+                    new_session.commit()
+            finally:
+                new_session.close() # Close connection to prevent database lock
 
         threading.Thread(
             target=listen_for_device,
@@ -471,18 +479,6 @@ def get_username_by_id(
         raise HTTPException(status_code=404, detail="User not found")
 
     return {"id": user.id, "username": user.username}
-    
-
-@app.post("/deploy-to-one-device")
-def cloud_to_device(device_id: str, firmware: FirmwareOverview):
-    connection_str = os.getenv('IOT_CONNECTION')
-    iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
-    if not deploy_helper(device_id, iot_hub, firmware):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Device not found or invalid DeviceID"
-        )
-    return {"status": "sent"}
 
 
 @app.post("/deploy-to-many-devices")
