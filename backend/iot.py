@@ -54,7 +54,7 @@ def listen_for_device(
     received_event = threading.Event()
 
     def on_event(partition_context, event):
-        device = event.system_properties.get(b'iot-connection-device-id', b'').decode()
+        device = event.system_properties.get(b'iothub-connection-device-id', b'').decode()
         if device == device_id:
             body = event.body_as_str()
             on_received(body)
