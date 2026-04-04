@@ -5,7 +5,6 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 import bcrypt  
 from database import SessionLocal, engine, Base
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
@@ -19,8 +18,6 @@ from models import User, Developer, DeveloperManager, BusinessManager, FieldShop
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from typing import List, Optional
-
-from iot import deploy_helper, listen_for_device, FirmwareOverview
 
 from pydantic import BaseModel, field_validator
 
@@ -97,7 +94,7 @@ class DeployFirmwareRequest(BaseModel):
     serial_number: str
 
 class DeployManyRequest(BaseModel):
-    serial_numbers: list[str]
+    serial_numbers: List[str]
     firmware_id: int
 
 def get_user_by_username(db: Session, username: str):
