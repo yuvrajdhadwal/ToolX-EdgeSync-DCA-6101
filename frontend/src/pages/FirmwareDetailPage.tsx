@@ -173,7 +173,7 @@ const FirmwareDetailPage: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [approveConfirmationText, setApproveConfirmationText] = useState('');
   const [compatibleDevices, setCompatibleDevices] = useState<CompatibleDevice[]>([]);
-  const [selectedSerial, setSelectedSerial] = useState('');
+  const [selectedSerials, setSelectedSerials] = useState<string[]>([]);
   const [deployError, setDeployError] = useState('');
   const [deploySuccess, setDeploySuccess] = useState('');
   const [isDeploying, setIsDeploying] = useState(false);
@@ -189,10 +189,21 @@ const FirmwareDetailPage: React.FC = () => {
   };
 
   const isRevert = (): boolean => {
-    if (!firmware || !selectedSerial) return false;
-    const selectedDevice = compatibleDevices.find(d => d.serial_number === selectedSerial);
-    if (!selectedDevice?.current_version) return false;
-    return compareVersions(firmware.version_number, selectedDevice.current_version) < 0;
+    if (!firmware || selectedSerials.length === 0) return false;
+    return selectedSerials.some(serial => {
+      const device = compatibleDevices.find(d => d.serial_number === serial);
+      if (!device?.current_version) return false;
+      return compareVersions(firmware.version_number, device.current_version) < 0;
+    });
+  };
+
+  const revertVersions = (): string[] => {
+    if (!firmware) return [];
+    return selectedSerials.filter(serial => {
+      const device = compatibleDevices.find(d => d.serial_number === serial);
+      if (!device?.current_version) return false;
+      return compareVersions(firmware.version_number, device.current_version) < 0;
+    });
   };
 
   useEffect(() => {
@@ -320,27 +331,36 @@ const FirmwareDetailPage: React.FC = () => {
   };
 
   const handleDeployConfirm = async () => {
-    if (!firmware || !selectedSerial) return;
+    if (!firmware || selectedSerials.length === 0) return;
     setIsDeploying(true);
     setDeployError('');
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/firmware/${firmware.id}/deploy-to-one-device`, {
+      const response = await fetch('/deploy-to-many-devices', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ serial_number: selectedSerial }),
+        body: JSON.stringify({
+          serial_numbers: selectedSerials,
+          firmware_id: firmware.id,
+        }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
+        // Handle both string and array error formats
+        if (Array.isArray(data.detail)) {
+          throw new Error(data.detail.map((e: { msg: string }) => e.msg).join(', '));
+        }
         throw new Error(data.detail ?? 'Failed to deploy firmware');
       }
-      setDeploySuccess(`Firmware successfully deployed to ${selectedSerial}`);
+      const data = await response.json();
+      setDeploySuccess(`${data.message}`);
+      console.log('Deploy results:', data.results);
       const updated = await loadCompatibleDevices(firmware.id);
       setCompatibleDevices(updated);
-      setSelectedSerial('');
+      setSelectedSerials([]);
     } catch (err) {
       setDeployError(err instanceof Error ? err.message : 'Deploy failed');
     } finally {
@@ -642,30 +662,68 @@ const FirmwareDetailPage: React.FC = () => {
                   </div>
                   <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <p style={{ margin: 0, color: COLORS.textMuted }}>
-                      Select a compatible {firmware?.device_type} device to deploy firmware version <strong>{firmware?.version_number}</strong>:
+                      Select compatible {firmware?.device_type} devices to deploy firmware version <strong>{firmware?.version_number}</strong>:
                     </p>
                     {compatibleDevices.length === 0 ? (
                       <p style={{ color: COLORS.textMuted }}>No compatible devices found.</p>
                     ) : (
-                      <select
-                        value={selectedSerial}
-                        onChange={(e) => setSelectedSerial(e.target.value)}
-                        style={{
-                          padding: '0.6rem 0.75rem', borderRadius: '6px',
-                          border: `1px solid ${COLORS.borderPrimary}`,
-                          backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary,
-                        }}
-                      >
-                        <option value=''>Select a device...</option>
-                        {compatibleDevices.map((device) => (
-                          <option
-                            key={device.serial_number}
-                            value={device.serial_number}
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (selectedSerials.length === compatibleDevices.length) {
+                                setSelectedSerials([]);
+                              } else {
+                                setSelectedSerials(compatibleDevices.map(d => d.serial_number));
+                              }
+                            }}
+                            style={{
+                              padding: '0.3rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
+                              borderRadius: '4px', border: `1px solid ${COLORS.borderPrimary}`,
+                              backgroundColor: 'transparent', color: COLORS.textPrimary,
+                            }}
                           >
-                            Serial #{device.serial_number} - [ Location: {device.location} | {device.current_version ? `Version: ${device.current_version}` : ''} ]
-                          </option>
-                        ))}
-                      </select>
+                            {selectedSerials.length === compatibleDevices.length ? 'Deselect All' : 'Select All'}
+                          </button>
+                        </div>
+                        <div style={{
+                          maxHeight: '200px', overflowY: 'auto',
+                          border: `1px solid ${COLORS.borderPrimary}`,
+                          borderRadius: '6px',
+                        }}>
+                          {compatibleDevices.map((device) => (
+                            <label
+                              key={device.serial_number}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                padding: '0.6rem 0.75rem', cursor: 'pointer',
+                                borderBottom: `1px solid ${COLORS.borderPrimary}`,
+                                color: COLORS.textPrimary,
+                                backgroundColor: selectedSerials.includes(device.serial_number)
+                                  ? COLORS.backgroundTertiary
+                                  : 'transparent',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedSerials.includes(device.serial_number)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedSerials(prev => [...prev, device.serial_number]);
+                                  } else {
+                                    setSelectedSerials(prev => prev.filter(s => s !== device.serial_number));
+                                  }
+                                }}
+                              />
+                              <span>
+                                Serial #{device.serial_number} — {device.location}
+                                {device.current_version ? ` (current: v${device.current_version})` : ''}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </>
                     )}
                     {deployError && <p style={{ margin: 0, color: COLORS.dangerText }}>{deployError}</p>}
                     {deploySuccess && <p style={{ margin: 0, color: COLORS.success }}>{deploySuccess}</p>}
@@ -676,7 +734,7 @@ const FirmwareDetailPage: React.FC = () => {
                   }}>
                     <button
                       type="button"
-                      disabled={isDeploying || !selectedSerial}
+                      disabled={isDeploying || selectedSerials.length === 0}
                       onClick={() => {
                         if (isRevert()) {
                           setShowRevertConfirm(true);
@@ -687,15 +745,21 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
                         backgroundColor: COLORS.success, color: COLORS.white,
-                        cursor: isDeploying || !selectedSerial ? 'not-allowed' : 'pointer',
-                        fontWeight: 600, opacity: isDeploying || !selectedSerial ? 0.6 : 1,
+                        cursor: isDeploying || selectedSerials.length === 0 ? 'not-allowed' : 'pointer',
+                        fontWeight: 600,
+                        opacity: isDeploying || selectedSerials.length === 0 ? 0.6 : 1,
                       }}
                     >
                       {isDeploying ? 'Deploying...' : 'Confirm Deploy'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setShowDeployPopup(false); setSelectedSerial(''); setDeployError(''); setDeploySuccess(''); }}
+                      onClick={() => {
+                        setShowDeployPopup(false);
+                        setSelectedSerials([]);
+                        setDeployError('');
+                        setDeploySuccess('');
+                      }}
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
@@ -724,9 +788,16 @@ const FirmwareDetailPage: React.FC = () => {
                       </div>
                       <div style={{ padding: '1rem 1.25rem' }}>
                         <p style={{ margin: 0, color: COLORS.textPrimary }}>
-                          Are you sure you want to revert to firmware version{' '}
-                          <strong>{firmware?.version_number}</strong>?
+                          The following devices will be reverted to firmware version{' '}
+                          <strong>{firmware?.version_number}</strong>:
                         </p>
+                        <div style={{ marginTop: '0.75rem' }}>
+                          {revertVersions().map(serial => (
+                            <span key={serial} style={{ display: 'block', marginTop: '0.25rem', color: COLORS.textMuted }}>
+                              • {serial} (current: v{compatibleDevices.find(d => d.serial_number === serial)?.current_version})
+                            </span>
+                          ))}
+                        </div>
                       </div>
                       <div style={{
                         display: 'flex', justifyContent: 'flex-end', gap: '0.75rem',

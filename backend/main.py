@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from typing import List, Optional
 
-from iot import deploy_helper, FirmwareOverview
+from iot import deploy_helper, listen_for_device, FirmwareOverview
 
 from pydantic import BaseModel, field_validator
 
@@ -80,7 +80,7 @@ class FirmwareCreate(BaseModel):
 class DeviceCreate(BaseModel):
     serial_number: str
     device_type: str
-    version_number: str
+    version_number: Optional[str] = None
     description: str
     location: str
     developer_manager: str
@@ -95,6 +95,10 @@ class DeviceCreate(BaseModel):
 # Add Pydantic model for deploy request
 class DeployFirmwareRequest(BaseModel):
     serial_number: str
+
+class DeployManyRequest(BaseModel):
+    serial_numbers: list[str]
+    firmware_id: int
 
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
@@ -227,6 +231,101 @@ def deploy_firmware(
         "telemetry_listener": "active" if eventhub_connection_str and iot_notification_status == "sent" else "not configured",
     }
 
+@app.post("/deploy-to-many-devices")
+def cloud_to_many_device(
+    payload: DeployManyRequest,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+
+    if user.type != UserRole.business_manager.value:
+        raise HTTPException(status_code=403, detail="Only business managers can deploy firmware")
+
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == payload.firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if firmware.approved_by is None or firmware.declined_by is not None:
+        raise HTTPException(status_code=400, detail="Only approved firmware can be deployed")
+
+    business_manager = db.query(BusinessManager).filter(BusinessManager.id == user.id).first()
+    if not business_manager:
+        raise HTTPException(status_code=404, detail="Business manager not found")
+
+    connection_str = os.getenv('IOT_CONNECTION')
+    eventhub_connection_str = os.getenv('EVENTHUB_CONNECTION')
+    iot_hub = IoTHubRegistryManager.from_connection_string(connection_str) if connection_str else None
+
+    firmware_overview = FirmwareOverview(
+        device_type=firmware.device_type,
+        developer=str(firmware.uploaded_by or ''),
+        version_number=firmware.version_number,
+        isEmergency=firmware.isEmergency,
+        description=firmware.description or '',
+    )
+
+    results = []
+    for serial in payload.serial_numbers:
+        device = db.query(Device).filter(Device.serial_number == serial).first()
+        if not device:
+            results.append({"serial_number": serial, "status": "not found"})
+            continue
+
+        # Send IoT C2D notification
+        iot_status = "not configured"
+        if iot_hub:
+            try:
+                sent = deploy_helper(serial, iot_hub, firmware_overview)
+                iot_status = "sent" if sent else "failed"
+            except Exception as e:
+                print(f"IoT error for {serial}: {e}")
+                iot_status = "failed"
+
+        # Listen for telemetry response in background
+        if eventhub_connection_str and iot_status == "sent":
+            def on_telemetry_received(data: str, s=serial):
+                print(f"Telemetry received from {s}: {data}")
+            threading.Thread(
+                target=listen_for_device,
+                args=(eventhub_connection_str, serial, on_telemetry_received),
+                daemon=True
+            ).start()
+
+        # Deactivate existing active deploy for this device
+        existing_deploy = db.query(Deploy).filter(
+            Deploy.device_serial == serial,
+            Deploy.isActive == True,
+        ).first()
+        if existing_deploy:
+            existing_deploy.isActive = False
+
+        # Update device firmware
+        device.firmware_id = payload.firmware_id
+        device.last_update = datetime.now(timezone.utc)
+
+        # Create new active deploy record
+        deploy = Deploy(
+            manager_id=business_manager.id,
+            target_firmware_id=payload.firmware_id,
+            device_serial=serial,
+            device_firmware_id=payload.firmware_id,
+            timestamp=datetime.now(timezone.utc),
+            isActive=True,
+        )
+        db.add(deploy)
+        results.append({
+            "serial_number": serial,
+            "status": "deployed",
+            "iot_notification": iot_status,
+        })
+
+    db.commit()
+    return {
+        "message": f"Deployed to {len([r for r in results if r['status'] == 'deployed'])} device(s)",
+        "results": results,
+    }
+
 
 # Add endpoint to get devices compatible with a firmware (matching device_type)
 @app.get("/firmware/{firmware_id}/compatible-devices")
@@ -314,27 +413,10 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
     ).first()
     if existing_device:
         raise HTTPException(status_code=400, detail="Device with this serial number already exists")
-    
-    firmware = db.query(FirmwareUpdate).filter(
-        FirmwareUpdate.version_number == device.version_number,
-        FirmwareUpdate.device_type == device.device_type
-    ).first()
-
-    if not firmware:
-        firmware = FirmwareUpdate(
-            version_number=device.version_number,
-            device_type=device.device_type,
-            description=device.description,
-            objectBinary=b'',
-            isEmergency=False,
-        )
-        db.add(firmware)
-        db.commit()
-        db.refresh(firmware)
 
     db_device = Device(
         serial_number=device.serial_number,
-        firmware_id=firmware.id,
+        firmware_id=None,
         device_type=device.device_type,
         location=device.location,
         developer_manager=device.developer_manager,
@@ -507,18 +589,6 @@ def get_username_by_id(
     return {"id": user.id, "username": user.username}
 
 
-@app.post("/deploy-to-many-devices")
-def cloud_to_many_device(device_ids: list[str], firmware: FirmwareOverview):
-    connection_str = os.getenv('IOT_CONNECTION')
-    iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
-
-    for device_id in device_ids:
-        if not deploy_helper(device_id, iot_hub, firmware):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Device not found or invalid DeviceID"
-            )
-    return {"status": "sent to all devices"}
 
 
 @app.get("/verify-token/{token}")

@@ -18,6 +18,7 @@ export default defineConfig({
       '/firmware-device-types': 'http://localhost:8000',
       '/users': 'http://localhost:8000',
       '/device': 'http://localhost:8000',
+      '/deploy-to-many-devices': 'http://localhost:8000',
     }
   }
 })

@@ -114,7 +114,7 @@ class Device(Base):
     __tablename__ = "devices"
 
     serial_number = Column(String(100), primary_key=True)
-    firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="RESTRICT"), primary_key=True, autoincrement=False)
+    firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="SET NULL"), nullable=True)
 
     device_type = Column(String(50))
     location = Column(String(255))
