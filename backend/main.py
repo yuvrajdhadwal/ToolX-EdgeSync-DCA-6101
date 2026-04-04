@@ -24,6 +24,8 @@ from iot import deploy_helper, FirmwareOverview
 
 from pydantic import BaseModel, field_validator
 
+from iot import deploy_helper, FirmwareOverview
+
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -67,6 +69,7 @@ class UserCreate(BaseModel):
     username: str
     password: str
     developer_manager_id: Optional[int] = None
+
 
 
 class FirmwareCreate(BaseModel):

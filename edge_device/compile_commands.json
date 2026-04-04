@@ -1,0 +1,22 @@
+[
+  {
+    "directory": "/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device",
+    "command": "/usr/bin/c++ -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/external/include/azureiot -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/external/include -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/include -std=c++17 -o CMakeFiles/main.dir/main.cpp.o -c /home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/main.cpp",
+    "file": "/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/main.cpp"
+  },
+  {
+    "directory": "/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device",
+    "command": "/usr/bin/c++ -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/external/include/azureiot -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/external/include -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/include -std=c++17 -o CMakeFiles/main.dir/setup.cpp.o -c /home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/setup.cpp",
+    "file": "/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/setup.cpp"
+  },
+  {
+    "directory": "/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device",
+    "command": "/usr/bin/c++ -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/external/include/azureiot -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/external/include -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/include -std=c++17 -o CMakeFiles/main.dir/shutdown.cpp.o -c /home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/shutdown.cpp",
+    "file": "/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/shutdown.cpp"
+  },
+  {
+    "directory": "/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device",
+    "command": "/usr/bin/c++ -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/external/include/azureiot -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/external/include -I/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/include -std=c++17 -o CMakeFiles/main.dir/stable.cpp.o -c /home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/stable.cpp",
+    "file": "/home/ydhadwal/ToolX-EdgeSync-DCA-6101/edge_device/stable.cpp"
+  }
+]

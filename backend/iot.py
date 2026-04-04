@@ -5,6 +5,7 @@ from azure.eventhub import EventHubConsumerClient
 from pydantic import BaseModel
 
 class FirmwareOverview(BaseModel):
+    id: int
     device_type: str
     developer: str
     version_number: str
@@ -21,7 +22,8 @@ def deploy_helper(device_id: str, iot_hub: IoTHubRegistryManager, firmware: Firm
         iot_hub.send_c2d_message(device_id, "New Firmware Update Deployed", properties=
                                           {
                                               "isDeployment": "true",
-                                              "isEmergency": str(firmware.isEmergency),
+                                              "firmwareID": firmware.id,
+                                              "isEmergency": firmware.isEmergency,
                                               "deviceType": firmware.device_type,
                                               "versionNumber": firmware.version_number,
                                               "developer": firmware.developer,
