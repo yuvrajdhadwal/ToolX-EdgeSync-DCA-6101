@@ -1,15 +1,17 @@
-import msrest
 import threading
-from azure.iot.hub import IoTHubRegistryManager
+
+import msrest
 from azure.eventhub import EventHubConsumerClient
+from azure.iot.hub import IoTHubRegistryManager
 from pydantic import BaseModel
 
+
 class FirmwareOverview(BaseModel):
-    id: int
+    id: str
     device_type: str
     developer: str
     version_number: str
-    isEmergency: bool
+    isEmergency: str
     description: str
 
 
@@ -21,7 +23,7 @@ def deploy_helper(device_id: str, iot_hub: IoTHubRegistryManager, firmware: Firm
     try:
         iot_hub.send_c2d_message(device_id, "New Firmware Update Deployed", properties=
                                           {
-                                              "isDeployment": "true",
+                                              "isDeployment": "1",
                                               "firmwareID": firmware.id,
                                               "isEmergency": firmware.isEmergency,
                                               "deviceType": firmware.device_type,

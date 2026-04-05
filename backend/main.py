@@ -1,30 +1,25 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Header, Form, File, UploadFile, Response
-from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from datetime import datetime, timedelta, timezone
-import bcrypt  
-from database import SessionLocal, engine, Base
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 import os
-from enum import Enum
-from azure.iot.hub import IoTHubRegistryManager
-from iot import deploy_helper, listen_for_device, FirmwareOverview
 import threading
-
-from models import User, Developer, DeveloperManager, BusinessManager, FieldShopProfessional, FirmwareUpdate, Device, Deploy
-
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from datetime import datetime, timedelta, timezone
+from enum import Enum
 from typing import List, Optional
 
-from iot import deploy_helper, FirmwareOverview
-
+import bcrypt
+from azure.iot.hub import IoTHubRegistryManager
+from database import Base, SessionLocal, engine
+from dotenv import load_dotenv
+from fastapi import (Depends, FastAPI, File, Form, Header, HTTPException,
+                     Response, UploadFile, status)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
+from iot import FirmwareOverview, deploy_helper, listen_for_device
+from jose import JWTError, jwt
+from models import (BusinessManager, Deploy, Developer, DeveloperManager,
+                    Device, FieldShopProfessional, FirmwareUpdate, User)
 from pydantic import BaseModel, field_validator
-
-from iot import deploy_helper, FirmwareOverview
+from sqlalchemy.orm import Session
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -169,10 +164,11 @@ def deploy_firmware(
         try:
             iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
             firmware_overview = FirmwareOverview(
+                id=firmware.id,
                 device_type=firmware.device_type,
                 developer=str(firmware.uploaded_by or ''),
                 version_number=firmware.version_number,
-                isEmergency=firmware.isEmergency,
+                isEmergency="1" if firmware.isEmergency else "0",
                 description=firmware.description or '',
             )
             message_sent = deploy_helper(payload.serial_number, iot_hub, firmware_overview)
