@@ -90,6 +90,24 @@ class DeviceCreate(BaseModel):
         if not v.strip():
             raise ValueError('Field must not be empty')
         return v
+
+    @field_validator('latitude')
+    @classmethod
+    def latitude_must_be_valid(cls, value: Optional[float]):
+        if value is None:
+            return value
+        if value < -90 or value > 90:
+            raise ValueError('Latitude must be between -90 and 90')
+        return value
+
+    @field_validator('longitude')
+    @classmethod
+    def longitude_must_be_valid(cls, value: Optional[float]):
+        if value is None:
+            return value
+        if value < -180 or value > 180:
+            raise ValueError('Longitude must be between -180 and 180')
+        return value
     
 # Add Pydantic model for deploy request
 class DeployFirmwareRequest(BaseModel):

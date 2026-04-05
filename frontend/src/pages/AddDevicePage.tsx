@@ -20,6 +20,11 @@ type devmngOption = {
   username: string;
   id: number;
 }
+
+const LATITUDE_MIN = -90;
+const LATITUDE_MAX = 90;
+const LONGITUDE_MIN = -180;
+const LONGITUDE_MAX = 180;
     
 const AddDevicePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -72,6 +77,21 @@ const AddDevicePage: React.FC = () => {
       setLoading(false);
       return;
     }
+
+    const latitude = formData.latitude.trim() ? Number(formData.latitude) : null;
+    const longitude = formData.longitude.trim() ? Number(formData.longitude) : null;
+
+    if (latitude !== null && (Number.isNaN(latitude) || latitude < LATITUDE_MIN || latitude > LATITUDE_MAX)) {
+      setError(`Latitude must be between ${LATITUDE_MIN} and ${LATITUDE_MAX}.`);
+      setLoading(false);
+      return;
+    }
+
+    if (longitude !== null && (Number.isNaN(longitude) || longitude < LONGITUDE_MIN || longitude > LONGITUDE_MAX)) {
+      setError(`Longitude must be between ${LONGITUDE_MIN} and ${LONGITUDE_MAX}.`);
+      setLoading(false);
+      return;
+    }
     
     try {
         const response = await fetch('/add_device', {
@@ -84,8 +104,8 @@ const AddDevicePage: React.FC = () => {
                 description: formData.description,
                 developer_manager: formData.developer_manager,
                 location: formData.location,
-                latitude: formData.latitude.trim() ? Number(formData.latitude) : null,
-                longitude: formData.longitude.trim() ? Number(formData.longitude) : null,
+                latitude,
+                longitude,
             }),
         });
         setLoading(false);
@@ -225,18 +245,22 @@ const AddDevicePage: React.FC = () => {
                     <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
                       type='number'
                       step='any'
+                      min={LATITUDE_MIN}
+                      max={LATITUDE_MAX}
                       name='latitude'
                       value={formData.latitude}
                       onChange={handleInputChange}
-                      placeholder='Latitude (e.g. 29.7604)'
+                      placeholder='Latitude (e.g. 29.7604, -90 to 90)'
                     />
                     <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
                       type='number'
                       step='any'
+                      min={LONGITUDE_MIN}
+                      max={LONGITUDE_MAX}
                       name='longitude'
                       value={formData.longitude}
                       onChange={handleInputChange}
-                      placeholder='Longitude (e.g. -95.3698)'
+                      placeholder='Longitude (e.g. -95.3698, -180 to 180)'
                     />
                   </div>
 
