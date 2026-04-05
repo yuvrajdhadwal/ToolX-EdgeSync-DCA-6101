@@ -73,7 +73,7 @@ def test_install_composite_foreign_key_mismatch(db_session):
     """Edge Case: Try to create an Install with mismatched composite keys."""
     # Setup dependencies
     pro = FieldShopProfessional(username="pro_installer", hashed_password="pwd")
-    fw = FirmwareUpdate(version_number="v1.0", device_type="Router")
+    fw = FirmwareUpdate(objectBinary=b"firmware", version_number="v1.0", device_type="Router")
     db_session.add_all([pro, fw])
     db_session.commit()
     
@@ -134,7 +134,7 @@ def test_set_null_on_manager_delete(db_session):
 
 def test_restrict_on_firmware_delete(db_session):
     """Test 'RESTRICT': Cannot delete a firmware if a Device is currently installed on it."""
-    fw = FirmwareUpdate(version_number="vCritical", device_type="Server")
+    fw = FirmwareUpdate(objectBinary=b"firmware", version_number="vCritical", device_type="Server")
     db_session.add(fw)
     db_session.commit()
 
@@ -167,7 +167,7 @@ def test_polymorphic_query_routing(db_session):
 def test_many_to_many_removal_does_not_delete_entity(db_session):
     """Test that removing an item from a view/download list doesn't delete the firmware."""
     pro = FieldShopProfessional(username="pro_downloader", hashed_password="pwd")
-    fw = FirmwareUpdate(version_number="v2.0", device_type="Sensor")
+    fw = FirmwareUpdate(objectBinary=b"firmware", version_number="v2.0", device_type="Sensor")
     
     pro.download_firmware.append(fw)
     db_session.add_all([pro, fw])

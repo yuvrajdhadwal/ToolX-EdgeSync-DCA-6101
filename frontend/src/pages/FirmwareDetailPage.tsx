@@ -325,7 +325,7 @@ const FirmwareDetailPage: React.FC = () => {
     setDeployError('');
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/firmware/${firmware.id}/deploy`, {
+      const response = await fetch(`/firmware/${firmware.id}/deploy-to-one-device`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

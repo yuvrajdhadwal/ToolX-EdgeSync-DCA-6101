@@ -157,25 +157,17 @@ const BizMngDevicesPage: React.FC = () => {
                   <td style={tdStyle}>{device?.description ?? ''}</td>
                   <td style={tdStyle}>
                     {device && (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setConfirmDevice(device)
-                        }}
-                        style={{
-                          padding: '0.25rem 0.75rem',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          borderRadius: '4px',
-                          border: `1px solid ${COLORS.danger}`,
-                          backgroundColor: 'transparent',
-                          color: COLORS.dangerText,
-                          fontWeight: 500,
-                        }}
-                      >
-                        X
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setConfirmDevice(device) }}
+                          style={{
+                            padding: '0.25rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
+                            borderRadius: '4px', border: `1px solid ${COLORS.danger}`,
+                            backgroundColor: 'transparent', color: COLORS.dangerText, fontWeight: 500,
+                          }}
+                        >
+                          X
+                        </button>
                     )}
                   </td>
                 </tr>
