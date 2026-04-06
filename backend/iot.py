@@ -129,10 +129,7 @@ def on_event_batch(
         else:
             # Fallback logging if no callback provided
             print(f"[{device_id}] {body}")
-    print("Number of events received in this batch: {}".format(len(events)))
-    print("Device ids captured in this batch: {}".format(
-        [event.system_properties.get(b"iothub-connection-device-id", b"").decode() for event in events]
-    ))
+    
     
     partition_context.update_checkpoint()
 
