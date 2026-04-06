@@ -14,7 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from iot import (FirmwareOverview, capture_active_devices, deploy_helper,
+from iot import (FirmwareOverview, deploy_helper,
+                 get_active_devices_from_iothub,
                  listen_for_device)
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
@@ -52,21 +53,31 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
 ALGORITHM = os.getenv('ALGORITHM', 'HS256')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ACTIVE_DEVICE_POLL_SECONDS = int(os.getenv("ACTIVE_DEVICE_POLL_SECONDS", "10"))
-ACTIVE_DEVICE_CAPTURE_WINDOW_SECONDS = int(os.getenv("ACTIVE_DEVICE_CAPTURE_WINDOW_SECONDS", "5"))
 
 active_device_serials: Set[str] = set()
 active_device_lock = threading.Lock()
 
 
 def refresh_active_device_cache_once():
-    eventhub_connection_str = os.getenv("EVENTHUB_CONNECTION")
-    if not eventhub_connection_str:
+    iot_connection_str = os.getenv("IOT_CONNECTION")
+    if not iot_connection_str:
+        return
+
+    db = SessionLocal()
+    try:
+        all_device_ids = [serial for (serial,) in db.query(Device.serial_number).all()]
+    finally:
+        db.close()
+
+    if not all_device_ids:
+        with active_device_lock:
+            active_device_serials.clear()
         return
 
     try:
-        active_serials = capture_active_devices(
-            eventhub_connection_str,
-            capture_window_seconds=ACTIVE_DEVICE_CAPTURE_WINDOW_SECONDS,
+        active_serials = get_active_devices_from_iothub(
+            iot_connection_str,
+            all_device_ids,
         )
     except Exception as ex:
         print(f"Active-device refresh error: {ex}")

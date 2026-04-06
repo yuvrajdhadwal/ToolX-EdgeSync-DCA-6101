@@ -140,3 +140,25 @@ def capture_active_devices(
 
     return sorted(active_device_ids)
 
+
+def get_active_devices_from_iothub(
+    iot_connection_str: str,
+    device_ids: List[str],
+) -> List[str]:
+    """
+    @brief Returns devices currently connected according to IoT Hub registry state.
+    """
+    iot_hub = IoTHubRegistryManager.from_connection_string(iot_connection_str)
+    active_ids: List[str] = []
+
+    for device_id in device_ids:
+        try:
+            device = iot_hub.get_device(device_id)
+            connection_state = getattr(device, "connection_state", None) or getattr(device, "connectionState", None)
+            if str(connection_state).lower() == "connected":
+                active_ids.append(device_id)
+        except Exception:
+            continue
+
+    return active_ids
+
