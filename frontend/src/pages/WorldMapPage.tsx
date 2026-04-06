@@ -70,25 +70,43 @@ const WorldMapPage: React.FC = () => {
   )
 
   React.useEffect(() => {
-    setIsLoadingDevices(true)
-    setLoadError('')
+    let mounted = true
 
-    fetch('/get_devices')
-      .then((res) => {
+    const loadOnlineDevices = async () => {
+      if (mounted && devices.length === 0) {
+        setIsLoadingDevices(true)
+      }
+      setLoadError('')
+
+      try {
+        const res = await fetch('/get_online_devices')
         if (!res.ok) {
-          throw new Error('Failed to load devices')
+          throw new Error('Failed to load active devices')
         }
-        return res.json() as Promise<Device[]>
-      })
-      .then((data) => {
-        setDevices(data)
-      })
-      .catch(() => {
-        setLoadError('Failed to load device pins.')
-      })
-      .finally(() => {
-        setIsLoadingDevices(false)
-      })
+        const data = (await res.json()) as Device[]
+        if (mounted) {
+          setDevices(data)
+        }
+      } catch {
+        if (mounted) {
+          setLoadError('Failed to load active device pins.')
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingDevices(false)
+        }
+      }
+    }
+
+    void loadOnlineDevices()
+    const timer = window.setInterval(() => {
+      void loadOnlineDevices()
+    }, 10000)
+
+    return () => {
+      mounted = false
+      window.clearInterval(timer)
+    }
   }, [])
 
   const devicesWithCoordinates = React.useMemo(
@@ -171,7 +189,7 @@ const WorldMapPage: React.FC = () => {
         {isLoadingDevices ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading device pins...</p> : null}
         {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
         {!isLoadingDevices && !loadError && devicesWithCoordinates.length === 0 ? (
-          <p style={{ margin: 0, color: COLORS.textMuted }}>No devices with latitude/longitude found.</p>
+          <p style={{ margin: 0, color: COLORS.textMuted }}>No active devices with latitude/longitude found.</p>
         ) : null}
         <div style={{ width: '77%', margin: '0 auto', minHeight: '600px', border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
           <MapContainer

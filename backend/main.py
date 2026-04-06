@@ -2,7 +2,7 @@ import os
 import threading
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import bcrypt
 from azure.iot.hub import IoTHubRegistryManager
@@ -14,7 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from iot import FirmwareOverview, deploy_helper, listen_for_device
+from iot import (FirmwareOverview, capture_active_devices, deploy_helper,
+                 listen_for_device)
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
@@ -50,6 +51,52 @@ def get_db():
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
 ALGORITHM = os.getenv('ALGORITHM', 'HS256')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACTIVE_DEVICE_POLL_SECONDS = int(os.getenv("ACTIVE_DEVICE_POLL_SECONDS", "10"))
+ACTIVE_DEVICE_CAPTURE_WINDOW_SECONDS = int(os.getenv("ACTIVE_DEVICE_CAPTURE_WINDOW_SECONDS", "5"))
+
+active_device_serials: Set[str] = set()
+active_device_lock = threading.Lock()
+
+
+def refresh_active_device_cache_once():
+    eventhub_connection_str = os.getenv("EVENTHUB_CONNECTION")
+    if not eventhub_connection_str:
+        return
+
+    try:
+        active_serials = capture_active_devices(
+            eventhub_connection_str,
+            capture_window_seconds=ACTIVE_DEVICE_CAPTURE_WINDOW_SECONDS,
+        )
+    except Exception as ex:
+        print(f"Active-device refresh error: {ex}")
+        return
+
+    now = datetime.now(timezone.utc)
+    with active_device_lock:
+        active_device_serials.clear()
+        active_device_serials.update(active_serials)
+
+    db = SessionLocal()
+    try:
+        for serial in active_serials:
+            device = db.query(Device).filter(Device.serial_number == serial).first()
+            if device:
+                device.last_online = now
+        db.commit()
+    finally:
+        db.close()
+
+
+def active_device_worker():
+    while True:
+        refresh_active_device_cache_once()
+        threading.Event().wait(ACTIVE_DEVICE_POLL_SECONDS)
+
+
+@app.on_event("startup")
+def start_active_device_worker():
+    threading.Thread(target=active_device_worker, daemon=True).start()
 
 
 class UserRole(str, Enum):
@@ -491,6 +538,32 @@ def get_devices(db: Session = Depends(get_db)):
             "serial_number": d.serial_number,
             "description": d.description,
             "developer_manager": resolve_manager_name(d.developer_manager),
+            "latitude": d.latitude,
+            "longitude": d.longitude,
+        }
+        for d in devices
+    ]
+
+
+@app.get("/get_online_devices")
+def get_online_devices(db: Session = Depends(get_db)):
+    with active_device_lock:
+        serials = list(active_device_serials)
+
+    if not serials:
+        return []
+
+    devices = db.query(Device).filter(Device.serial_number.in_(serials)).all()
+
+    return [
+        {
+            "device_type": d.device_type,
+            "version_number": d.firmware.version_number if d.firmware else "N/A",
+            "last_update": d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A",
+            "location": d.location,
+            "serial_number": d.serial_number,
+            "description": d.description,
+            "developer_manager": d.developer_manager,
             "latitude": d.latitude,
             "longitude": d.longitude,
         }
