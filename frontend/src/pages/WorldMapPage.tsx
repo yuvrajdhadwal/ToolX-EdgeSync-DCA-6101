@@ -10,12 +10,22 @@ import Logout from '../components/Logout'
 
 const DEFAULT_CENTER: [number, number] = [20, 0]
 const DEFAULT_ZOOM = 2
+const CONTINENTS = [
+  'Africa',
+  'Antarctica',
+  'Asia',
+  'Europe',
+  'North America',
+  'Oceania',
+  'South America',
+]
 
 type Device = {
   device_type: string
   version_number: string
   last_update: string
   location: string
+  region?: string
   serial_number: string
   description: string
   latitude: number | null
@@ -55,6 +65,8 @@ const WorldMapPage: React.FC = () => {
   const role = getRoleFromToken()
   const [resetSignal, setResetSignal] = React.useState(0)
   const [devices, setDevices] = React.useState<Device[]>([])
+  const [selectedDeviceType, setSelectedDeviceType] = React.useState('all')
+  const [selectedRegion, setSelectedRegion] = React.useState('all')
   const [isLoadingDevices, setIsLoadingDevices] = React.useState(true)
   const [loadError, setLoadError] = React.useState('')
 
@@ -122,6 +134,33 @@ const WorldMapPage: React.FC = () => {
     [devices],
   )
 
+  const availableDeviceTypes = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          devicesWithCoordinates
+            .map((device) => device.device_type)
+            .filter((deviceType) => Boolean(deviceType?.trim())),
+        ),
+      ).sort((first, second) => first.localeCompare(second)),
+    [devicesWithCoordinates],
+  )
+
+  const filteredDevices = React.useMemo(() => {
+    return devicesWithCoordinates.filter((device) => {
+      const matchesType = selectedDeviceType === 'all' || device.device_type === selectedDeviceType
+      const normalizedRegion = (device.region ?? '').toLowerCase()
+      const matchesRegion =
+        selectedRegion === 'all' || normalizedRegion === selectedRegion.toLowerCase()
+
+      if (!matchesType || !matchesRegion) {
+        return false
+      }
+
+      return true
+    })
+  }, [devicesWithCoordinates, selectedDeviceType, selectedRegion])
+
   if (role !== 'business_manager') {
     return null
   }
@@ -169,7 +208,49 @@ const WorldMapPage: React.FC = () => {
         borderRadius: '8px',
         boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
       }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              value={selectedDeviceType}
+              onChange={(event) => setSelectedDeviceType(event.target.value)}
+              style={{
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                border: `1px solid ${COLORS.borderPrimary}`,
+                backgroundColor: COLORS.backgroundPrimary,
+                color: COLORS.textPrimary,
+                minWidth: '200px',
+              }}
+            >
+              <option value="all">All device types</option>
+              {availableDeviceTypes.map((deviceType) => (
+                <option key={deviceType} value={deviceType}>
+                  {deviceType}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedRegion}
+              onChange={(event) => setSelectedRegion(event.target.value)}
+              style={{
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                border: `1px solid ${COLORS.borderPrimary}`,
+                backgroundColor: COLORS.backgroundPrimary,
+                color: COLORS.textPrimary,
+                minWidth: '220px',
+              }}
+            >
+              <option value="all">All regions</option>
+              {CONTINENTS.map((continent) => (
+                <option key={continent} value={continent}>
+                  {continent}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             type="button"
             onClick={() => setResetSignal(prev => prev + 1)}
@@ -189,8 +270,8 @@ const WorldMapPage: React.FC = () => {
         </div>
         {isLoadingDevices ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading device pins...</p> : null}
         {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
-        {!isLoadingDevices && !loadError && devicesWithCoordinates.length === 0 ? (
-          <p style={{ margin: 0, color: COLORS.textMuted }}>No active devices with latitude/longitude found.</p>
+        {!isLoadingDevices && !loadError && filteredDevices.length === 0 ? (
+          <p style={{ margin: 0, color: COLORS.textMuted }}>No active devices match the selected filters.</p>
         ) : null}
         <div style={{ width: '77%', margin: '0 auto', minHeight: '600px', border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
           <MapContainer
@@ -203,7 +284,7 @@ const WorldMapPage: React.FC = () => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {devicesWithCoordinates.map((device) => (
+            {filteredDevices.map((device) => (
               <Marker
                 key={device.serial_number}
                 position={[device.latitude as number, device.longitude as number]}
