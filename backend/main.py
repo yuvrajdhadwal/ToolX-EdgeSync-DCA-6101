@@ -51,21 +51,17 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
 ALGORITHM = os.getenv('ALGORITHM', 'HS256')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-
 class UserRole(str, Enum):
     developer = "developer"
     developer_manager = "developer_manager"
     business_manager = "business_manager"
     field_shop_professional = "field_shop_professional"
 
-
 class UserCreate(BaseModel):
     role: UserRole
     username: str
     password: str
     developer_manager_id: Optional[int] = None
-
-
 
 class FirmwareCreate(BaseModel):
     objectBinary: str
@@ -113,6 +109,7 @@ class DeviceCreate(BaseModel):
 # Add Pydantic model for deploy request
 class DeployFirmwareRequest(BaseModel):
     serial_number: str
+    isEmergency: bool = False
 
 # Re-added Pydantic model deploying many requests
 class DeployManyRequest(BaseModel):
@@ -193,7 +190,7 @@ def deploy_firmware(
                 device_type=firmware.device_type,
                 developer=str(firmware.uploaded_by or ''),
                 version_number=firmware.version_number,
-                isEmergency="1" if firmware.isEmergency else "0",
+                isEmergency= payload.isEmergency,
                 description=firmware.description or '',
             )
             message_sent = deploy_helper(payload.serial_number, iot_hub, firmware_overview)
@@ -241,6 +238,7 @@ def deploy_firmware(
         device_firmware_id=firmware_id,
         timestamp=datetime.now(timezone.utc),
         isActive=True,
+        isEmergency=payload.isEmergency,
     )
     db.add(deploy)
     db.commit()

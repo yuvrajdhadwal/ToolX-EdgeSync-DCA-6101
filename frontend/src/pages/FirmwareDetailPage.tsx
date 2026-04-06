@@ -179,6 +179,7 @@ const FirmwareDetailPage: React.FC = () => {
   const [isDeploying, setIsDeploying] = useState(false);
   const [resolvedUsernames, setResolvedUsernames] = useState<Record<number, string>>({});
   const [error, setError] = useState('');
+  const [deployIsEmergency, setDeployIsEmergency] = useState(false);
 
   const canModerateFirmware = userRole === 'developer_manager' && firmware?.status === 'pending';
   const canDeployFirmware = userRole === 'business_manager' && firmware?.status === 'current';
@@ -345,6 +346,7 @@ const FirmwareDetailPage: React.FC = () => {
         body: JSON.stringify({
           serial_numbers: selectedSerials,
           firmware_id: firmware.id,
+          isEmergency: deployIsEmergency,
         }),
       });
       if (!response.ok) {
@@ -668,6 +670,14 @@ const FirmwareDetailPage: React.FC = () => {
                     ) : (
                       <>
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: COLORS.textPrimary }}>
+                                <input
+                                  type="checkbox"
+                                  checked={deployIsEmergency}
+                                  onChange={(e) => setDeployIsEmergency(e.target.checked)}
+                                />
+                                <span style={{ marginRight: '0.75rem' }}>Emergency deployment</span>
+                              </label>
                           <button
                             type="button"
                             onClick={() => {
@@ -685,6 +695,7 @@ const FirmwareDetailPage: React.FC = () => {
                           >
                             {selectedSerials.length === compatibleDevices.length ? 'Deselect All' : 'Select All'}
                           </button>
+                          
                         </div>
                         <div style={{
                           maxHeight: '200px', overflowY: 'auto',
@@ -704,6 +715,7 @@ const FirmwareDetailPage: React.FC = () => {
                                   : 'transparent',
                               }}
                             >
+                              
                               <input
                                 type="checkbox"
                                 checked={selectedSerials.includes(device.serial_number)}
@@ -734,6 +746,7 @@ const FirmwareDetailPage: React.FC = () => {
                     <button
                       type="button"
                       disabled={isDeploying || selectedSerials.length === 0}
+                      
                       onClick={() => {
                         if (isRevert()) {
                           setShowRevertConfirm(true);
