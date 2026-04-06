@@ -123,7 +123,7 @@ class FirmwareCreate(BaseModel):
 class DeviceCreate(BaseModel):
     serial_number: str
     device_type: str
-    version_number: str
+    version_number: Optional[str] = None
     description: str
     location: str
     developer_manager: str
@@ -597,7 +597,7 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
 
     db_device = Device(
         serial_number=device.serial_number,
-        firmware_id=firmware.id,
+        firmware_id=None,
         device_type=device.device_type,
         location=device.location,
         developer_manager=device.developer_manager,
