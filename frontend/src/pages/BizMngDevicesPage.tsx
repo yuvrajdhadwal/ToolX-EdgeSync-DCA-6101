@@ -34,12 +34,6 @@ const BizMngDevicesPage: React.FC = () => {
   const tableHeaders = ['Device Type', 'Firmware Version', 'Last Updated', 'Region', 'Serial Number', 'Device Description', 'Remove']
   const minRows = 3
 
-  const handleOpenDevice = (device: Device) => {
-    navigate(ROUTES.DEVICE_DETAIL.replace(':serialNumber', encodeURIComponent(device.serial_number)), {
-      state: { device },
-    })
-  }
-
   const handleDelete = async (serial_number: string) => {
     try {
       const response = await fetch(`/remove_device/${serial_number}`, {
@@ -154,14 +148,13 @@ const BizMngDevicesPage: React.FC = () => {
               {rows.map((device, rowIndex) => (
                 <tr key={rowIndex} style={{
                   backgroundColor: rowIndex % 2 === 0 ? COLORS.backgroundSecondary : COLORS.backgroundPrimary,
-                  cursor: device ? 'pointer' : 'default',
                 }}>
-                  <td style={tdStyle} onClick={() => device && handleOpenDevice(device)}>{device?.device_type ?? ''}</td>
-                  <td style={tdStyle} onClick={() => device && handleOpenDevice(device)}>{device?.version_number ?? ''}</td>
-                  <td style={tdStyle} onClick={() => device && handleOpenDevice(device)}>{device?.last_update ?? ''}</td>
-                  <td style={tdStyle} onClick={() => device && handleOpenDevice(device)}>{device?.location ?? ''}</td>
-                  <td style={tdStyle} onClick={() => device && handleOpenDevice(device)}>{device?.serial_number ?? ''}</td>
-                  <td style={tdStyle} onClick={() => device && handleOpenDevice(device)}>{device?.description ?? ''}</td>
+                  <td style={tdStyle}>{device?.device_type ?? ''}</td>
+                  <td style={tdStyle}>{device?.version_number ?? ''}</td>
+                  <td style={tdStyle}>{device?.last_update ?? ''}</td>
+                  <td style={tdStyle}>{device?.location ?? ''}</td>
+                  <td style={tdStyle}>{device?.serial_number ?? ''}</td>
+                  <td style={tdStyle}>{device?.description ?? ''}</td>
                   <td style={tdStyle}>
                     {device && (
                         <button

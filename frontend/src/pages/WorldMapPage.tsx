@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapContainer, TileLayer, useMap } from 'react-leaflet'
+import { MapContainer, Marker, TileLayer, Tooltip, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
@@ -9,6 +10,17 @@ import Logout from '../components/Logout'
 
 const DEFAULT_CENTER: [number, number] = [20, 0]
 const DEFAULT_ZOOM = 2
+
+type Device = {
+  device_type: string
+  version_number: string
+  last_update: string
+  location: string
+  serial_number: string
+  description: string
+  latitude: number | null
+  longitude: number | null
+}
 
 const getRoleFromToken = (): string | null => {
   const token = localStorage.getItem('token')
@@ -42,6 +54,54 @@ const WorldMapPage: React.FC = () => {
   const navigate = useNavigate()
   const role = getRoleFromToken()
   const [resetSignal, setResetSignal] = React.useState(0)
+  const [devices, setDevices] = React.useState<Device[]>([])
+  const [isLoadingDevices, setIsLoadingDevices] = React.useState(true)
+  const [loadError, setLoadError] = React.useState('')
+
+  const pinIcon = React.useMemo(
+    () =>
+      L.divIcon({
+        className: '',
+        html: '<div style="width:14px;height:14px;border-radius:9999px;background:#f85149;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      }),
+    [],
+  )
+
+  React.useEffect(() => {
+    setIsLoadingDevices(true)
+    setLoadError('')
+
+    fetch('/get_devices')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Failed to load devices')
+        }
+        return res.json() as Promise<Device[]>
+      })
+      .then((data) => {
+        setDevices(data)
+      })
+      .catch(() => {
+        setLoadError('Failed to load device pins.')
+      })
+      .finally(() => {
+        setIsLoadingDevices(false)
+      })
+  }, [])
+
+  const devicesWithCoordinates = React.useMemo(
+    () =>
+      devices.filter(
+        (device) =>
+          typeof device.latitude === 'number' &&
+          typeof device.longitude === 'number' &&
+          !Number.isNaN(device.latitude) &&
+          !Number.isNaN(device.longitude),
+      ),
+    [devices],
+  )
 
   if (role !== 'business_manager') {
     return null
@@ -108,6 +168,11 @@ const WorldMapPage: React.FC = () => {
             Reset
           </button>
         </div>
+        {isLoadingDevices ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading device pins...</p> : null}
+        {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
+        {!isLoadingDevices && !loadError && devicesWithCoordinates.length === 0 ? (
+          <p style={{ margin: 0, color: COLORS.textMuted }}>No devices with latitude/longitude found.</p>
+        ) : null}
         <div style={{ width: '77%', margin: '0 auto', minHeight: '600px', border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
           <MapContainer
             center={DEFAULT_CENTER}
@@ -119,6 +184,27 @@ const WorldMapPage: React.FC = () => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+            {devicesWithCoordinates.map((device) => (
+              <Marker
+                key={device.serial_number}
+                position={[device.latitude as number, device.longitude as number]}
+                icon={pinIcon}
+                eventHandlers={{
+                  click: () => {
+                    navigate(ROUTES.DEVICE_DETAIL.replace(':serialNumber', encodeURIComponent(device.serial_number)), {
+                      state: {
+                        device,
+                        fromRoute: ROUTES.WORLD_MAP,
+                      },
+                    })
+                  },
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -10]}>
+                  {device.device_type}
+                </Tooltip>
+              </Marker>
+            ))}
             <ResetMapControl center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} resetSignal={resetSignal} />
           </MapContainer>
         </div>

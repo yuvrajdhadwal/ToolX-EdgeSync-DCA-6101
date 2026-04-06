@@ -84,6 +84,8 @@ class DeviceCreate(BaseModel):
     description: str
     location: str
     developer_manager: str
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None
 
     @field_validator('device_type', 'serial_number', 'version_number', 'description', 'location', 'developer_manager')
     @classmethod
@@ -91,6 +93,24 @@ class DeviceCreate(BaseModel):
         if not v.strip():
             raise ValueError('Field must not be empty')
         return v
+
+    @field_validator('latitude')
+    @classmethod
+    def latitude_must_be_valid(cls, value: Optional[float]):
+        if value is None:
+            return value
+        if value < -90 or value > 90:
+            raise ValueError('Latitude must be between -90 and 90')
+        return value
+
+    @field_validator('longitude')
+    @classmethod
+    def longitude_must_be_valid(cls, value: Optional[float]):
+        if value is None:
+            return value
+        if value < -180 or value > 180:
+            raise ValueError('Longitude must be between -180 and 180')
+        return value
     
 # Add Pydantic model for deploy request
 class DeployFirmwareRequest(BaseModel):
@@ -436,6 +456,8 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
         location=device.location,
         developer_manager=device.developer_manager,
         description=device.description,
+        latitude=device.latitude,
+        longitude=device.longitude,
         last_update=datetime.now(timezone.utc),
     )
     db.add(db_device)
@@ -446,6 +468,21 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
 
 @app.get("/get_devices")
 def get_devices(db: Session = Depends(get_db)):
+    manager_lookup = {
+        manager.id: manager.username
+        for manager in db.query(DeveloperManager).all()
+    }
+
+    def resolve_manager_name(value: Optional[str]) -> str:
+        if value is None:
+            return ""
+        raw_value = str(value).strip()
+        if not raw_value:
+            return ""
+        if raw_value.isdigit():
+            return manager_lookup.get(int(raw_value), raw_value)
+        return raw_value
+
     devices = db.query(Device).all()
     return [
         {
@@ -455,6 +492,9 @@ def get_devices(db: Session = Depends(get_db)):
             "location": d.location,
             "serial_number": d.serial_number,
             "description": d.description,
+            "developer_manager": resolve_manager_name(d.developer_manager),
+            "latitude": d.latitude,
+            "longitude": d.longitude,
         }
         for d in devices
     ]
