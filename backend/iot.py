@@ -57,29 +57,6 @@ def deploy_helper(
 
 
 
-def listen_for_device_activity(
-    event_connection_str: str,
-    on_activity: callable,
-):
-    """
-    @brief Continuously listens for telemetry events and reports device activity.
-    Calls on_activity(device_id, body) for every telemetry event received.
-    """
-
-    def on_event(partition_context, event):
-        device = event.system_properties.get(b"iot-connection-device-id", b"").decode()
-        if device:
-            body = event.body_as_str()
-            on_activity(device, body)
-            partition_context.update_checkpoint(event)
-
-    client = EventHubConsumerClient.from_connection_string(
-        event_connection_str,
-        consumer_group="$Default",
-    )
-    with client:
-        client.receive(on_event=on_event)
-
 
 def telemetry_listener(
     on_activity: Optional[Callable[[str, str], None]] = None,
@@ -114,6 +91,8 @@ def on_event_batch(
     Extracts device_id and body, then calls on_activity callback if provided.
     """
     for event in events:
+        if event.body_as_str() != "Device is Online":
+            continue
         device_id = event.system_properties.get(
             b"iothub-connection-device-id", b""
         ).decode()
@@ -127,10 +106,7 @@ def on_event_batch(
         else:
             # Fallback logging if no callback provided
             print(f"[{device_id}] {body}")
-    print("Number of events received in this batch: {}".format(len(events)))
-    print("Device ids captured in this batch: {}".format(
-        [event.system_properties.get(b"iothub-connection-device-id", b"").decode() for event in events]
-    ))
+    
     
     partition_context.update_checkpoint()
 
