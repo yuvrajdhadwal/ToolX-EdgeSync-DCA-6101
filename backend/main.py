@@ -3,7 +3,7 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import List, Optional, Set
+from typing import List, Optional
 
 import bcrypt
 from azure.iot.hub import IoTHubRegistryManager
@@ -15,8 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from iot import (FirmwareOverview, deploy_helper, listen_for_device,
-                 telemetry_listener)
+from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
@@ -101,19 +100,16 @@ def _record_device_activity(device_id: str, body: str):
     if ACTIVE_DEVICE_ONLINE_MESSAGE.lower() not in body.lower():
         return
 
-    now = datetime.now(timezone.utc)
-    with active_device_lock:
-        active_device_serials.add(device_id)
-        active_device_last_seen[device_id] = now
+    db = SessionLocal()
+    try:
+        device = db.query(Device).filter(Device.serial_number == device_id).first()
+        if not device:
+            return
 
-        stale_ids = [
-            serial
-            for serial, last_seen in active_device_last_seen.items()
-            if (now - last_seen).total_seconds() > ONLINE_DEVICE_TTL_SECONDS
-        ]
-        for serial in stale_ids:
-            active_device_last_seen.pop(serial, None)
-            active_device_serials.discard(serial)
+        device.last_online = datetime.now(timezone.utc)
+        db.commit()
+    finally:
+        db.close()
 
 
 def telemetry_activity_worker():
@@ -322,33 +318,6 @@ def deploy_firmware(
             print(f"IoT notification error: {e}")
             iot_notification_status = "failed"
 
-    # Listen for telemetry response in background
-    if eventhub_connection_str and iot_notification_status == "sent":
-
-        def on_telemetry_received(data: str):
-            # Create a new session that ONLY exists for this update (Prevent existing db session from being passed in event handler)
-            new_session = SessionLocal()
-            try:
-                device = (
-                    new_session.query(Device)
-                    .filter(Device.serial_number == payload.serial_number)
-                    .first()
-                )
-                if device:
-                    device.last_online = datetime.now(timezone.utc)
-                    new_session.commit()
-            finally:
-                new_session.close()  # Close connection to prevent database lock
-
-        threading.Thread(
-            target=listen_for_device,
-            args=(
-                eventhub_connection_str,
-                payload.serial_number,
-                on_telemetry_received,
-            ),
-            daemon=True,
-        ).start()
 
     # Deactivate existing active deploy for this device
     existing_deploy = (
@@ -381,11 +350,6 @@ def deploy_firmware(
     return {
         "message": f"Firmware successfully deployed to device {payload.serial_number}",
         "iot_notification": iot_notification_status,
-        "telemetry_listener": (
-            "active"
-            if eventhub_connection_str and iot_notification_status == "sent"
-            else "not configured"
-        ),
     }
 
 
@@ -454,16 +418,6 @@ def cloud_to_many_device(
                 print(f"IoT error for {serial}: {e}")
                 iot_status = "failed"
 
-        if eventhub_connection_str and iot_status == "sent":
-
-            def on_telemetry_received(data: str, s=serial):
-                print(f"Telemetry received from {s}: {data}")
-
-            threading.Thread(
-                target=listen_for_device,
-                args=(eventhub_connection_str, serial, on_telemetry_received),
-                daemon=True,
-            ).start()
 
         existing_deploy = (
             db.query(Deploy)
@@ -608,27 +562,6 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
             status_code=400, detail="Device with this serial number already exists"
         )
 
-    firmware = (
-        db.query(FirmwareUpdate)
-        .filter(
-            FirmwareUpdate.version_number == device.version_number,
-            FirmwareUpdate.device_type == device.device_type,
-        )
-        .first()
-    )
-
-    if not firmware:
-        firmware = FirmwareUpdate(
-            version_number=device.version_number,
-            device_type=device.device_type,
-            description=device.description,
-            objectBinary=b"",
-            isEmergency=False,
-        )
-        db.add(firmware)
-        db.commit()
-        db.refresh(firmware)
-
     db_device = Device(
         serial_number=device.serial_number,
         firmware_id=None,
@@ -684,21 +617,7 @@ def get_devices(db: Session = Depends(get_db)):
 
 @app.get("/get_online_devices")
 def get_online_devices(db: Session = Depends(get_db)):
-    with active_device_lock:
-        now = datetime.now(timezone.utc)
-        stale_ids = [
-            serial
-            for serial, last_seen in active_device_last_seen.items()
-            if (now - last_seen).total_seconds() > ONLINE_DEVICE_TTL_SECONDS
-        ]
-        for serial in stale_ids:
-            active_device_last_seen.pop(serial, None)
-            active_device_serials.discard(serial)
-
-        active_serials = list(active_device_serials)
-
-    if not active_serials:
-        return []
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
 
     manager_lookup = {
         manager.id: manager.username for manager in db.query(DeveloperManager).all()
@@ -714,7 +633,11 @@ def get_online_devices(db: Session = Depends(get_db)):
             return manager_lookup.get(int(raw_value), raw_value)
         return raw_value
 
-    devices = db.query(Device).filter(Device.serial_number.in_(active_serials)).all()
+    devices = (
+        db.query(Device)
+        .filter(Device.last_online.is_not(None), Device.last_online >= cutoff)
+        .all()
+    )
 
     return [
         {

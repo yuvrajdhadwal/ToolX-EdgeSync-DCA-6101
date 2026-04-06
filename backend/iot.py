@@ -56,65 +56,6 @@ def deploy_helper(
         return success
 
 
-def listen_for_device(
-    event_connection_str: str,
-    device_id: str,
-    on_received: callable,
-    timeout: int = 30,
-):
-    """
-    @brief Listens to specific device for telemetry to confirm device gets proper firmware
-    When edge device receives message -> Call on_received(data)
-    Stop listening if timeout = 30 sec
-    """
-    received_event = threading.Event()
-
-    def on_event(partition_context, event):
-        device = event.system_properties.get(b"iot-connection-device-id", b"").decode()
-        if device == device_id:
-            body = event.body_as_str()
-            on_received(body)
-            received_event.set()
-            partition_context.update_checkpoint(event)
-
-    def run_client():
-        client = EventHubConsumerClient.from_connection_string(
-            event_connection_str,
-            consumer_group="$Default",
-        )
-        with client:
-            client.receive(
-                on_event=on_event,
-                max_wait_time=timeout,
-            )
-
-    thread = threading.Thread(target=run_client, daemon=True)
-    thread.start()
-    received_event.wait(timeout=timeout)
-
-
-def listen_for_device_activity(
-    event_connection_str: str,
-    on_activity: callable,
-):
-    """
-    @brief Continuously listens for telemetry events and reports device activity.
-    Calls on_activity(device_id, body) for every telemetry event received.
-    """
-
-    def on_event(partition_context, event):
-        device = event.system_properties.get(b"iot-connection-device-id", b"").decode()
-        if device:
-            body = event.body_as_str()
-            on_activity(device, body)
-            partition_context.update_checkpoint(event)
-
-    client = EventHubConsumerClient.from_connection_string(
-        event_connection_str,
-        consumer_group="$Default",
-    )
-    with client:
-        client.receive(on_event=on_event)
 
 
 def telemetry_listener(
@@ -150,7 +91,7 @@ def on_event_batch(
     Extracts device_id and body, then calls on_activity callback if provided.
     """
     for event in events:
-        # if event message is not Device is Online then continue
+
         if event.body_as_str() != "Device is Online":
             continue
         device_id = event.system_properties.get(
@@ -166,10 +107,7 @@ def on_event_batch(
         else:
             # Fallback logging if no callback provided
             print(f"[{device_id}] {body}")
-    print("Number of events received in this batch: {}".format(len(events)))
-    print("Device ids captured in this batch: {}".format(
-        [event.system_properties.get(b"iothub-connection-device-id", b"").decode() for event in events]
-    ))
+    
     
     partition_context.update_checkpoint()
 
