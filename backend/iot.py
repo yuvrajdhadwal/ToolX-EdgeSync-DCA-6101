@@ -57,29 +57,6 @@ def deploy_helper(
 
 
 
-def listen_for_device_activity(
-    event_connection_str: str,
-    on_activity: callable,
-):
-    """
-    @brief Continuously listens for telemetry events and reports device activity.
-    Calls on_activity(device_id, body) for every telemetry event received.
-    """
-
-    def on_event(partition_context, event):
-        device = event.system_properties.get(b"iot-connection-device-id", b"").decode()
-        if device:
-            body = event.body_as_str()
-            on_activity(device, body)
-            partition_context.update_checkpoint(event)
-
-    client = EventHubConsumerClient.from_connection_string(
-        event_connection_str,
-        consumer_group="$Default",
-    )
-    with client:
-        client.receive(on_event=on_event)
-
 
 def telemetry_listener(
     on_activity: Optional[Callable[[str, str], None]] = None,
