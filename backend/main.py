@@ -566,27 +566,6 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
             status_code=400, detail="Device with this serial number already exists"
         )
 
-    firmware = (
-        db.query(FirmwareUpdate)
-        .filter(
-            FirmwareUpdate.version_number == device.version_number,
-            FirmwareUpdate.device_type == device.device_type,
-        )
-        .first()
-    )
-
-    if not firmware:
-        firmware = FirmwareUpdate(
-            version_number=device.version_number,
-            device_type=device.device_type,
-            description=device.description,
-            objectBinary=b"",
-            isEmergency=False,
-        )
-        db.add(firmware)
-        db.commit()
-        db.refresh(firmware)
-
     db_device = Device(
         serial_number=device.serial_number,
         firmware_id=None,
