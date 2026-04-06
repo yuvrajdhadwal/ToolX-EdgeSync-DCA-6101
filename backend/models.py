@@ -146,12 +146,12 @@ class Deploy(Base):
     isActive = Column(Boolean, default=False)
 
 
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["device_serial", "device_firmware_id"],
-            ["devices.serial_number", "devices.firmware_id"]
-        ),
-    )
+    # __table_args__ = (
+    #    ForeignKeyConstraint(
+    #        ["device_serial", "device_firmware_id"],
+    #        ["devices.serial_number", "devices.firmware_id"]
+    #    ),
+    #)
 
 
 class Install(Base):
