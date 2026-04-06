@@ -104,15 +104,17 @@ auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
       std::cout << "\nMessage properties:\n";
 
       for (size_t i = 0; i < count; i++) {
-        (void)printf("\tKey: %s Value: %s\r\n", (char *)keys[i],
-                     (char *)values[i]);
-      }
+        std::cout << "\tKey: " << (char *)keys[i]
+                  << " Value: " << (char *)values[i] << "\n";
 
-      if (strcmp("true", (char *)values[0]) == 0) {
-        isDeployment = true;
-      }
-      if (strcmp("true", (char *)values[2]) == 0) {
-        isEmergency = true;
+        if (strcmp("isDeployment", (char *)keys[i]) == 0 &&
+            strcmp("1", (char *)values[i]) == 0) {
+          isDeployment = true;
+        }
+        if (strcmp("isEmergency", (char *)keys[i]) == 0 &&
+            strcmp("1", (char *)values[i]) == 0) {
+          isEmergency = true;
+        }
       }
     }
   }

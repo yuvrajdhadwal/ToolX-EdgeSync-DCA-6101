@@ -191,11 +191,11 @@ def deploy_firmware(
         try:
             iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
             firmware_overview = FirmwareOverview(
-                id=firmware.id,
+                id=str(firmware.id),
                 device_type=firmware.device_type,
                 developer=str(firmware.uploaded_by or ''),
                 version_number=firmware.version_number,
-                isEmergency=firmware.isEmergency,
+                isEmergency="1" if firmware.isEmergency else "0",
                 description=firmware.description or '',
             )
             message_sent = deploy_helper(payload.serial_number, iot_hub, firmware_overview)
