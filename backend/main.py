@@ -205,15 +205,19 @@ def deploy_firmware(
     # Listen for telemetry response in background
     if eventhub_connection_str and iot_notification_status == "sent":
         def on_telemetry_received(data: str):
-            # Create a new session that ONLY exists for this update (Prevent existing db session from being passed in event handler)
+            # Only update last_online if device acknowledged the deployment
+            if "Accepted" not in data and "Installing" not in data:
+                return
             new_session = SessionLocal()
             try:
-                device = new_session.query(Device).filter(Device.serial_number == payload.serial_number).first()
+                device = new_session.query(Device).filter(
+                    Device.serial_number == payload.serial_number
+                ).first()
                 if device:
                     device.last_online = datetime.now(timezone.utc)
                     new_session.commit()
             finally:
-                new_session.close() # Close connection to prevent database lock
+                new_session.close()
 
         threading.Thread(
             target=listen_for_device,
@@ -304,7 +308,20 @@ def cloud_to_many_device(
 
         if eventhub_connection_str and iot_status == "sent":
             def on_telemetry_received(data: str, s=serial):
-                print(f"Telemetry received from {s}: {data}")
+                # Only update last_online if device acknowledged the deployment
+                if "Accepted" not in data and "Installing" not in data:
+                    return
+                new_session = SessionLocal()
+                try:
+                    device = new_session.query(Device).filter(
+                        Device.serial_number == s
+                    ).first()
+                    if device:
+                        device.last_online = datetime.now(timezone.utc)
+                        new_session.commit()
+                finally:
+                    new_session.close()
+
             threading.Thread(
                 target=listen_for_device,
                 args=(eventhub_connection_str, serial, on_telemetry_received),

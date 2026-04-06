@@ -48,21 +48,18 @@ def listen_for_device(
     event_connection_str: str,
     device_id: str,
     on_received: callable,
-    timeout: int = 30,
+    
 ):
     """
     @brief Listens to specific device for telemetry to confirm device gets proper firmware
-    When edge device receives message -> Call on_received(data)
-    Stop listening if timeout = 30 sec
+    Runs in background indefinitely until a message is received from the device.
     """
-    received_event = threading.Event()
 
     def on_event(partition_context, event):
-        device = event.system_properties.get(b'iot-connection-device-id', b'').decode()
+        device = event.system_properties.get(b'iothub-connection-device-id', b'').decode()
         if device == device_id:
             body = event.body_as_str()
             on_received(body)
-            received_event.set()
             partition_context.update_checkpoint(event)
 
     def run_client():
@@ -71,12 +68,7 @@ def listen_for_device(
             consumer_group="$Default",
         )
         with client:
-            client.receive(
-                on_event=on_event,
-                max_wait_time=timeout,
-            )
+            client.receive(on_event=on_event)
 
-    thread = threading.Thread(target=run_client, daemon=True)
-    thread.start()
-    received_event.wait(timeout=timeout)
+    threading.Thread(target=run_client, daemon=True).start()
 
