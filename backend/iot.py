@@ -5,6 +5,7 @@ from typing import List, Set
 import msrest
 from azure.eventhub import EventHubConsumerClient
 from azure.iot.hub import IoTHubRegistryManager
+from azure.iot.device.aio import IoTHubDeviceClient
 from pydantic import BaseModel
 
 
@@ -107,40 +108,6 @@ def listen_for_device_activity(
         client.receive(on_event=on_event)
 
 
-def capture_active_devices(
-    event_connection_str: str,
-    capture_window_seconds: int = 30,
-) -> List[str]:
-    """
-    @brief Listens for telemetry during capture_window_seconds and returns all active device IDs.
-    """
-    active_device_ids: Set[str] = set()
-    stop_event = threading.Event()
-
-    def on_event(partition_context, event):
-        device_id = event.system_properties.get(b'iot-connection-device-id', b'').decode()
-        if device_id:
-            active_device_ids.add(device_id)
-            partition_context.update_checkpoint(event)
-
-    def run_client():
-        client = EventHubConsumerClient.from_connection_string(
-            event_connection_str,
-            consumer_group="$Default",
-        )
-        with client:
-            while not stop_event.is_set():
-                client.receive(on_event=on_event, max_wait_time=1)
-
-    listener = threading.Thread(target=run_client, daemon=True)
-    listener.start()
-    time.sleep(capture_window_seconds)
-    stop_event.set()
-    listener.join(timeout=2)
-
-    return sorted(active_device_ids)
-
-
 def get_active_devices_from_iothub(
     iot_connection_str: str,
     device_ids: List[str],
@@ -159,6 +126,6 @@ def get_active_devices_from_iothub(
                 active_ids.append(device_id)
         except Exception:
             continue
-
+    
     return active_ids
 
