@@ -3,7 +3,7 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import List, Optional, Set
+from typing import List, Optional
 
 import bcrypt
 from azure.iot.hub import IoTHubRegistryManager
@@ -58,28 +58,20 @@ ACTIVE_DEVICE_ONLINE_MESSAGE = os.getenv("ACTIVE_DEVICE_ONLINE_MESSAGE", "Device
 ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
 ACTIVE_DEVICE_RETRY_SECONDS = int(os.getenv("ACTIVE_DEVICE_RETRY_SECONDS", "5"))
 
-active_device_serials: Set[str] = set()
-active_device_last_seen: dict[str, datetime] = {}
-active_device_lock = threading.Lock()
-
-
 def _record_device_activity(device_id: str, body: str):
     if ACTIVE_DEVICE_ONLINE_MESSAGE.lower() not in body.lower():
         return
 
-    now = datetime.now(timezone.utc)
-    with active_device_lock:
-        active_device_serials.add(device_id)
-        active_device_last_seen[device_id] = now
+    db = SessionLocal()
+    try:
+        device = db.query(Device).filter(Device.serial_number == device_id).first()
+        if not device:
+            return
 
-        stale_ids = [
-            serial
-            for serial, last_seen in active_device_last_seen.items()
-            if (now - last_seen).total_seconds() > ONLINE_DEVICE_TTL_SECONDS
-        ]
-        for serial in stale_ids:
-            active_device_last_seen.pop(serial, None)
-            active_device_serials.discard(serial)
+        device.last_online = datetime.now(timezone.utc)
+        db.commit()
+    finally:
+        db.close()
 
 
 def telemetry_activity_worker():
@@ -649,21 +641,7 @@ def get_devices(db: Session = Depends(get_db)):
 
 @app.get("/get_online_devices")
 def get_online_devices(db: Session = Depends(get_db)):
-    with active_device_lock:
-        now = datetime.now(timezone.utc)
-        stale_ids = [
-            serial
-            for serial, last_seen in active_device_last_seen.items()
-            if (now - last_seen).total_seconds() > ONLINE_DEVICE_TTL_SECONDS
-        ]
-        for serial in stale_ids:
-            active_device_last_seen.pop(serial, None)
-            active_device_serials.discard(serial)
-
-        active_serials = list(active_device_serials)
-
-    if not active_serials:
-        return []
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
 
     manager_lookup = {
         manager.id: manager.username for manager in db.query(DeveloperManager).all()
@@ -679,7 +657,11 @@ def get_online_devices(db: Session = Depends(get_db)):
             return manager_lookup.get(int(raw_value), raw_value)
         return raw_value
 
-    devices = db.query(Device).filter(Device.serial_number.in_(active_serials)).all()
+    devices = (
+        db.query(Device)
+        .filter(Device.last_online.is_not(None), Device.last_online >= cutoff)
+        .all()
+    )
 
     return [
         {
