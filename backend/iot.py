@@ -1,3 +1,4 @@
+import os
 import threading
 import time
 from typing import List, Set
@@ -5,8 +6,10 @@ from typing import List, Set
 import msrest
 from azure.eventhub import EventHubConsumerClient
 from azure.iot.hub import IoTHubRegistryManager
-from azure.iot.device.aio import IoTHubDeviceClient
+from dotenv import load_dotenv
 from pydantic import BaseModel
+
+load_dotenv()
 
 
 class FirmwareOverview(BaseModel):
@@ -18,22 +21,27 @@ class FirmwareOverview(BaseModel):
     description: str
 
 
-def deploy_helper(device_id: str, iot_hub: IoTHubRegistryManager, firmware: FirmwareOverview) -> bool:
+def deploy_helper(
+    device_id: str, iot_hub: IoTHubRegistryManager, firmware: FirmwareOverview
+) -> bool:
     """
     @brief Sends a Deployment Message from Cloud to Edge Device
     """
     success = False
     try:
-        iot_hub.send_c2d_message(device_id, "New Firmware Update Deployed", properties=
-                                          {
-                                              "isDeployment": "1",
-                                              "firmwareID": firmware.id,
-                                              "isEmergency": firmware.isEmergency,
-                                              "deviceType": firmware.device_type,
-                                              "versionNumber": firmware.version_number,
-                                              "developer": firmware.developer,
-                                              "description": firmware.description
-                                          })
+        iot_hub.send_c2d_message(
+            device_id,
+            "New Firmware Update Deployed",
+            properties={
+                "isDeployment": "1",
+                "firmwareID": firmware.id,
+                "isEmergency": firmware.isEmergency,
+                "deviceType": firmware.device_type,
+                "versionNumber": firmware.version_number,
+                "developer": firmware.developer,
+                "description": firmware.description,
+            },
+        )
         success = True
     except msrest.exceptions.HttpOperationError as ex:
         print("HttpOperationError error {0}".format(ex.response.text))
@@ -46,6 +54,7 @@ def deploy_helper(device_id: str, iot_hub: IoTHubRegistryManager, firmware: Firm
         success = False
     finally:
         return success
+
 
 def listen_for_device(
     event_connection_str: str,
@@ -61,7 +70,7 @@ def listen_for_device(
     received_event = threading.Event()
 
     def on_event(partition_context, event):
-        device = event.system_properties.get(b'iot-connection-device-id', b'').decode()
+        device = event.system_properties.get(b"iot-connection-device-id", b"").decode()
         if device == device_id:
             body = event.body_as_str()
             on_received(body)
@@ -94,7 +103,7 @@ def listen_for_device_activity(
     """
 
     def on_event(partition_context, event):
-        device = event.system_properties.get(b'iot-connection-device-id', b'').decode()
+        device = event.system_properties.get(b"iot-connection-device-id", b"").decode()
         if device:
             body = event.body_as_str()
             on_activity(device, body)
@@ -106,6 +115,34 @@ def listen_for_device_activity(
     )
     with client:
         client.receive(on_event=on_event)
+
+
+def capture_active_devices(
+    event_connection_str: str,
+    capture_window_seconds: int = 30,
+) -> List[str]:
+    """
+    @brief Listens for telemetry during capture_window_seconds and returns all active device IDs.
+    """
+    active_device_ids: Set[str] = set()
+    stop_event = threading.Event()
+
+    def run_client():
+        client = EventHubConsumerClient.from_connection_string(
+            event_connection_str,
+            consumer_group="$Default",
+        )
+        with client:
+            while not stop_event.is_set():
+                client.receive(on_event=on_event, max_wait_time=1)
+
+    listener = threading.Thread(target=run_client, daemon=True)
+    listener.start()
+    time.sleep(capture_window_seconds)
+    stop_event.set()
+    listener.join(timeout=2)
+
+    return sorted(active_device_ids)
 
 
 def get_active_devices_from_iothub(
@@ -121,11 +158,44 @@ def get_active_devices_from_iothub(
     for device_id in device_ids:
         try:
             device = iot_hub.get_device(device_id)
-            connection_state = getattr(device, "connection_state", None) or getattr(device, "connectionState", None)
+            connection_state = getattr(device, "connection_state", None) or getattr(
+                device, "connectionState", None
+            )
             if str(connection_state).lower() == "connected":
                 active_ids.append(device_id)
         except Exception:
             continue
-    
+
     return active_ids
 
+
+def telemetry_listener():
+    client = EventHubConsumerClient.from_connection_string(
+        conn_str=os.getenv("EVENTHUB_CONNECTION"), consumer_group="$Default"
+    )
+
+    with client:
+        client.receive_batch(on_event_batch=on_event_batch, on_error=on_error)
+
+
+def on_event_batch(partition_context, events):
+    for event in events:
+        device_id = event.system_properties.get(
+            b"iot-connection-device-id", b""
+        ).decode()
+        body = event.body_as_str()
+        print(device_id, body)
+    partition_context.update_checkpoint()
+
+
+def on_error(partition_context, error):
+    if partition_context:
+        print(
+            "An exception: {} occurred during receiving from Partition: {}.".format(
+                error, partition_context.partition_id
+            )
+        )
+    else:
+        print(
+            "An exception: {} occurred during the load balance process.".format(error)
+        )
