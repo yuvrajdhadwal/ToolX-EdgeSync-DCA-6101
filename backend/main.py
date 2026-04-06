@@ -78,7 +78,7 @@ class FirmwareCreate(BaseModel):
 class DeviceCreate(BaseModel):
     serial_number: str
     device_type: str
-    version_number: str
+    version_number: Optional[str] = None
     description: str
     location: str
     developer_manager: str
@@ -429,27 +429,10 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
     ).first()
     if existing_device:
         raise HTTPException(status_code=400, detail="Device with this serial number already exists")
-    
-    firmware = db.query(FirmwareUpdate).filter(
-        FirmwareUpdate.version_number == device.version_number,
-        FirmwareUpdate.device_type == device.device_type
-    ).first()
-
-    if not firmware:
-        firmware = FirmwareUpdate(
-            version_number=device.version_number,
-            device_type=device.device_type,
-            description=device.description,
-            objectBinary=b'',
-            isEmergency=False,
-        )
-        db.add(firmware)
-        db.commit()
-        db.refresh(firmware)
 
     db_device = Device(
         serial_number=device.serial_number,
-        firmware_id=firmware.id,
+        firmware_id=None,
         device_type=device.device_type,
         location=device.location,
         developer_manager=device.developer_manager,

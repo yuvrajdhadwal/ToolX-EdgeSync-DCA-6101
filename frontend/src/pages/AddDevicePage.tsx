@@ -8,7 +8,6 @@ import Profile from '../components/Profile'
 interface ItemInfo {
     device_type: string;
     serial_number: string;
-    version_number: string;
     description: string;
     location: string;
     developer_manager: string;
@@ -44,7 +43,6 @@ const AddDevicePage: React.FC = () => {
     device_type: '',
     serial_number: '',
     developer_manager: '',
-    version_number: '',
     location: '',
     description: '',
     latitude: '',
@@ -68,7 +66,6 @@ const AddDevicePage: React.FC = () => {
     if (
       !formData.device_type.trim() ||
       !formData.serial_number.trim() ||
-      !formData.version_number.trim() ||
       !formData.location.trim() ||
       !formData.developer_manager.trim() ||
       !formData.description.trim()
@@ -100,7 +97,6 @@ const AddDevicePage: React.FC = () => {
             body: JSON.stringify({
                 device_type: formData.device_type,
                 serial_number: formData.serial_number,
-                version_number: formData.version_number,
                 description: formData.description,
                 developer_manager: formData.developer_manager,
                 location: formData.location,
@@ -202,17 +198,7 @@ const AddDevicePage: React.FC = () => {
                     value={formData.serial_number}
                     onChange={handleInputChange}
                 />
-
-                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
-                    Firmware Version:
-                </label>
-                <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
-                    type='text'
-                    name='version_number'
-                    value={formData.version_number}
-                    onChange={handleInputChange}
-                />
-
+                
                 <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
                     Location:
                 </label>
