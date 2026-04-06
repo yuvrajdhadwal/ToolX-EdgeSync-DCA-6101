@@ -181,10 +181,10 @@ def telemetry_listener():
 def on_event_batch(partition_context, events):
     for event in events:
         device_id = event.system_properties.get(
-            b"iot-connection-device-id", b""
+            b"iothub-connection-device-id", b""
         ).decode()
         body = event.body_as_str()
-        print(device_id, body)
+        print(str(device_id), body)  // TODO: TEMPORARY
     partition_context.update_checkpoint()
 
 
