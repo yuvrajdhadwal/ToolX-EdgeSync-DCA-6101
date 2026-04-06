@@ -115,6 +115,7 @@ class DeployFirmwareRequest(BaseModel):
 class DeployManyRequest(BaseModel):
     serial_numbers: List[str]
     firmware_id: int
+    isEmergency: bool = False
 
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
@@ -280,7 +281,7 @@ def cloud_to_many_device(
         device_type=firmware.device_type,
         developer=str(firmware.uploaded_by or ''),
         version_number=firmware.version_number,
-        isEmergency="1" if firmware.isEmergency else "0",
+        isEmergency=payload.isEmergency,
         description=firmware.description or '',
     )
 
