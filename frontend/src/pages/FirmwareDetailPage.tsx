@@ -388,6 +388,7 @@ const FirmwareDetailPage: React.FC = () => {
                 type="button"
                 onClick={async () => {
                   setShowDeployPopup(true);
+                  setDeployIsEmergency(false);
                   setDeployError('');
                   setDeploySuccess('');
                   try {
@@ -769,6 +770,7 @@ const FirmwareDetailPage: React.FC = () => {
                       onClick={() => {
                         setShowDeployPopup(false);
                         setSelectedSerials([]);
+                        setDeployIsEmergency(false);
                         setDeployError('');
                         setDeploySuccess('');
                       }}
