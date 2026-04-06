@@ -467,31 +467,36 @@ def get_compatible_devices(
     user = get_authenticated_user(authorization, db)
 
     if user.type != UserRole.business_manager.value:
-        raise HTTPException(
-            status_code=403, detail="Only business managers can view compatible devices"
-        )
+        raise HTTPException(status_code=403, detail="Only business managers can view compatible devices")
 
     firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")
 
-    # Only return devices of matching type that don't already have this exact firmware version
     devices = db.query(Device).filter(Device.device_type == firmware.device_type).all()
     compatible = [
-        d
-        for d in devices
+        d for d in devices
         if not d.firmware or d.firmware.version_number != firmware.version_number
     ]
 
-    return [
-        {
-            "serial_number": d.serial_number,
-            "device_type": d.device_type,
-            "location": d.location,
-            "current_version": d.firmware.version_number if d.firmware else None,
-        }
-        for d in compatible
+    all_regions = [
+        "Africa", "Antarctica", "Asia", "Europe",
+        "North America", "Oceania", "South America", "Unknown"
     ]
+
+    return {
+        "devices": [
+            {
+                "serial_number": d.serial_number,
+                "device_type": d.device_type,
+                "location": d.location,
+                "current_version": d.firmware.version_number if d.firmware else None,
+                "region": get_region_from_coordinates(d.latitude, d.longitude),
+            }
+            for d in compatible
+        ],
+        "all_regions": all_regions,
+    }
 
 
 @app.post("/upload")
