@@ -121,7 +121,7 @@ def telemetry_activity_worker():
             telemetry_listener(on_activity=_record_device_activity)
         except Exception as ex:
             print(f"Active-device telemetry listener error: {ex}")
-            time.sleep(ACTIVE_DEVICE_RETRY_SECONDS)
+            
 
 @app.on_event("startup")
 def start_active_device_worker():
@@ -297,7 +297,6 @@ def deploy_firmware(
     # Send IoT C2D notification to device
     iot_notification_status = "Not Configured"
     connection_str = os.getenv("IOT_CONNECTION")
-    eventhub_connection_str = os.getenv("EVENTHUB_CONNECTION")
 
     if connection_str:
         try:
@@ -386,7 +385,6 @@ def cloud_to_many_device(
         raise HTTPException(status_code=404, detail="Business manager not found")
 
     connection_str = os.getenv("IOT_CONNECTION")
-    eventhub_connection_str = os.getenv("EVENTHUB_CONNECTION")
     iot_hub = (
         IoTHubRegistryManager.from_connection_string(connection_str)
         if connection_str
