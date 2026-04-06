@@ -15,8 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from iot import (FirmwareOverview, deploy_helper, listen_for_device_activity,
-                 telemetry_listener)
+from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
@@ -288,33 +287,6 @@ def deploy_firmware(
             print(f"IoT notification error: {e}")
             iot_notification_status = "failed"
 
-    # Listen for telemetry response in background
-    if eventhub_connection_str and iot_notification_status == "sent":
-
-        def on_telemetry_received(data: str):
-            # Create a new session that ONLY exists for this update (Prevent existing db session from being passed in event handler)
-            new_session = SessionLocal()
-            try:
-                device = (
-                    new_session.query(Device)
-                    .filter(Device.serial_number == payload.serial_number)
-                    .first()
-                )
-                if device:
-                    device.last_online = datetime.now(timezone.utc)
-                    new_session.commit()
-            finally:
-                new_session.close()  # Close connection to prevent database lock
-
-        threading.Thread(
-            target=listen_for_device_activity,
-            args=(
-                eventhub_connection_str,
-                payload.serial_number,
-                on_telemetry_received,
-            ),
-            daemon=True,
-        ).start()
 
     # Deactivate existing active deploy for this device
     existing_deploy = (
@@ -347,11 +319,6 @@ def deploy_firmware(
     return {
         "message": f"Firmware successfully deployed to device {payload.serial_number}",
         "iot_notification": iot_notification_status,
-        "telemetry_listener": (
-            "active"
-            if eventhub_connection_str and iot_notification_status == "sent"
-            else "not configured"
-        ),
     }
 
 
@@ -420,16 +387,6 @@ def cloud_to_many_device(
                 print(f"IoT error for {serial}: {e}")
                 iot_status = "failed"
 
-        if eventhub_connection_str and iot_status == "sent":
-
-            def on_telemetry_received(data: str, s=serial):
-                print(f"Telemetry received from {s}: {data}")
-
-            threading.Thread(
-                target=listen_for_device_activity,
-                args=(eventhub_connection_str, serial, on_telemetry_received),
-                daemon=True,
-            ).start()
 
         existing_deploy = (
             db.query(Deploy)
