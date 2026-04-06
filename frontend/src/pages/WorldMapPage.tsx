@@ -83,7 +83,8 @@ const WorldMapPage: React.FC = () => {
         if (!res.ok) {
           throw new Error('Failed to load active devices')
         }
-        const data = (await res.json()) as Device[]
+        const payload = await res.json()
+        const data = Array.isArray(payload) ? (payload as Device[]) : []
         if (mounted) {
           setDevices(data)
         }

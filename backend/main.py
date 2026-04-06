@@ -1,8 +1,9 @@
 import os
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import bcrypt
 from azure.iot.hub import IoTHubRegistryManager
@@ -53,10 +54,48 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 IOTHUB_CONNECTION_STRING = os.getenv("IOT_CONNECTION")
 EVENTHUB_CONNECTION_STRING = os.getenv("EVENTHUB_CONNECTION")
+ACTIVE_DEVICE_ONLINE_MESSAGE = os.getenv("ACTIVE_DEVICE_ONLINE_MESSAGE", "Device is Online")
+ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
+ACTIVE_DEVICE_RETRY_SECONDS = int(os.getenv("ACTIVE_DEVICE_RETRY_SECONDS", "5"))
+
+active_device_serials: Set[str] = set()
+active_device_last_seen: dict[str, datetime] = {}
+active_device_lock = threading.Lock()
+
+
+def _record_device_activity(device_id: str, body: str):
+    if ACTIVE_DEVICE_ONLINE_MESSAGE.lower() not in body.lower():
+        return
+
+    now = datetime.now(timezone.utc)
+    with active_device_lock:
+        active_device_serials.add(device_id)
+        active_device_last_seen[device_id] = now
+
+        stale_ids = [
+            serial
+            for serial, last_seen in active_device_last_seen.items()
+            if (now - last_seen).total_seconds() > ONLINE_DEVICE_TTL_SECONDS
+        ]
+        for serial in stale_ids:
+            active_device_last_seen.pop(serial, None)
+            active_device_serials.discard(serial)
+
+
+def telemetry_activity_worker():
+    if not EVENTHUB_CONNECTION_STRING:
+        return
+
+    while True:
+        try:
+            telemetry_listener(on_activity=_record_device_activity)
+        except Exception as ex:
+            print(f"Active-device telemetry listener error: {ex}")
+            time.sleep(ACTIVE_DEVICE_RETRY_SECONDS)
 
 @app.on_event("startup")
 def start_active_device_worker():
-    threading.Thread(target=telemetry_listener, daemon=True).start()
+    threading.Thread(target=telemetry_activity_worker, daemon=True).start()
 
 class UserRole(str, Enum):
     developer = "developer"
@@ -610,33 +649,54 @@ def get_devices(db: Session = Depends(get_db)):
 
 @app.get("/get_online_devices")
 def get_online_devices(db: Session = Depends(get_db)):
-    return
+    with active_device_lock:
+        now = datetime.now(timezone.utc)
+        stale_ids = [
+            serial
+            for serial, last_seen in active_device_last_seen.items()
+            if (now - last_seen).total_seconds() > ONLINE_DEVICE_TTL_SECONDS
+        ]
+        for serial in stale_ids:
+            active_device_last_seen.pop(serial, None)
+            active_device_serials.discard(serial)
 
-    # with active_device_lock:
-    #     serials = list(active_device_serials)
-    #
-    # if not serials:
-    #     return []
-    #
-    # devices = db.query(Device).filter(Device.serial_number.in_(serials)).all()
-    #
-    # return [
-    #     {
-    #         "device_type": d.device_type,
-    #         "version_number": d.firmware.version_number if d.firmware else "N/A",
-    #         "last_update": (
-    #             d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
-    #         ),
-    #         "location": d.location,
-    #         "serial_number": d.serial_number,
-    #         "description": d.description,
-    #         "developer_manager": d.developer_manager,
-    #         "latitude": d.latitude,
-    #         "longitude": d.longitude,
-    #     }
-    #     for d in devices
-    # ]
-    #
+        active_serials = list(active_device_serials)
+
+    if not active_serials:
+        return []
+
+    manager_lookup = {
+        manager.id: manager.username for manager in db.query(DeveloperManager).all()
+    }
+
+    def resolve_manager_name(value: Optional[str]) -> str:
+        if value is None:
+            return ""
+        raw_value = str(value).strip()
+        if not raw_value:
+            return ""
+        if raw_value.isdigit():
+            return manager_lookup.get(int(raw_value), raw_value)
+        return raw_value
+
+    devices = db.query(Device).filter(Device.serial_number.in_(active_serials)).all()
+
+    return [
+        {
+            "device_type": d.device_type,
+            "version_number": d.firmware.version_number if d.firmware else "N/A",
+            "last_update": (
+                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
+            ),
+            "location": d.location,
+            "serial_number": d.serial_number,
+            "description": d.description,
+            "developer_manager": resolve_manager_name(d.developer_manager),
+            "latitude": d.latitude,
+            "longitude": d.longitude,
+        }
+        for d in devices
+    ]
 
 @app.get("/device/{serial_number}/deploy-history")
 def get_deploy_history(

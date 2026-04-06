@@ -1,7 +1,7 @@
 import os
 import threading
 import time
-from typing import List, Set
+from typing import Callable, List, Optional, Set
 
 import msrest
 from azure.eventhub import EventHubConsumerClient
@@ -117,78 +117,64 @@ def listen_for_device_activity(
         client.receive(on_event=on_event)
 
 
-def capture_active_devices(
-    event_connection_str: str,
-    capture_window_seconds: int = 30,
-) -> List[str]:
+def telemetry_listener(
+    on_activity: Optional[Callable[[str, str], None]] = None,
+    on_error_callback: Optional[Callable] = None,
+):
     """
-    @brief Listens for telemetry during capture_window_seconds and returns all active device IDs.
+    @brief Listens to Event Hub for telemetry and invokes callbacks.
+    If on_activity is provided, calls on_activity(device_id, body) for each event.
     """
-    active_device_ids: Set[str] = set()
-    stop_event = threading.Event()
-
-    def run_client():
-        client = EventHubConsumerClient.from_connection_string(
-            event_connection_str,
-            consumer_group="$Default",
-        )
-        with client:
-            while not stop_event.is_set():
-                client.receive(on_event=on_event, max_wait_time=1)
-
-    listener = threading.Thread(target=run_client, daemon=True)
-    listener.start()
-    time.sleep(capture_window_seconds)
-    stop_event.set()
-    listener.join(timeout=2)
-
-    return sorted(active_device_ids)
-
-
-def get_active_devices_from_iothub(
-    iot_connection_str: str,
-    device_ids: List[str],
-) -> List[str]:
-    """
-    @brief Returns devices currently connected according to IoT Hub registry state.
-    """
-    iot_hub = IoTHubRegistryManager.from_connection_string(iot_connection_str)
-    active_ids: List[str] = []
-
-    for device_id in device_ids:
-        try:
-            device = iot_hub.get_device(device_id)
-            connection_state = getattr(device, "connection_state", None) or getattr(
-                device, "connectionState", None
-            )
-            if str(connection_state).lower() == "connected":
-                active_ids.append(device_id)
-        except Exception:
-            continue
-
-    return active_ids
-
-
-def telemetry_listener():
     client = EventHubConsumerClient.from_connection_string(
         conn_str=os.getenv("EVENTHUB_CONNECTION"), consumer_group="$Default"
     )
 
     with client:
-        client.receive_batch(on_event_batch=on_event_batch, on_error=on_error)
+        client.receive_batch(
+            on_event_batch=lambda partition_context, events: on_event_batch(
+                partition_context, events, on_activity
+            ),
+            on_error=lambda partition_context, error: on_error(
+                partition_context, error, on_error_callback
+            ),
+        )
 
 
-def on_event_batch(partition_context, events):
+def on_event_batch(
+    partition_context,
+    events,
+    on_activity: Optional[Callable[[str, str], None]] = None,
+):
+    """
+    @brief Processes a batch of events from Event Hub.
+    Extracts device_id and body, then calls on_activity callback if provided.
+    """
     for event in events:
         device_id = event.system_properties.get(
             b"iothub-connection-device-id", b""
         ).decode()
         body = event.body_as_str()
-        print(str(device_id), body)  // TODO: TEMPORARY
+        
+        if not device_id:
+            continue
+
+        if on_activity:
+            on_activity(device_id, body)
+        else:
+            # Fallback logging if no callback provided
+            print(f"[{device_id}] {body}")
+    print("Number of events received in this batch: {}".format(len(events)))
+    print("Device ids captured in this batch: {}".format(
+        [event.system_properties.get(b"iothub-connection-device-id", b"").decode() for event in events]
+    ))
+    
     partition_context.update_checkpoint()
 
 
-def on_error(partition_context, error):
+def on_error(partition_context, error, on_error_callback: Optional[Callable] = None):
+    """
+    @brief Handles errors from Event Hub listener.
+    """
     if partition_context:
         print(
             "An exception: {} occurred during receiving from Partition: {}.".format(
@@ -199,3 +185,6 @@ def on_error(partition_context, error):
         print(
             "An exception: {} occurred during the load balance process.".format(error)
         )
+
+    if on_error_callback:
+        on_error_callback(partition_context, error)
