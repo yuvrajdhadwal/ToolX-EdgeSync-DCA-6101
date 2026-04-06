@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from iot import (FirmwareOverview, deploy_helper, listen_for_device,
+from iot import (FirmwareOverview, deploy_helper, listen_for_device_activity,
                  telemetry_listener)
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
@@ -307,7 +307,7 @@ def deploy_firmware(
                 new_session.close()  # Close connection to prevent database lock
 
         threading.Thread(
-            target=listen_for_device,
+            target=listen_for_device_activity,
             args=(
                 eventhub_connection_str,
                 payload.serial_number,
@@ -426,7 +426,7 @@ def cloud_to_many_device(
                 print(f"Telemetry received from {s}: {data}")
 
             threading.Thread(
-                target=listen_for_device,
+                target=listen_for_device_activity,
                 args=(eventhub_connection_str, serial, on_telemetry_received),
                 daemon=True,
             ).start()
