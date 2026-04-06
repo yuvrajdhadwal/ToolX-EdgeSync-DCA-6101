@@ -191,7 +191,7 @@ def deploy_firmware(
                 device_type=firmware.device_type,
                 developer=str(firmware.uploaded_by or ''),
                 version_number=firmware.version_number,
-                isEmergency= payload.isEmergency,
+                isEmergency= "1" if firmware.isEmergency else "0",
                 description=firmware.description or '',
             )
             message_sent = deploy_helper(payload.serial_number, iot_hub, firmware_overview)
@@ -281,7 +281,7 @@ def cloud_to_many_device(
         device_type=firmware.device_type,
         developer=str(firmware.uploaded_by or ''),
         version_number=firmware.version_number,
-        isEmergency=payload.isEmergency,
+        isEmergency="1" if firmware.isEmergency else "0",
         description=firmware.description or '',
     )
 
@@ -327,6 +327,7 @@ def cloud_to_many_device(
             device_firmware_id=payload.firmware_id,
             timestamp=datetime.now(timezone.utc),
             isActive=True,
+            isEmergency=payload.isEmergency,
         )
         db.add(deploy)
         results.append({
