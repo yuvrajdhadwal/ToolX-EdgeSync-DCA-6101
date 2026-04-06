@@ -57,6 +57,45 @@ ACTIVE_DEVICE_ONLINE_MESSAGE = os.getenv("ACTIVE_DEVICE_ONLINE_MESSAGE", "Device
 ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
 ACTIVE_DEVICE_RETRY_SECONDS = int(os.getenv("ACTIVE_DEVICE_RETRY_SECONDS", "5"))
 
+active_device_serials: Set[str] = set()
+active_device_last_seen: dict[str, datetime] = {}
+active_device_lock = threading.Lock()
+
+
+def get_region_from_coordinates(
+    latitude: Optional[float],
+    longitude: Optional[float],
+) -> str:
+    if latitude is None or longitude is None:
+        return "Unknown"
+
+    if latitude < -90 or latitude > 90 or longitude < -180 or longitude > 180:
+        return "Unknown"
+
+    if latitude <= -60:
+        return "Antarctica"
+
+    if -35 <= latitude <= 37 and -20 <= longitude <= 55:
+        return "Africa"
+
+    if 5 <= latitude <= 83 and -170 <= longitude <= -52:
+        return "North America"
+
+    if -56 <= latitude <= 13 and -82 <= longitude <= -34:
+        return "South America"
+
+    if 34 <= latitude <= 82 and -31 <= longitude <= 60:
+        return "Europe"
+
+    if -50 <= latitude <= 10 and 110 <= longitude <= 180:
+        return "Oceania"
+
+    if -10 <= latitude <= 81 and 26 <= longitude <= 180:
+        return "Asia"
+
+    return "Unknown"
+
+
 def _record_device_activity(device_id: str, body: str):
     if ACTIVE_DEVICE_ONLINE_MESSAGE.lower() not in body.lower():
         return
@@ -570,6 +609,7 @@ def get_devices(db: Session = Depends(get_db)):
             "developer_manager": resolve_manager_name(d.developer_manager),
             "latitude": d.latitude,
             "longitude": d.longitude,
+            "region": get_region_from_coordinates(d.latitude, d.longitude),
         }
         for d in devices
     ]
@@ -612,6 +652,7 @@ def get_online_devices(db: Session = Depends(get_db)):
             "developer_manager": resolve_manager_name(d.developer_manager),
             "latitude": d.latitude,
             "longitude": d.longitude,
+            "region": get_region_from_coordinates(d.latitude, d.longitude),
         }
         for d in devices
     ]

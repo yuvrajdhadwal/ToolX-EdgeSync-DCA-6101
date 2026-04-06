@@ -91,6 +91,7 @@ def on_event_batch(
     Extracts device_id and body, then calls on_activity callback if provided.
     """
     for event in events:
+
         if event.body_as_str() != "Device is Online":
             continue
         device_id = event.system_properties.get(
