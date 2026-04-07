@@ -133,13 +133,11 @@ class UserRole(str, Enum):
     business_manager = "business_manager"
     field_shop_professional = "field_shop_professional"
 
-
 class UserCreate(BaseModel):
     role: UserRole
     username: str
     password: str
     developer_manager_id: Optional[int] = None
-
 
 class FirmwareCreate(BaseModel):
     objectBinary: str
@@ -196,12 +194,14 @@ class DeviceCreate(BaseModel):
 # Add Pydantic model for deploy request
 class DeployFirmwareRequest(BaseModel):
     serial_number: str
+    isEmergency: bool = False
 
 
 # Re-added Pydantic model deploying many requests
 class DeployManyRequest(BaseModel):
     serial_numbers: List[str]
     firmware_id: int
+    isEmergency: bool = False
 
 
 def get_user_by_username(db: Session, username: str):
@@ -342,6 +342,7 @@ def deploy_firmware(
         device_firmware_id=firmware_id,
         timestamp=datetime.now(timezone.utc),
         isActive=True,
+        isEmergency=payload.isEmergency,
     )
     db.add(deploy)
     db.commit()
@@ -438,6 +439,7 @@ def cloud_to_many_device(
             device_firmware_id=payload.firmware_id,
             timestamp=datetime.now(timezone.utc),
             isActive=True,
+            isEmergency=payload.isEmergency,
         )
         db.add(deploy)
         results.append(

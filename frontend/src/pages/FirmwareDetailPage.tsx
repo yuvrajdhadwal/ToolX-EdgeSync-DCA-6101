@@ -187,6 +187,7 @@ const FirmwareDetailPage: React.FC = () => {
   const [isDeploying, setIsDeploying] = useState(false);
   const [resolvedUsernames, setResolvedUsernames] = useState<Record<number, string>>({});
   const [error, setError] = useState('');
+  const [deployIsEmergency, setDeployIsEmergency] = useState(false);
 
   const canModerateFirmware = userRole === 'developer_manager' && firmware?.status === 'pending';
   const canDeployFirmware = userRole === 'business_manager' && firmware?.status === 'current';
@@ -357,6 +358,7 @@ const FirmwareDetailPage: React.FC = () => {
         body: JSON.stringify({
           serial_numbers: selectedSerials,
           firmware_id: firmware.id,
+          isEmergency: deployIsEmergency,
         }),
       });
       if (!response.ok) {
@@ -399,6 +401,7 @@ const FirmwareDetailPage: React.FC = () => {
                 type="button"
                 onClick={async () => {
                   setShowDeployPopup(true);
+                  setDeployIsEmergency(false);
                   setDeployError('');
                   setDeploySuccess('');
                   try {
@@ -733,27 +736,35 @@ const FirmwareDetailPage: React.FC = () => {
                       <p style={{ color: COLORS.textMuted }}>No compatible devices found.</p>
                     ) : (
                       <>
-                        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (selectedSerials.length === filteredDevices.length && filteredDevices.length > 0) {
-                                setSelectedSerials([]);
-                              } else {
-                                setSelectedSerials(filteredDevices.map(d => d.serial_number));
-                              }
-                            }}
-                            style={{
-                              padding: '0.3rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
-                              borderRadius: '4px', border: `1px solid ${COLORS.accentPrimary}`,
-                              backgroundColor: 'transparent', color: COLORS.accentPrimary, marginTop: '20px'
-                            }}
-                          >
-                            {selectedSerials.length === filteredDevices.length && filteredDevices.length > 0
-                              ? 'Deselect All Devices'
-                              : 'Select All Devices'}
-                          </button>
-                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: COLORS.textPrimary }}>
+                              <input
+                                type="checkbox"
+                                checked={deployIsEmergency}
+                                onChange={(e) => setDeployIsEmergency(e.target.checked)}
+                              />
+                              <span style={{ marginRight: '0.75rem' }}>Emergency Deployment</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedSerials.length === filteredDevices.length && filteredDevices.length > 0) {
+                                  setSelectedSerials([]);
+                                } else {
+                                  setSelectedSerials(filteredDevices.map(d => d.serial_number));
+                                }
+                              }}
+                              style={{
+                                padding: '0.3rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
+                                borderRadius: '4px', border: `1px solid ${COLORS.accentPrimary}`,
+                                backgroundColor: 'transparent', color: COLORS.accentPrimary,
+                              }}
+                            >
+                              {selectedSerials.length === filteredDevices.length && filteredDevices.length > 0
+                                ? 'Deselect All Devices'
+                                : 'Select All Devices'}
+                            </button>
+                          </div>
                         <div style={{
                           maxHeight: '200px', overflowY: 'auto',
                           border: `1px solid ${COLORS.borderPrimary}`,
@@ -808,6 +819,7 @@ const FirmwareDetailPage: React.FC = () => {
                     <button
                       type="button"
                       disabled={isDeploying || selectedSerials.length === 0}
+                      
                       onClick={() => {
                         if (isRevert()) {
                           setShowRevertConfirm(true);
@@ -831,6 +843,7 @@ const FirmwareDetailPage: React.FC = () => {
                         setShowDeployPopup(false);
                         setSelectedSerials([]);
                         setSelectedRegions([]);
+                        setDeployIsEmergency(false);
                         setDeployError('');
                         setDeploySuccess('');
                       }}

@@ -144,6 +144,7 @@ class Deploy(Base):
     device_firmware_id = Column(Integer, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
     isActive = Column(Boolean, default=False)
+    isEmergency = Column(Boolean, default=False)
 
 
     # __table_args__ = (
