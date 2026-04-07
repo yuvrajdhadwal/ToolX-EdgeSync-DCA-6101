@@ -81,7 +81,7 @@ def get_region_from_coordinates(
     if 5 <= latitude <= 83 and -170 <= longitude <= -52:
         return "North America"
 
-    if -56 <= latitude <= 13 and -82 <= longitude <= -34:
+    if -55 <= latitude <= 7 and -85 <= longitude <= -35:
         return "South America"
 
     if 34 <= latitude <= 82 and -31 <= longitude <= 60:
@@ -361,9 +361,6 @@ def cloud_to_many_device(
     authorization: Optional[str] = Header(default=None),
 ):
     user = get_authenticated_user(authorization, db)
-    print(
-        f"[deploy-many] request: firmware_id={payload.firmware_id}, serial_count={len(payload.serial_numbers)}, isEmergency={payload.isEmergency}, user={user.username}"
-    )
 
     if user.type != UserRole.business_manager.value:
         raise HTTPException(
@@ -390,13 +387,11 @@ def cloud_to_many_device(
         raise HTTPException(status_code=404, detail="Business manager not found")
 
     connection_str = os.getenv("IOT_CONNECTION")
-    print(f"[deploy-many] iot_connection_configured={bool(connection_str)}")
     iot_hub = (
         IoTHubRegistryManager.from_connection_string(connection_str)
         if connection_str
         else None
     )
-    print("Iot hub is initialized" if iot_hub else "Iot hub is not configured, skipping notifications")
 
     firmware_overview = FirmwareOverview(
         id=str(firmware.id),
@@ -409,10 +404,8 @@ def cloud_to_many_device(
 
     results = []
     for serial in payload.serial_numbers:
-        print(f"[deploy-many] processing serial={serial}")
         device = db.query(Device).filter(Device.serial_number == serial).first()
         if not device:
-            print(f"[deploy-many] serial={serial} not found")
             results.append({"serial_number": serial, "status": "not found"})
             continue
 
@@ -421,12 +414,9 @@ def cloud_to_many_device(
             try:
                 sent = deploy_helper(serial, iot_hub, firmware_overview)
                 iot_status = "sent" if sent else "failed"
-                print(f"[deploy-many] serial={serial} iot_send_status={iot_status}")
             except Exception as e:
                 print(f"IoT error for {serial}: {e}")
                 iot_status = "failed"
-        else:
-            print(f"[deploy-many] serial={serial} iot_send_status=not configured")
 
 
         existing_deploy = (
@@ -438,12 +428,10 @@ def cloud_to_many_device(
             .first()
         )
         if existing_deploy:
-            print(f"[deploy-many] serial={serial} deactivating existing deploy id={existing_deploy.id}")
             existing_deploy.isActive = False
 
         device.firmware_id = payload.firmware_id
         device.last_update = datetime.now(timezone.utc)
-        print(f"[deploy-many] serial={serial} db_device_update firmware_id={payload.firmware_id}")
 
         deploy = Deploy(
             manager_id=business_manager.id,
@@ -464,13 +452,8 @@ def cloud_to_many_device(
         )
 
     db.commit()
-    deployed_count = len([r for r in results if r["status"] == "deployed"])
-    failed_iot = [r["serial_number"] for r in results if r.get("iot_notification") == "failed"]
-    print(
-        f"[deploy-many] commit complete deployed={deployed_count}/{len(payload.serial_numbers)} failed_iot={failed_iot}"
-    )
     return {
-        "message": f"Deployed to {deployed_count} device(s)",
+        "message": f"Deployed to {len([r for r in results if r['status'] == 'deployed'])} device(s)",
         "results": results,
     }
 
