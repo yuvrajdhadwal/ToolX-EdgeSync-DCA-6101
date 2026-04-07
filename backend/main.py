@@ -127,7 +127,6 @@ def telemetry_activity_worker():
 def start_active_device_worker():
     threading.Thread(target=telemetry_activity_worker, daemon=True).start()
 
-
 class UserRole(str, Enum):
     developer = "developer"
     developer_manager = "developer_manager"

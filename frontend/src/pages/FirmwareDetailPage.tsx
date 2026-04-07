@@ -748,6 +748,9 @@ const FirmwareDetailPage: React.FC = () => {
                                 />
                                 <span style={{ marginRight: '0.75rem' }}>Emergency deployment</span>
                               </label>
+<<<<<<< HEAD
+>>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
+=======
 >>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
                           <button
                             type="button"
@@ -874,7 +877,11 @@ const FirmwareDetailPage: React.FC = () => {
                         setShowDeployPopup(false);
                         setSelectedSerials([]);
 <<<<<<< HEAD
+<<<<<<< HEAD
                         setSelectedRegions([]);
+=======
+                        setDeployIsEmergency(false);
+>>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
 =======
                         setDeployIsEmergency(false);
 >>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0

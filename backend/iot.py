@@ -30,6 +30,7 @@ def deploy_helper(
     success = False
     is_emergency = firmware.isEmergency == "1"
     try:
+<<<<<<< HEAD
         iot_hub.send_c2d_message(
             device_id,
             "New Firmware Update Deployed",
@@ -43,6 +44,8 @@ def deploy_helper(
                 "description": firmware.description,
             },
         )
+=======
+>>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
         message_body = (
             "EMERGENCY Firmware Deployment - Immediate attention required"
             if is_emergency
