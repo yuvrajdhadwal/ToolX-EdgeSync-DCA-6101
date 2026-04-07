@@ -556,6 +556,8 @@ async def upload_firmware(
     )
     if not manager_user:
         raise HTTPException(status_code=404, detail="Developer manager not found")
+    if not file.filename or not file.filename.lower().endswith(".bin"):
+        raise HTTPException(status_code=400, detail="Only .bin files can be uploaded")
 
     file_content = await file.read()
     firmware = FirmwareUpdate(

@@ -90,6 +90,10 @@ const UploadPage: React.FC = () => {
       console.error('Firmware file is required');
       return;
     }
+    if (!formData.file.name.toLowerCase().endsWith('.bin')) {
+      setError('Only .bin files are allowed');
+      return;
+    }
     setLoading(true);
     const data = new FormData();
     if (formData.file) {
@@ -169,7 +173,6 @@ const UploadPage: React.FC = () => {
           <h2 style={{ textAlign: 'left', marginBottom: '2.5rem', fontSize: '1.5rem', color: COLORS.textPrimary, paddingLeft: '5rem' }}>
             Create New Update
           </h2>
-            {error && <p style={{ color: COLORS.error, marginTop: 0, paddingLeft: '5rem' }}>{error}</p>}
             <form style={{display: 'grid', gridTemplateColumns: 'max-content 1fr max-content 1fr', gap: '.5rem', alignItems: 'center'}}
                 onSubmit={handleSubmit}>
                 <label style={{
@@ -193,6 +196,7 @@ const UploadPage: React.FC = () => {
                     }}
                     type='file'
                     name='file'
+                    accept='.bin'
                     onChange={handleInputChange}>
                 </input>
 
@@ -281,6 +285,7 @@ const UploadPage: React.FC = () => {
                     value={formData.description}
                     onChange={handleInputChange}>
                 </textarea>
+                <div style={{ gridColumn: '4', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
                 <button style={{
                     backgroundColor: COLORS.success,
                     placeSelf: 'center',
@@ -293,6 +298,9 @@ const UploadPage: React.FC = () => {
                     >
                     {loading? 'Uploading...':'Submit Update'}
                 </button>
+                {error && <p style={{ color: COLORS.error, placeSelf: "center" }}>{error}</p>}
+
+                </div>
 
 
                 
