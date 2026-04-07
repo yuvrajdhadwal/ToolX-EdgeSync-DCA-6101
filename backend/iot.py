@@ -20,12 +20,19 @@ def deploy_helper(device_id: str, iot_hub: IoTHubRegistryManager, firmware: Firm
     @brief Sends a Deployment Message from Cloud to Edge Device
     """
     success = False
+    is_emergency = firmware.isEmergency == "1"
     try:
-        iot_hub.send_c2d_message(device_id, "New Firmware Update Deployed", properties=
+        message_body = (
+            "EMERGENCY Firmware Deployment - Immediate attention required"
+            if is_emergency
+            else "New Firmware Update Deployed"
+        )
+        iot_hub.send_c2d_message(device_id, message_body, properties=
                                           {
                                               "isDeployment": "1",
                                               "firmwareID": firmware.id,
-                                              "isEmergency": firmware.isEmergency,
+                                              "isEmergency": "1" if is_emergency else "0",
+                                              "notificationType": "emergencyDeploy" if is_emergency else "standardDeploy",
                                               "deviceType": firmware.device_type,
                                               "versionNumber": firmware.version_number,
                                               "developer": firmware.developer,
