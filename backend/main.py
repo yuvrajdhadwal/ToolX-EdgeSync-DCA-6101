@@ -81,7 +81,7 @@ def get_region_from_coordinates(
     if 5 <= latitude <= 83 and -170 <= longitude <= -52:
         return "North America"
 
-    if -56 <= latitude <= 13 and -82 <= longitude <= -34:
+    if -55 <= latitude <= 7 and -85 <= longitude <= -35:
         return "South America"
 
     if 34 <= latitude <= 82 and -31 <= longitude <= 60:
