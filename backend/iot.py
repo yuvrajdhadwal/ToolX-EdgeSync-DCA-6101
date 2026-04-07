@@ -28,6 +28,7 @@ def deploy_helper(
     @brief Sends a Deployment Message from Cloud to Edge Device
     """
     success = False
+    is_emergency = firmware.isEmergency == "1"
     try:
         iot_hub.send_c2d_message(
             device_id,
@@ -42,6 +43,22 @@ def deploy_helper(
                 "description": firmware.description,
             },
         )
+        message_body = (
+            "EMERGENCY Firmware Deployment - Immediate attention required"
+            if is_emergency
+            else "New Firmware Update Deployed"
+        )
+        iot_hub.send_c2d_message(device_id, message_body, properties=
+                                          {
+                                              "isDeployment": "1",
+                                              "firmwareID": firmware.id,
+                                              "isEmergency": "1" if is_emergency else "0",
+                                              "notificationType": "emergencyDeploy" if is_emergency else "standardDeploy",
+                                              "deviceType": firmware.device_type,
+                                              "versionNumber": firmware.version_number,
+                                              "developer": firmware.developer,
+                                              "description": firmware.description
+                                          })
         success = True
     except msrest.exceptions.HttpOperationError as ex:
         print("HttpOperationError error {0}".format(ex.response.text))
