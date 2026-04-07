@@ -85,11 +85,11 @@ auto main() -> int {
       stable(device_ll_handle);
       last_send_time += interval;
       // TODO: Temporary while stable, setup, and shutdown are only states
-      //static int i = 0;
-      //if (i == 4) {
-      //  isStable = false;
-      //}
-      //++i;
+      static int i = 0;
+      if (i == 4) {
+        isStable = false;
+      }
+      ++i;
     }
 
     IoTHubDeviceClient_LL_DoWork(
