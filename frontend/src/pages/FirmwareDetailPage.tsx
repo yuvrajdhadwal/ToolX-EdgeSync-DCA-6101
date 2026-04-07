@@ -676,20 +676,21 @@ const FirmwareDetailPage: React.FC = () => {
                   <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
                     <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Deploy Firmware</h3>
                   </div>
+
                   <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <p style={{ margin: 0, color: COLORS.textMuted }}>
-                      Select compatible {firmware?.device_type} devices to deploy firmware version <strong>{firmware?.version_number}</strong>:
+                      Select compatible {firmware?.device_type} devices to deploy firmware version{' '}
+                      <strong>{firmware?.version_number}</strong>:
                     </p>
 
-                    {/* Region Filter */}
                     {allRegions.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}>
                         <label style={{ color: COLORS.textPrimary, fontWeight: 500, fontSize: '0.9rem' }}>
                           Filter by Region:
                         </label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                          {allRegions.map(region => {
-                            const count = compatibleDevices.filter(d => d.region === region).length;
+                          {allRegions.map((region) => {
+                            const count = compatibleDevices.filter((d) => d.region === region).length
                             return (
                               <label
                                 key={region}
@@ -712,73 +713,66 @@ const FirmwareDetailPage: React.FC = () => {
                                   disabled={count === 0}
                                   onChange={(e) => {
                                     if (e.target.checked) {
-                                      setSelectedRegions(prev => [...prev, region]);
+                                      setSelectedRegions((prev) => [...prev, region])
                                     } else {
-                                      setSelectedRegions(prev => prev.filter(r => r !== region));
-                                      setSelectedSerials(prev =>
-                                        prev.filter(serial =>
-                                          compatibleDevices.find(d => d.serial_number === serial)?.region !== region
-                                        )
-                                      );
+                                      setSelectedRegions((prev) => prev.filter((r) => r !== region))
+                                      setSelectedSerials((prev) =>
+                                        prev.filter(
+                                          (serial) =>
+                                            compatibleDevices.find((d) => d.serial_number === serial)?.region !== region,
+                                        ),
+                                      )
                                     }
                                   }}
                                 />
                                 {region} ({count})
                               </label>
-                            );
+                            )
                           })}
                         </div>
                       </div>
                     )}
-                    
-                    {/* Device List */}
+
                     {compatibleDevices.length === 0 ? (
                       <p style={{ color: COLORS.textMuted }}>No compatible devices found.</p>
                     ) : (
                       <>
-<<<<<<< HEAD
-                        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-=======
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: COLORS.textPrimary }}>
-                                <input
-                                  type="checkbox"
-                                  checked={deployIsEmergency}
-                                  onChange={(e) => setDeployIsEmergency(e.target.checked)}
-                                />
-                                <span style={{ marginRight: '0.75rem' }}>Emergency deployment</span>
-                              </label>
-<<<<<<< HEAD
->>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
-=======
->>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
+                            <input
+                              type="checkbox"
+                              checked={deployIsEmergency}
+                              onChange={(e) => setDeployIsEmergency(e.target.checked)}
+                            />
+                            <span>Emergency deployment</span>
+                          </label>
+
                           <button
                             type="button"
                             onClick={() => {
                               if (selectedSerials.length === filteredDevices.length && filteredDevices.length > 0) {
-                                setSelectedSerials([]);
+                                setSelectedSerials([])
                               } else {
-                                setSelectedSerials(filteredDevices.map(d => d.serial_number));
+                                setSelectedSerials(filteredDevices.map((d) => d.serial_number))
                               }
                             }}
                             style={{
                               padding: '0.3rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
                               borderRadius: '4px', border: `1px solid ${COLORS.accentPrimary}`,
-                              backgroundColor: 'transparent', color: COLORS.accentPrimary, marginTop: '20px'
+                              backgroundColor: 'transparent', color: COLORS.accentPrimary,
                             }}
                           >
                             {selectedSerials.length === filteredDevices.length && filteredDevices.length > 0
                               ? 'Deselect All Devices'
                               : 'Select All Devices'}
                           </button>
-                          
                         </div>
+
                         <div style={{
                           maxHeight: '200px', overflowY: 'auto',
                           border: `1px solid ${COLORS.borderPrimary}`,
                           borderRadius: '6px',
                         }}>
-<<<<<<< HEAD
                           {filteredDevices.length === 0 ? (
                             <p style={{ margin: '0.75rem', color: COLORS.textMuted }}>
                               No devices match the selected regions.
@@ -795,31 +789,6 @@ const FirmwareDetailPage: React.FC = () => {
                                   backgroundColor: selectedSerials.includes(device.serial_number)
                                     ? COLORS.backgroundTertiary
                                     : 'transparent',
-=======
-                          {compatibleDevices.map((device) => (
-                            <label
-                              key={device.serial_number}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                                padding: '0.6rem 0.75rem', cursor: 'pointer',
-                                borderBottom: `1px solid ${COLORS.borderPrimary}`,
-                                color: COLORS.textPrimary,
-                                backgroundColor: selectedSerials.includes(device.serial_number)
-                                  ? COLORS.backgroundTertiary
-                                  : 'transparent',
-                              }}
-                            >
-                              
-                              <input
-                                type="checkbox"
-                                checked={selectedSerials.includes(device.serial_number)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedSerials(prev => [...prev, device.serial_number]);
-                                  } else {
-                                    setSelectedSerials(prev => prev.filter(s => s !== device.serial_number));
-                                  }
->>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
                                 }}
                               >
                                 <input
@@ -827,9 +796,9 @@ const FirmwareDetailPage: React.FC = () => {
                                   checked={selectedSerials.includes(device.serial_number)}
                                   onChange={(e) => {
                                     if (e.target.checked) {
-                                      setSelectedSerials(prev => [...prev, device.serial_number]);
+                                      setSelectedSerials((prev) => [...prev, device.serial_number])
                                     } else {
-                                      setSelectedSerials(prev => prev.filter(s => s !== device.serial_number));
+                                      setSelectedSerials((prev) => prev.filter((s) => s !== device.serial_number))
                                     }
                                   }}
                                 />
@@ -843,9 +812,11 @@ const FirmwareDetailPage: React.FC = () => {
                         </div>
                       </>
                     )}
+
                     {deployError && <p style={{ margin: 0, color: COLORS.dangerText }}>{deployError}</p>}
                     {deploySuccess && <p style={{ margin: 0, color: COLORS.success }}>{deploySuccess}</p>}
                   </div>
+
                   <div style={{
                     display: 'flex', justifyContent: 'flex-end', gap: '0.75rem',
                     padding: '1rem 1.25rem', borderTop: `1px solid ${COLORS.borderPrimary}`,
@@ -853,12 +824,11 @@ const FirmwareDetailPage: React.FC = () => {
                     <button
                       type="button"
                       disabled={isDeploying || selectedSerials.length === 0}
-                      
                       onClick={() => {
                         if (isRevert()) {
-                          setShowRevertConfirm(true);
+                          setShowRevertConfirm(true)
                         } else {
-                          handleDeployConfirm();
+                          handleDeployConfirm()
                         }
                       }}
                       style={{
@@ -874,19 +844,12 @@ const FirmwareDetailPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setShowDeployPopup(false);
-                        setSelectedSerials([]);
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        setSelectedRegions([]);
-=======
-                        setDeployIsEmergency(false);
->>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
-=======
-                        setDeployIsEmergency(false);
->>>>>>> 19b28038ca90ee573ee9ccb6ac60f7b7a41d6fc0
-                        setDeployError('');
-                        setDeploySuccess('');
+                        setShowDeployPopup(false)
+                        setSelectedSerials([])
+                        setSelectedRegions([])
+                        setDeployIsEmergency(false)
+                        setDeployError('')
+                        setDeploySuccess('')
                       }}
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
@@ -898,69 +861,69 @@ const FirmwareDetailPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
 
-                {/* Revert Confirmation Modal */}
-                {showRevertConfirm && (
-                  <div style={{
-                    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '1rem', zIndex: 1100,
-                  }}>
-                    <div style={{
-                      width: '100%', maxWidth: '460px', backgroundColor: COLORS.backgroundSecondary,
-                      border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px',
-                      display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                    }}>
-                      <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
-                        <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Revert Firmware</h3>
-                      </div>
-                      <div style={{ padding: '1rem 1.25rem' }}>
-                        <p style={{ margin: 0, color: COLORS.textPrimary }}>
-                          The following devices will be reverted to firmware version{' '}
-                          <strong>{firmware?.version_number}</strong>:
-                        </p>
-                        <div style={{ marginTop: '0.75rem' }}>
-                          {revertVersions().map(serial => (
-                            <span key={serial} style={{ display: 'block', marginTop: '0.25rem', color: COLORS.textMuted }}>
-                              • {serial} (current: v{compatibleDevices.find(d => d.serial_number === serial)?.current_version})
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div style={{
-                        display: 'flex', justifyContent: 'flex-end', gap: '0.75rem',
-                        padding: '1rem 1.25rem', borderTop: `1px solid ${COLORS.borderPrimary}`,
-                      }}>
-                        <button
-                          type="button"
-                          disabled={isDeploying}
-                          onClick={() => {
-                            setShowRevertConfirm(false);
-                            handleDeployConfirm();
-                          }}
-                          style={{
-                            padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
-                            backgroundColor: COLORS.danger, color: COLORS.white,
-                            cursor: isDeploying ? 'not-allowed' : 'pointer', fontWeight: 600,
-                          }}
-                        >
-                          Revert
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowRevertConfirm(false)}
-                          style={{
-                            padding: '0.55rem 1rem', borderRadius: '6px',
-                            border: `1px solid ${COLORS.borderPrimary}`,
-                            backgroundColor: 'transparent', color: COLORS.textPrimary, cursor: 'pointer',
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
+            {/* Revert Confirmation Modal */}
+            {showRevertConfirm && (
+              <div style={{
+                position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '1rem', zIndex: 1100,
+              }}>
+                <div style={{
+                  width: '100%', maxWidth: '460px', backgroundColor: COLORS.backgroundSecondary,
+                  border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px',
+                  display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                }}>
+                  <div style={{ padding: '1rem 1.25rem', borderBottom: `1px solid ${COLORS.borderPrimary}` }}>
+                    <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Revert Firmware</h3>
+                  </div>
+                  <div style={{ padding: '1rem 1.25rem' }}>
+                    <p style={{ margin: 0, color: COLORS.textPrimary }}>
+                      The following devices will be reverted to firmware version{' '}
+                      <strong>{firmware?.version_number}</strong>:
+                    </p>
+                    <div style={{ marginTop: '0.75rem' }}>
+                      {revertVersions().map((serial) => (
+                        <span key={serial} style={{ display: 'block', marginTop: '0.25rem', color: COLORS.textMuted }}>
+                          • {serial} (current: v{compatibleDevices.find((d) => d.serial_number === serial)?.current_version})
+                        </span>
+                      ))}
                     </div>
                   </div>
-                )}
+                  <div style={{
+                    display: 'flex', justifyContent: 'flex-end', gap: '0.75rem',
+                    padding: '1rem 1.25rem', borderTop: `1px solid ${COLORS.borderPrimary}`,
+                  }}>
+                    <button
+                      type="button"
+                      disabled={isDeploying}
+                      onClick={() => {
+                        setShowRevertConfirm(false)
+                        handleDeployConfirm()
+                      }}
+                      style={{
+                        padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
+                        backgroundColor: COLORS.danger, color: COLORS.white,
+                        cursor: isDeploying ? 'not-allowed' : 'pointer', fontWeight: 600,
+                      }}
+                    >
+                      Revert
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowRevertConfirm(false)}
+                      style={{
+                        padding: '0.55rem 1rem', borderRadius: '6px',
+                        border: `1px solid ${COLORS.borderPrimary}`,
+                        backgroundColor: 'transparent', color: COLORS.textPrimary, cursor: 'pointer',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </>

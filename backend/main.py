@@ -311,7 +311,7 @@ def deploy_firmware(
             )
             message_sent = deploy_helper(
                 payload.serial_number, iot_hub, firmware_overview
-                
+
             )
             iot_notification_status = "sent" if message_sent else "failed"
         except Exception as e:
