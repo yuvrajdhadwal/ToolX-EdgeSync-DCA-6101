@@ -32,6 +32,13 @@ type Device = {
   longitude: number | null
 }
 
+type FirmwareOption = {
+  id: number
+  version_number: string
+  device_type: string
+  isEmergency: boolean
+}
+
 const getRoleFromToken = (): string | null => {
   const token = localStorage.getItem('token')
   if (!token) return null
@@ -67,6 +74,16 @@ const WorldMapPage: React.FC = () => {
   const [devices, setDevices] = React.useState<Device[]>([])
   const [selectedDeviceType, setSelectedDeviceType] = React.useState('all')
   const [selectedRegion, setSelectedRegion] = React.useState('all')
+  const [isSelectionMode, setIsSelectionMode] = React.useState(false)
+  const [selectedSerials, setSelectedSerials] = React.useState<string[]>([])
+  const [selectedDeployType, setSelectedDeployType] = React.useState<string | null>(null)
+  const [showDeployPopup, setShowDeployPopup] = React.useState(false)
+  const [firmwareOptions, setFirmwareOptions] = React.useState<FirmwareOption[]>([])
+  const [selectedFirmwareId, setSelectedFirmwareId] = React.useState<number | ''>('')
+  const [isLoadingFirmware, setIsLoadingFirmware] = React.useState(false)
+  const [isDeploying, setIsDeploying] = React.useState(false)
+  const [deployError, setDeployError] = React.useState('')
+  const [deploySuccess, setDeploySuccess] = React.useState('')
   const [isLoadingDevices, setIsLoadingDevices] = React.useState(true)
   const [loadError, setLoadError] = React.useState('')
 
@@ -77,6 +94,17 @@ const WorldMapPage: React.FC = () => {
         html: '<div style="width:14px;height:14px;border-radius:9999px;background:#f85149;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
         iconSize: [14, 14],
         iconAnchor: [7, 7],
+      }),
+    [],
+  )
+
+  const selectedPinIcon = React.useMemo(
+    () =>
+      L.divIcon({
+        className: '',
+        html: '<div style="width:16px;height:16px;border-radius:9999px;background:#2ea043;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
       }),
     [],
   )
@@ -160,6 +188,109 @@ const WorldMapPage: React.FC = () => {
       return true
     })
   }, [devicesWithCoordinates, selectedDeviceType, selectedRegion])
+
+  const selectedDevices = React.useMemo(
+    () => filteredDevices.filter((device) => selectedSerials.includes(device.serial_number)),
+    [filteredDevices, selectedSerials],
+  )
+
+  const loadCurrentFirmwareOptions = React.useCallback(async (deviceType: string) => {
+    setIsLoadingFirmware(true)
+    setDeployError('')
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/firmware/status/current', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!response.ok) {
+        throw new Error('Failed to load current firmware options')
+      }
+      const payload = await response.json()
+      const options = (Array.isArray(payload) ? payload : []) as FirmwareOption[]
+      const filteredOptions = options.filter((firmware) => firmware.device_type === deviceType)
+      setFirmwareOptions(filteredOptions)
+      setSelectedFirmwareId(filteredOptions.length > 0 ? filteredOptions[0].id : '')
+    } catch (error) {
+      setFirmwareOptions([])
+      setSelectedFirmwareId('')
+      setDeployError(error instanceof Error ? error.message : 'Failed to load firmware options')
+    } finally {
+      setIsLoadingFirmware(false)
+    }
+  }, [])
+
+  const handleMarkerClick = (device: Device) => {
+    if (!isSelectionMode) {
+      navigate(ROUTES.DEVICE_DETAIL.replace(':serialNumber', encodeURIComponent(device.serial_number)), {
+        state: {
+          device,
+          fromRoute: ROUTES.WORLD_MAP,
+        },
+      })
+      return
+    }
+
+    if (selectedSerials.includes(device.serial_number)) {
+      const nextSelected = selectedSerials.filter((serial) => serial !== device.serial_number)
+      setSelectedSerials(nextSelected)
+      if (nextSelected.length === 0) {
+        setSelectedDeployType(null)
+      }
+      return
+    }
+
+    if (selectedDeployType && selectedDeployType !== device.device_type) {
+      setDeployError('You can only select devices of the same type for mass deploy.')
+      return
+    }
+
+    setDeployError('')
+    setSelectedDeployType(device.device_type)
+    setSelectedSerials((previous) => [...previous, device.serial_number])
+  }
+
+  const handleDeploySelected = async () => {
+    if (!selectedDeployType || selectedSerials.length === 0) return
+    setShowDeployPopup(true)
+    setDeploySuccess('')
+    await loadCurrentFirmwareOptions(selectedDeployType)
+  }
+
+  const handleConfirmDeploy = async () => {
+    if (!selectedFirmwareId || selectedSerials.length === 0) return
+    setIsDeploying(true)
+    setDeployError('')
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/deploy-to-many-devices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          serial_numbers: selectedSerials,
+          firmware_id: selectedFirmwareId,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.detail ?? 'Failed to deploy firmware to selected devices')
+      }
+
+      const data = await response.json()
+      setDeploySuccess(data.message ?? 'Deploy submitted successfully.')
+      setShowDeployPopup(false)
+      setSelectedSerials([])
+      setSelectedDeployType(null)
+      setIsSelectionMode(false)
+    } catch (error) {
+      setDeployError(error instanceof Error ? error.message : 'Failed to deploy firmware')
+    } finally {
+      setIsDeploying(false)
+    }
+  }
 
   if (role !== 'business_manager') {
     return null
@@ -249,6 +380,48 @@ const WorldMapPage: React.FC = () => {
                 </option>
               ))}
             </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsSelectionMode((previous) => !previous)
+                setDeployError('')
+                setDeploySuccess('')
+                if (isSelectionMode) {
+                  setSelectedSerials([])
+                  setSelectedDeployType(null)
+                }
+              }}
+              style={{
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                border: `1px solid ${COLORS.borderPrimary}`,
+                backgroundColor: isSelectionMode ? COLORS.backgroundTertiary : COLORS.backgroundPrimary,
+                color: COLORS.textPrimary,
+                cursor: 'pointer',
+              }}
+            >
+              {isSelectionMode ? 'Selection On' : 'Select Pins'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                void handleDeploySelected()
+              }}
+              disabled={!isSelectionMode || selectedSerials.length === 0}
+              style={{
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: COLORS.success,
+                color: COLORS.white,
+                cursor: !isSelectionMode || selectedSerials.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: !isSelectionMode || selectedSerials.length === 0 ? 0.6 : 1,
+              }}
+            >
+              Deploy Selected ({selectedSerials.length})
+            </button>
           </div>
 
           <button
@@ -270,6 +443,13 @@ const WorldMapPage: React.FC = () => {
         </div>
         {isLoadingDevices ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading device pins...</p> : null}
         {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
+        {deployError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{deployError}</p> : null}
+        {deploySuccess ? <p style={{ margin: 0, color: COLORS.success }}>{deploySuccess}</p> : null}
+        {isSelectionMode && selectedDeployType ? (
+          <p style={{ margin: 0, color: COLORS.textMuted }}>
+            Selection mode active: {selectedSerials.length} selected ({selectedDeployType})
+          </p>
+        ) : null}
         {!isLoadingDevices && !loadError && filteredDevices.length === 0 ? (
           <p style={{ margin: 0, color: COLORS.textMuted }}>No active devices match the selected filters.</p>
         ) : null}
@@ -288,16 +468,9 @@ const WorldMapPage: React.FC = () => {
               <Marker
                 key={device.serial_number}
                 position={[device.latitude as number, device.longitude as number]}
-                icon={pinIcon}
+                icon={selectedSerials.includes(device.serial_number) ? selectedPinIcon : pinIcon}
                 eventHandlers={{
-                  click: () => {
-                    navigate(ROUTES.DEVICE_DETAIL.replace(':serialNumber', encodeURIComponent(device.serial_number)), {
-                      state: {
-                        device,
-                        fromRoute: ROUTES.WORLD_MAP,
-                      },
-                    })
-                  },
+                  click: () => handleMarkerClick(device),
                 }}
               >
                 <Tooltip direction="top" offset={[0, -10]}>
@@ -309,6 +482,98 @@ const WorldMapPage: React.FC = () => {
           </MapContainer>
         </div>
       </main>
+
+      {showDeployPopup && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '540px',
+            backgroundColor: COLORS.backgroundSecondary,
+            border: `1px solid ${COLORS.borderPrimary}`,
+            borderRadius: '8px',
+            padding: '1rem 1.25rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.9rem',
+          }}>
+            <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Deploy from Map</h3>
+            <p style={{ margin: 0, color: COLORS.textMuted }}>
+              Deploy to {selectedDevices.length} selected device(s) of type {selectedDeployType ?? '-'}. 
+            </p>
+
+            {isLoadingFirmware ? (
+              <p style={{ margin: 0, color: COLORS.textMuted }}>Loading firmware options...</p>
+            ) : (
+              <select
+                value={selectedFirmwareId}
+                onChange={(event) => setSelectedFirmwareId(Number(event.target.value))}
+                style={{
+                  padding: '0.6rem 0.75rem',
+                  borderRadius: '6px',
+                  border: `1px solid ${COLORS.borderPrimary}`,
+                  backgroundColor: COLORS.backgroundPrimary,
+                  color: COLORS.textPrimary,
+                }}
+              >
+                {firmwareOptions.length === 0 ? (
+                  <option value="">No current firmware options</option>
+                ) : (
+                  firmwareOptions.map((firmware) => (
+                    <option key={firmware.id} value={firmware.id}>
+                      v{firmware.version_number}{firmware.isEmergency ? ' (Emergency)' : ''}
+                    </option>
+                  ))
+                )}
+              </select>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowDeployPopup(false)}
+                style={{
+                  padding: '0.55rem 1rem',
+                  borderRadius: '6px',
+                  border: `1px solid ${COLORS.borderPrimary}`,
+                  backgroundColor: 'transparent',
+                  color: COLORS.textPrimary,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleConfirmDeploy()
+                }}
+                disabled={isDeploying || !selectedFirmwareId || firmwareOptions.length === 0}
+                style={{
+                  padding: '0.55rem 1rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: COLORS.success,
+                  color: COLORS.white,
+                  cursor: isDeploying || !selectedFirmwareId || firmwareOptions.length === 0 ? 'not-allowed' : 'pointer',
+                  opacity: isDeploying || !selectedFirmwareId || firmwareOptions.length === 0 ? 0.6 : 1,
+                  fontWeight: 600,
+                }}
+              >
+                {isDeploying ? 'Deploying...' : 'Confirm Deploy'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
