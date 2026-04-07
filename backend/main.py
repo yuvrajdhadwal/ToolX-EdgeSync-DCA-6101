@@ -121,7 +121,7 @@ def telemetry_activity_worker():
             telemetry_listener(on_activity=_record_device_activity)
         except Exception as ex:
             print(f"Active-device telemetry listener error: {ex}")
-            time.sleep(ACTIVE_DEVICE_RETRY_SECONDS)
+            
 
 @app.on_event("startup")
 def start_active_device_worker():
@@ -133,13 +133,11 @@ class UserRole(str, Enum):
     business_manager = "business_manager"
     field_shop_professional = "field_shop_professional"
 
-
 class UserCreate(BaseModel):
     role: UserRole
     username: str
     password: str
     developer_manager_id: Optional[int] = None
-
 
 class FirmwareCreate(BaseModel):
     objectBinary: str
@@ -196,12 +194,14 @@ class DeviceCreate(BaseModel):
 # Add Pydantic model for deploy request
 class DeployFirmwareRequest(BaseModel):
     serial_number: str
+    isEmergency: bool = False
 
 
 # Re-added Pydantic model deploying many requests
 class DeployManyRequest(BaseModel):
     serial_numbers: List[str]
     firmware_id: int
+    isEmergency: bool = False
 
 
 def get_user_by_username(db: Session, username: str):
@@ -297,7 +297,6 @@ def deploy_firmware(
     # Send IoT C2D notification to device
     iot_notification_status = "Not Configured"
     connection_str = os.getenv("IOT_CONNECTION")
-    eventhub_connection_str = os.getenv("EVENTHUB_CONNECTION")
 
     if connection_str:
         try:
@@ -343,6 +342,7 @@ def deploy_firmware(
         device_firmware_id=firmware_id,
         timestamp=datetime.now(timezone.utc),
         isActive=True,
+        isEmergency=payload.isEmergency,
     )
     db.add(deploy)
     db.commit()
@@ -386,7 +386,6 @@ def cloud_to_many_device(
         raise HTTPException(status_code=404, detail="Business manager not found")
 
     connection_str = os.getenv("IOT_CONNECTION")
-    eventhub_connection_str = os.getenv("EVENTHUB_CONNECTION")
     iot_hub = (
         IoTHubRegistryManager.from_connection_string(connection_str)
         if connection_str
@@ -440,6 +439,7 @@ def cloud_to_many_device(
             device_firmware_id=payload.firmware_id,
             timestamp=datetime.now(timezone.utc),
             isActive=True,
+            isEmergency=payload.isEmergency,
         )
         db.add(deploy)
         results.append(
