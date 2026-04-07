@@ -1,8 +1,9 @@
 import os
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import bcrypt
 from azure.iot.hub import IoTHubRegistryManager
@@ -14,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from iot import FirmwareOverview, deploy_helper, listen_for_device
+from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
@@ -26,11 +27,11 @@ Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 load_dotenv()
 
-origins = [ 
-    os.getenv('LOCAL_ORIGIN', 'http://localhost:5173'),
+origins = [
+    os.getenv("LOCAL_ORIGIN", "http://localhost:5173"),
 ]
 
-app.add_middleware( 
+app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
@@ -47,9 +48,84 @@ def get_db():
         db.close()
 
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
-ALGORITHM = os.getenv('ALGORITHM', 'HS256')
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+IOTHUB_CONNECTION_STRING = os.getenv("IOT_CONNECTION")
+EVENTHUB_CONNECTION_STRING = os.getenv("EVENTHUB_CONNECTION")
+ACTIVE_DEVICE_ONLINE_MESSAGE = os.getenv("ACTIVE_DEVICE_ONLINE_MESSAGE", "Device is Online")
+ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
+ACTIVE_DEVICE_RETRY_SECONDS = int(os.getenv("ACTIVE_DEVICE_RETRY_SECONDS", "5"))
+
+active_device_serials: Set[str] = set()
+active_device_last_seen: dict[str, datetime] = {}
+active_device_lock = threading.Lock()
+
+
+def get_region_from_coordinates(
+    latitude: Optional[float],
+    longitude: Optional[float],
+) -> str:
+    if latitude is None or longitude is None:
+        return "Unknown"
+
+    if latitude < -90 or latitude > 90 or longitude < -180 or longitude > 180:
+        return "Unknown"
+
+    if latitude <= -60:
+        return "Antarctica"
+
+    if -35 <= latitude <= 37 and -20 <= longitude <= 55:
+        return "Africa"
+
+    if 5 <= latitude <= 83 and -170 <= longitude <= -52:
+        return "North America"
+
+    if -56 <= latitude <= 13 and -82 <= longitude <= -34:
+        return "South America"
+
+    if 34 <= latitude <= 82 and -31 <= longitude <= 60:
+        return "Europe"
+
+    if -50 <= latitude <= 10 and 110 <= longitude <= 180:
+        return "Oceania"
+
+    if -10 <= latitude <= 81 and 26 <= longitude <= 180:
+        return "Asia"
+
+    return "Unknown"
+
+
+def _record_device_activity(device_id: str, body: str):
+    if ACTIVE_DEVICE_ONLINE_MESSAGE.lower() not in body.lower():
+        return
+
+    db = SessionLocal()
+    try:
+        device = db.query(Device).filter(Device.serial_number == device_id).first()
+        if not device:
+            return
+
+        device.last_online = datetime.now(timezone.utc)
+        db.commit()
+    finally:
+        db.close()
+
+
+def telemetry_activity_worker():
+    if not EVENTHUB_CONNECTION_STRING:
+        return
+
+    while True:
+        try:
+            telemetry_listener(on_activity=_record_device_activity)
+        except Exception as ex:
+            print(f"Active-device telemetry listener error: {ex}")
+            
+
+@app.on_event("startup")
+def start_active_device_worker():
+    threading.Thread(target=telemetry_activity_worker, daemon=True).start()
 
 class UserRole(str, Enum):
     developer = "developer"
@@ -71,6 +147,7 @@ class FirmwareCreate(BaseModel):
     isEmergency: bool
     description: str
 
+
 class DeviceCreate(BaseModel):
     serial_number: str
     device_type: str
@@ -81,35 +158,44 @@ class DeviceCreate(BaseModel):
     longitude: Optional[float] = None
     latitude: Optional[float] = None
 
-    @field_validator('device_type', 'serial_number', 'version_number', 'description', 'location', 'developer_manager')
+    @field_validator(
+        "device_type",
+        "serial_number",
+        "version_number",
+        "description",
+        "location",
+        "developer_manager",
+    )
     @classmethod
     def fields_must_not_be_empty(cls, v):
         if not v.strip():
-            raise ValueError('Field must not be empty')
+            raise ValueError("Field must not be empty")
         return v
 
-    @field_validator('latitude')
+    @field_validator("latitude")
     @classmethod
     def latitude_must_be_valid(cls, value: Optional[float]):
         if value is None:
             return value
         if value < -90 or value > 90:
-            raise ValueError('Latitude must be between -90 and 90')
+            raise ValueError("Latitude must be between -90 and 90")
         return value
 
-    @field_validator('longitude')
+    @field_validator("longitude")
     @classmethod
     def longitude_must_be_valid(cls, value: Optional[float]):
         if value is None:
             return value
         if value < -180 or value > 180:
-            raise ValueError('Longitude must be between -180 and 180')
+            raise ValueError("Longitude must be between -180 and 180")
         return value
-    
+
+
 # Add Pydantic model for deploy request
 class DeployFirmwareRequest(BaseModel):
     serial_number: str
     isEmergency: bool = False
+
 
 # Re-added Pydantic model deploying many requests
 class DeployManyRequest(BaseModel):
@@ -117,38 +203,60 @@ class DeployManyRequest(BaseModel):
     firmware_id: int
     isEmergency: bool = False
 
+
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
+
 
 @app.get("/devmng")
 def get_devmng(db: Session = Depends(get_db)):
     managers = db.query(DeveloperManager).all()
     return [{"id": mng.id, "username": mng.username} for mng in managers]
 
+
 def create_user(db: Session, user: UserCreate):
-    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    hashed_password = bcrypt.hashpw(
+        user.password.encode("utf-8"), bcrypt.gensalt()
+    ).decode("utf-8")
 
     if user.role == UserRole.developer:
         if not user.developer_manager_id:
-            raise HTTPException(status_code=400, detail="Developer must have a developer manager ID")
-        developer_manager = db.query(DeveloperManager).filter(DeveloperManager.id == user.developer_manager_id).first()
+            raise HTTPException(
+                status_code=400, detail="Developer must have a developer manager ID"
+            )
+        developer_manager = (
+            db.query(DeveloperManager)
+            .filter(DeveloperManager.id == user.developer_manager_id)
+            .first()
+        )
         if not developer_manager:
             raise HTTPException(status_code=404, detail="Developer manager not found")
-        db_user = Developer(username=user.username, hashed_password=hashed_password, manager_id=developer_manager.id)
+        db_user = Developer(
+            username=user.username,
+            hashed_password=hashed_password,
+            manager_id=developer_manager.id,
+        )
     elif user.role == UserRole.developer_manager:
-        db_user = DeveloperManager(username=user.username, hashed_password=hashed_password)
+        db_user = DeveloperManager(
+            username=user.username, hashed_password=hashed_password
+        )
     elif user.role == UserRole.business_manager:
-        db_user = BusinessManager(username=user.username, hashed_password=hashed_password)
+        db_user = BusinessManager(
+            username=user.username, hashed_password=hashed_password
+        )
     elif user.role == UserRole.field_shop_professional:
-        db_user = FieldShopProfessional(username=user.username, hashed_password=hashed_password)
+        db_user = FieldShopProfessional(
+            username=user.username, hashed_password=hashed_password
+        )
     else:
         raise HTTPException(status_code=400, detail="Invalid role type")
 
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    
+
     return "complete"
+
 
 # Update deploy-to-one-device endpoint
 @app.post("/firmware/{firmware_id}/deploy-to-one-device")
@@ -161,27 +269,34 @@ def deploy_firmware(
     user = get_authenticated_user(authorization, db)
 
     if user.type != UserRole.business_manager.value:
-        raise HTTPException(status_code=403, detail="Only business managers can deploy firmware")
+        raise HTTPException(
+            status_code=403, detail="Only business managers can deploy firmware"
+        )
 
     firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     if firmware.approved_by is None or firmware.declined_by is not None:
-        raise HTTPException(status_code=400, detail="Only approved firmware can be deployed")
+        raise HTTPException(
+            status_code=400, detail="Only approved firmware can be deployed"
+        )
 
-    device = db.query(Device).filter(Device.serial_number == payload.serial_number).first()
+    device = (
+        db.query(Device).filter(Device.serial_number == payload.serial_number).first()
+    )
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
 
-    business_manager = db.query(BusinessManager).filter(BusinessManager.id == user.id).first()
+    business_manager = (
+        db.query(BusinessManager).filter(BusinessManager.id == user.id).first()
+    )
     if not business_manager:
         raise HTTPException(status_code=404, detail="Business manager not found")
 
     # Send IoT C2D notification to device
     iot_notification_status = "Not Configured"
-    connection_str = os.getenv('IOT_CONNECTION')
-    eventhub_connection_str = os.getenv('EVENTHUB_CONNECTION')
+    connection_str = os.getenv("IOT_CONNECTION")
 
     if connection_str:
         try:
@@ -189,41 +304,30 @@ def deploy_firmware(
             firmware_overview = FirmwareOverview(
                 id=str(firmware.id),
                 device_type=firmware.device_type,
-                developer=str(firmware.uploaded_by or ''),
+                developer=str(firmware.uploaded_by or ""),
                 version_number=firmware.version_number,
-                isEmergency= "1" if firmware.isEmergency else "0",
-                description=firmware.description or '',
+                isEmergency="1" if firmware.isEmergency else "0",
+                description=firmware.description or "",
             )
-            message_sent = deploy_helper(payload.serial_number, iot_hub, firmware_overview)
+            message_sent = deploy_helper(
+                payload.serial_number, iot_hub, firmware_overview
+
+            )
             iot_notification_status = "sent" if message_sent else "failed"
         except Exception as e:
             print(f"IoT notification error: {e}")
             iot_notification_status = "failed"
 
-    # Listen for telemetry response in background
-    if eventhub_connection_str and iot_notification_status == "sent":
-        def on_telemetry_received(data: str):
-            # Create a new session that ONLY exists for this update (Prevent existing db session from being passed in event handler)
-            new_session = SessionLocal()
-            try:
-                device = new_session.query(Device).filter(Device.serial_number == payload.serial_number).first()
-                if device:
-                    device.last_online = datetime.now(timezone.utc)
-                    new_session.commit()
-            finally:
-                new_session.close() # Close connection to prevent database lock
-
-        threading.Thread(
-            target=listen_for_device,
-            args=(eventhub_connection_str, payload.serial_number, on_telemetry_received),
-            daemon=True
-        ).start()
 
     # Deactivate existing active deploy for this device
-    existing_deploy = db.query(Deploy).filter(
-        Deploy.device_serial == payload.serial_number,
-        Deploy.isActive == True,
-    ).first()
+    existing_deploy = (
+        db.query(Deploy)
+        .filter(
+            Deploy.device_serial == payload.serial_number,
+            Deploy.isActive == True,
+        )
+        .first()
+    )
     if existing_deploy:
         existing_deploy.isActive = False
 
@@ -247,8 +351,8 @@ def deploy_firmware(
     return {
         "message": f"Firmware successfully deployed to device {payload.serial_number}",
         "iot_notification": iot_notification_status,
-        "telemetry_listener": "active" if eventhub_connection_str and iot_notification_status == "sent" else "not configured",
     }
+
 
 @app.post("/deploy-to-many-devices")
 def cloud_to_many_device(
@@ -259,30 +363,43 @@ def cloud_to_many_device(
     user = get_authenticated_user(authorization, db)
 
     if user.type != UserRole.business_manager.value:
-        raise HTTPException(status_code=403, detail="Only business managers can deploy firmware")
+        raise HTTPException(
+            status_code=403, detail="Only business managers can deploy firmware"
+        )
 
-    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == payload.firmware_id).first()
+    firmware = (
+        db.query(FirmwareUpdate)
+        .filter(FirmwareUpdate.id == payload.firmware_id)
+        .first()
+    )
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     if firmware.approved_by is None or firmware.declined_by is not None:
-        raise HTTPException(status_code=400, detail="Only approved firmware can be deployed")
+        raise HTTPException(
+            status_code=400, detail="Only approved firmware can be deployed"
+        )
 
-    business_manager = db.query(BusinessManager).filter(BusinessManager.id == user.id).first()
+    business_manager = (
+        db.query(BusinessManager).filter(BusinessManager.id == user.id).first()
+    )
     if not business_manager:
         raise HTTPException(status_code=404, detail="Business manager not found")
 
-    connection_str = os.getenv('IOT_CONNECTION')
-    eventhub_connection_str = os.getenv('EVENTHUB_CONNECTION')
-    iot_hub = IoTHubRegistryManager.from_connection_string(connection_str) if connection_str else None
+    connection_str = os.getenv("IOT_CONNECTION")
+    iot_hub = (
+        IoTHubRegistryManager.from_connection_string(connection_str)
+        if connection_str
+        else None
+    )
 
     firmware_overview = FirmwareOverview(
         id=str(firmware.id),
         device_type=firmware.device_type,
-        developer=str(firmware.uploaded_by or ''),
+        developer=str(firmware.uploaded_by or ""),
         version_number=firmware.version_number,
         isEmergency="1" if firmware.isEmergency else "0",
-        description=firmware.description or '',
+        description=firmware.description or "",
     )
 
     results = []
@@ -301,19 +418,15 @@ def cloud_to_many_device(
                 print(f"IoT error for {serial}: {e}")
                 iot_status = "failed"
 
-        if eventhub_connection_str and iot_status == "sent":
-            def on_telemetry_received(data: str, s=serial):
-                print(f"Telemetry received from {s}: {data}")
-            threading.Thread(
-                target=listen_for_device,
-                args=(eventhub_connection_str, serial, on_telemetry_received),
-                daemon=True
-            ).start()
 
-        existing_deploy = db.query(Deploy).filter(
-            Deploy.device_serial == serial,
-            Deploy.isActive == True,
-        ).first()
+        existing_deploy = (
+            db.query(Deploy)
+            .filter(
+                Deploy.device_serial == serial,
+                Deploy.isActive == True,
+            )
+            .first()
+        )
         if existing_deploy:
             existing_deploy.isActive = False
 
@@ -330,11 +443,13 @@ def cloud_to_many_device(
             isEmergency=payload.isEmergency,
         )
         db.add(deploy)
-        results.append({
-            "serial_number": serial,
-            "status": "deployed",
-            "iot_notification": iot_status,
-        })
+        results.append(
+            {
+                "serial_number": serial,
+                "status": "deployed",
+                "iot_notification": iot_status,
+            }
+        )
 
     db.commit()
     return {
@@ -359,22 +474,31 @@ def get_compatible_devices(
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")
 
-    # Only return devices of matching type that don't already have this exact firmware version
     devices = db.query(Device).filter(Device.device_type == firmware.device_type).all()
     compatible = [
         d for d in devices
         if not d.firmware or d.firmware.version_number != firmware.version_number
     ]
 
-    return [
-        {
-            "serial_number": d.serial_number,
-            "device_type": d.device_type,
-            "location": d.location,
-            "current_version": d.firmware.version_number if d.firmware else None,
-        }
-        for d in compatible
+    all_regions = [
+        "Africa", "Antarctica", "Asia", "Europe",
+        "North America", "Oceania", "South America", "Unknown"
     ]
+
+    return {
+        "devices": [
+            {
+                "serial_number": d.serial_number,
+                "device_type": d.device_type,
+                "location": d.location,
+                "current_version": d.firmware.version_number if d.firmware else None,
+                "region": get_region_from_coordinates(d.latitude, d.longitude),
+            }
+            for d in compatible
+        ],
+        "all_regions": all_regions,
+    }
+
 
 @app.post("/upload")
 async def upload_firmware(
@@ -384,23 +508,35 @@ async def upload_firmware(
     isEmergency: bool = Form(...),
     description: str = Form(...),
     authorization: Optional[str] = Header(default=None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     if not authorization:
-        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+        raise HTTPException(
+            status_code=401, detail="Missing or invalid authorization header"
+        )
 
     authenticated_user = get_authenticated_user(authorization, db)
     if authenticated_user.type != UserRole.developer.value:
-        raise HTTPException(status_code=403, detail="Only developers can upload firmware")
+        raise HTTPException(
+            status_code=403, detail="Only developers can upload firmware"
+        )
 
-    developer_user = db.query(Developer).filter(Developer.id == authenticated_user.id).first()
+    developer_user = (
+        db.query(Developer).filter(Developer.id == authenticated_user.id).first()
+    )
     if not developer_user:
         raise HTTPException(status_code=404, detail="Developer not found")
 
     if developer_user.manager_id is None:
-        raise HTTPException(status_code=400, detail="Developer does not have an assigned manager")
+        raise HTTPException(
+            status_code=400, detail="Developer does not have an assigned manager"
+        )
 
-    manager_user = db.query(DeveloperManager).filter(DeveloperManager.id == developer_user.manager_id).first()
+    manager_user = (
+        db.query(DeveloperManager)
+        .filter(DeveloperManager.id == developer_user.manager_id)
+        .first()
+    )
     if not manager_user:
         raise HTTPException(status_code=404, detail="Developer manager not found")
 
@@ -419,16 +555,18 @@ async def upload_firmware(
     db.add(firmware)
     db.commit()
     db.refresh(firmware)
-    return {'message': 'upload successful'}
-  
+    return {"message": "upload successful"}
+
 
 @app.post("/add_device")
 def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
-    existing_device = db.query(Device).filter(
-        Device.serial_number == device.serial_number
-    ).first()
+    existing_device = (
+        db.query(Device).filter(Device.serial_number == device.serial_number).first()
+    )
     if existing_device:
-        raise HTTPException(status_code=400, detail="Device with this serial number already exists")
+        raise HTTPException(
+            status_code=400, detail="Device with this serial number already exists"
+        )
 
     db_device = Device(
         serial_number=device.serial_number,
@@ -450,8 +588,7 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
 @app.get("/get_devices")
 def get_devices(db: Session = Depends(get_db)):
     manager_lookup = {
-        manager.id: manager.username
-        for manager in db.query(DeveloperManager).all()
+        manager.id: manager.username for manager in db.query(DeveloperManager).all()
     }
 
     def resolve_manager_name(value: Optional[str]) -> str:
@@ -469,13 +606,59 @@ def get_devices(db: Session = Depends(get_db)):
         {
             "device_type": d.device_type,
             "version_number": d.firmware.version_number if d.firmware else "N/A",
-            "last_update": d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A",
+            "last_update": (
+                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
+            ),
             "location": d.location,
             "serial_number": d.serial_number,
             "description": d.description,
             "developer_manager": resolve_manager_name(d.developer_manager),
             "latitude": d.latitude,
             "longitude": d.longitude,
+            "region": get_region_from_coordinates(d.latitude, d.longitude),
+        }
+        for d in devices
+    ]
+
+
+@app.get("/get_online_devices")
+def get_online_devices(db: Session = Depends(get_db)):
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
+
+    manager_lookup = {
+        manager.id: manager.username for manager in db.query(DeveloperManager).all()
+    }
+
+    def resolve_manager_name(value: Optional[str]) -> str:
+        if value is None:
+            return ""
+        raw_value = str(value).strip()
+        if not raw_value:
+            return ""
+        if raw_value.isdigit():
+            return manager_lookup.get(int(raw_value), raw_value)
+        return raw_value
+
+    devices = (
+        db.query(Device)
+        .filter(Device.last_online.is_not(None), Device.last_online >= cutoff)
+        .all()
+    )
+
+    return [
+        {
+            "device_type": d.device_type,
+            "version_number": d.firmware.version_number if d.firmware else "N/A",
+            "last_update": (
+                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
+            ),
+            "location": d.location,
+            "serial_number": d.serial_number,
+            "description": d.description,
+            "developer_manager": resolve_manager_name(d.developer_manager),
+            "latitude": d.latitude,
+            "longitude": d.longitude,
+            "region": get_region_from_coordinates(d.latitude, d.longitude),
         }
         for d in devices
     ]
@@ -499,12 +682,16 @@ def get_deploy_history(
     return [
         {
             "id": d.id,
-            "firmware_version": db.query(FirmwareUpdate).filter(FirmwareUpdate.id == d.target_firmware_id).first().version_number,
+            "firmware_version": db.query(FirmwareUpdate)
+            .filter(FirmwareUpdate.id == d.target_firmware_id)
+            .first()
+            .version_number,
             "timestamp": d.timestamp.strftime("%Y-%m-%d %H:%M"),
             "isActive": d.isActive,
         }
         for d in deploys
     ]
+
 
 @app.delete("/remove_device/{serial_number}")
 def delete_device(serial_number: str, db: Session = Depends(get_db)):
@@ -528,9 +715,12 @@ def authenticate_user(username: str, password: str, db: Session):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         return False
-    if not bcrypt.checkpw(password.encode('utf-8'), user.hashed_password.encode('utf-8')):
+    if not bcrypt.checkpw(
+        password.encode("utf-8"), user.hashed_password.encode("utf-8")
+    ):
         return False
     return user
+
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
@@ -544,7 +734,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 @app.post("/token")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(
@@ -554,8 +746,8 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username, "role": user.type}, 
-        expires_delta=access_token_expires
+        data={"sub": user.username, "role": user.type},
+        expires_delta=access_token_expires,
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -573,10 +765,13 @@ def verify_token(token: str = Depends(oauth2_scheme)):
 
 def get_token_payload_from_header(authorization: Optional[str]) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+        raise HTTPException(
+            status_code=401, detail="Missing or invalid authorization header"
+        )
     token = authorization.split(" ", 1)[1]
     return verify_token(token=token)
-        
+
+
 def get_authenticated_user(authorization: Optional[str], db: Session) -> User:
     token = authorization.split(" ", 1)[1]
     payload = verify_token(token=token)
@@ -602,7 +797,9 @@ def require_developer_manager(authorization: Optional[str]) -> str:
     username = payload.get("sub")
 
     if role != UserRole.developer_manager.value:
-        raise HTTPException(status_code=403, detail="Only developer managers can perform this action")
+        raise HTTPException(
+            status_code=403, detail="Only developer managers can perform this action"
+        )
 
     if not username:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
@@ -628,7 +825,11 @@ def get_username_by_id(
 @app.get("/verify-token/{token}")
 async def verify_user_token(token: str):
     payload = verify_token(token=token)
-    return {"message": "Token is valid", "user": payload.get("sub"), "role": payload.get("role")}
+    return {
+        "message": "Token is valid",
+        "user": payload.get("sub"),
+        "role": payload.get("role"),
+    }
 
 
 class FirmwareResponse(BaseModel):
@@ -663,14 +864,20 @@ def get_firmware_status(firmware: FirmwareUpdate, db: Session = None) -> str:
         return "rejected"
     if firmware.approved_by is not None:
         if db:
-            deployed = db.query(Deploy).filter(Deploy.target_firmware_id == firmware.id).first()
+            deployed = (
+                db.query(Deploy)
+                .filter(Deploy.target_firmware_id == firmware.id)
+                .first()
+            )
             if deployed:
                 return "deployed"
         return "current"
     return "pending"
 
 
-def map_firmware_response(firmware: FirmwareUpdate, db: Session = None) -> FirmwareResponse:
+def map_firmware_response(
+    firmware: FirmwareUpdate, db: Session = None
+) -> FirmwareResponse:
     return FirmwareResponse(
         id=firmware.id,
         version_number=firmware.version_number,
@@ -734,15 +941,22 @@ def get_firmware_by_status(
     user = get_authenticated_user(authorization, db)
 
     if status not in {"current", "pending", "rejected"}:
-        raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'current', or 'rejected'")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid status. Use 'pending', 'current', or 'rejected'",
+        )
 
     if status == "pending":
         if user.type == UserRole.developer.value:
-            records = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.uploaded_by == user.id,
-                FirmwareUpdate.approved_by.is_(None),
-                FirmwareUpdate.declined_by.is_(None),
-            ).all()
+            records = (
+                db.query(FirmwareUpdate)
+                .filter(
+                    FirmwareUpdate.uploaded_by == user.id,
+                    FirmwareUpdate.approved_by.is_(None),
+                    FirmwareUpdate.declined_by.is_(None),
+                )
+                .all()
+            )
         elif user.type == UserRole.developer_manager.value:
             records = [
                 firmware
@@ -751,18 +965,26 @@ def get_firmware_by_status(
             ]
         else:
             # business_manager sees all pending firmware
-            records = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.approved_by.is_(None),
-                FirmwareUpdate.declined_by.is_(None),
-            ).all()
+            records = (
+                db.query(FirmwareUpdate)
+                .filter(
+                    FirmwareUpdate.approved_by.is_(None),
+                    FirmwareUpdate.declined_by.is_(None),
+                )
+                .all()
+            )
 
     elif status == "current":
         if user.type == UserRole.developer.value:
-            records = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.uploaded_by == user.id,
-                FirmwareUpdate.approved_by.isnot(None),
-                FirmwareUpdate.declined_by.is_(None),
-            ).all()
+            records = (
+                db.query(FirmwareUpdate)
+                .filter(
+                    FirmwareUpdate.uploaded_by == user.id,
+                    FirmwareUpdate.approved_by.isnot(None),
+                    FirmwareUpdate.declined_by.is_(None),
+                )
+                .all()
+            )
         elif user.type == UserRole.developer_manager.value:
             records = [
                 firmware
@@ -771,17 +993,25 @@ def get_firmware_by_status(
             ]
         else:
             # business_manager sees all approved firmware
-            records = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.approved_by.isnot(None),
-                FirmwareUpdate.declined_by.is_(None),
-            ).all()
+            records = (
+                db.query(FirmwareUpdate)
+                .filter(
+                    FirmwareUpdate.approved_by.isnot(None),
+                    FirmwareUpdate.declined_by.is_(None),
+                )
+                .all()
+            )
 
     else:  # rejected
         if user.type == UserRole.developer.value:
-            records = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.uploaded_by == user.id,
-                FirmwareUpdate.declined_by.isnot(None),
-            ).all()
+            records = (
+                db.query(FirmwareUpdate)
+                .filter(
+                    FirmwareUpdate.uploaded_by == user.id,
+                    FirmwareUpdate.declined_by.isnot(None),
+                )
+                .all()
+            )
         elif user.type == UserRole.developer_manager.value:
             records = [
                 firmware
@@ -790,9 +1020,13 @@ def get_firmware_by_status(
             ]
         else:
             # business_manager sees all rejected firmware
-            records = db.query(FirmwareUpdate).filter(
-                FirmwareUpdate.declined_by.isnot(None),
-            ).all()
+            records = (
+                db.query(FirmwareUpdate)
+                .filter(
+                    FirmwareUpdate.declined_by.isnot(None),
+                )
+                .all()
+            )
 
     return [map_firmware_response(record) for record in records]
 
@@ -813,7 +1047,10 @@ def get_firmware_by_id(
     if user.type == UserRole.business_manager.value:
         return map_firmware_response(firmware)
 
-    if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
+    if (
+        not user_can_view_firmware(user, firmware.id)
+        and firmware.uploaded_by != user.id
+    ):
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     return map_firmware_response(firmware)
@@ -835,16 +1072,23 @@ def download_firmware(
         return Response(
             content=firmware.objectBinary,
             media_type="application/octet-stream",
-            headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"}
+            headers={
+                "Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"
+            },
         )
 
-    if not user_can_view_firmware(user, firmware.id) and firmware.uploaded_by != user.id:
+    if (
+        not user_can_view_firmware(user, firmware.id)
+        and firmware.uploaded_by != user.id
+    ):
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     return Response(
         content=firmware.objectBinary,
         media_type="application/octet-stream",
-        headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"}
+        headers={
+            "Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"
+        },
     )
 
 
@@ -857,13 +1101,23 @@ def reject_firmware(
 ):
     token_username = require_developer_manager(authorization)
 
-    if payload.rejecting_manager_username.strip().lower() != token_username.strip().lower():
-        raise HTTPException(status_code=403, detail="Rejecting manager must match the authenticated user")
+    if (
+        payload.rejecting_manager_username.strip().lower()
+        != token_username.strip().lower()
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Rejecting manager must match the authenticated user",
+        )
 
     if not payload.rejection_reason.strip():
         raise HTTPException(status_code=400, detail="Rejection reason is required")
 
-    manager = db.query(DeveloperManager).filter(DeveloperManager.username == token_username).first()
+    manager = (
+        db.query(DeveloperManager)
+        .filter(DeveloperManager.username == token_username)
+        .first()
+    )
     if not manager:
         raise HTTPException(status_code=404, detail="Developer manager not found")
 
@@ -872,13 +1126,17 @@ def reject_firmware(
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     if firmware.approved_by is not None or firmware.declined_by is not None:
-        raise HTTPException(status_code=400, detail="Only pending firmware can be rejected")
+        raise HTTPException(
+            status_code=400, detail="Only pending firmware can be rejected"
+        )
 
     if not any(viewable.id == firmware.id for viewable in manager.viewable_firmware):
         manager.viewable_firmware.append(firmware)
 
     uploader = db.query(Developer).filter(Developer.id == firmware.uploaded_by).first()
-    if uploader and not any(viewable.id == firmware.id for viewable in uploader.viewable_firmware):
+    if uploader and not any(
+        viewable.id == firmware.id for viewable in uploader.viewable_firmware
+    ):
         uploader.viewable_firmware.append(firmware)
 
     firmware.declined_by = manager.id
@@ -902,7 +1160,11 @@ def approve_firmware(
     if payload.confirmation_text.strip().upper() != "CONFIRM":
         raise HTTPException(status_code=400, detail="Type CONFIRM to approve firmware")
 
-    manager = db.query(DeveloperManager).filter(DeveloperManager.username == token_username).first()
+    manager = (
+        db.query(DeveloperManager)
+        .filter(DeveloperManager.username == token_username)
+        .first()
+    )
     if not manager:
         raise HTTPException(status_code=404, detail="Developer manager not found")
 
@@ -911,13 +1173,17 @@ def approve_firmware(
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     if firmware.approved_by is not None or firmware.declined_by is not None:
-        raise HTTPException(status_code=400, detail="Only pending firmware can be approved")
+        raise HTTPException(
+            status_code=400, detail="Only pending firmware can be approved"
+        )
 
     if not any(viewable.id == firmware.id for viewable in manager.viewable_firmware):
         manager.viewable_firmware.append(firmware)
 
     uploader = db.query(Developer).filter(Developer.id == firmware.uploaded_by).first()
-    if uploader and not any(viewable.id == firmware.id for viewable in uploader.viewable_firmware):
+    if uploader and not any(
+        viewable.id == firmware.id for viewable in uploader.viewable_firmware
+    ):
         uploader.viewable_firmware.append(firmware)
 
     firmware.approved_by = manager.id
