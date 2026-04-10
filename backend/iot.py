@@ -97,8 +97,6 @@ def on_event_batch(
     """
     for event in events:
 
-        if event.body_as_str() != "Device is Online":
-            continue
         device_id = event.system_properties.get(
             b"iothub-connection-device-id", b""
         ).decode()
