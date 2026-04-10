@@ -21,7 +21,7 @@ from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
-from backend.acceptance_status import update_acceptance_status
+from acceptance_status import update_acceptance_status
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
