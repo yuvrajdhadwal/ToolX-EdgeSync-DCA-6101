@@ -21,6 +21,7 @@ from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
+from install_status import update_install_status
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -121,11 +122,25 @@ def telemetry_activity_worker():
             telemetry_listener(on_activity=_record_device_activity)
         except Exception as ex:
             print(f"Active-device telemetry listener error: {ex}")
+
+def telemetry_install_accept_worker():
+    if not EVENTHUB_CONNECTION_STRING:
+        return
+
+    while True:
+        try:
+            telemetry_listener(on_activity=update_install_status)
+        except Exception as ex:
+            print(f"Firmware telemetry listener error: {ex}")
             
 
 @app.on_event("startup")
 def start_active_device_worker():
     threading.Thread(target=telemetry_activity_worker, daemon=True).start()
+
+@app.on_event("startup")
+def start_firmware_worker():
+    threading.Thread(target=telemetry_install_accept_worker, daemon=True).start()
 
 class UserRole(str, Enum):
     developer = "developer"
