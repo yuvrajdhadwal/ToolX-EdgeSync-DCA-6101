@@ -1,7 +1,7 @@
 from database import SessionLocal
 from models import Deploy
 
-def update_install_status(device_id: str, body: str):
+def update_acceptance_status(device_id: str, body: str):
     if "Accepted" in body:
         accepted = True
     elif "Rejected" in body:

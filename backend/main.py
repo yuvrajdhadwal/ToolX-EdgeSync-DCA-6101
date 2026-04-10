@@ -21,7 +21,7 @@ from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
-from install_status import update_install_status
+from backend.acceptance_status import update_acceptance_status
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
@@ -129,7 +129,7 @@ def telemetry_install_accept_worker():
 
     while True:
         try:
-            telemetry_listener(on_activity=update_install_status)
+            telemetry_listener(on_activity=update_acceptance_status)
         except Exception as ex:
             print(f"Firmware telemetry listener error: {ex}")
             
