@@ -145,6 +145,7 @@ class Deploy(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     isActive = Column(Boolean, default=False)
     isEmergency = Column(Boolean, default=False)
+    isAccepted = Column(Boolean)
 
 
     # __table_args__ = (
