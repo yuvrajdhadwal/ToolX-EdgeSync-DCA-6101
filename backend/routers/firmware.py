@@ -6,7 +6,18 @@ from sqlalchemy.orm import Session
 
 from core.security import get_authenticated_user, require_developer_manager
 from database import SessionLocal
-from services import firmware_service
+from services.firmware import (
+    approve_firmware,
+    cloud_to_many_device,
+    deploy_firmware,
+    download_firmware,
+    get_compatible_devices,
+    get_firmware_by_id,
+    get_firmware_by_status,
+    get_firmware_device_types,
+    reject_firmware,
+    upload_firmware,
+)
 
 router = APIRouter()
 
@@ -54,7 +65,7 @@ def deploy_firmware(
 		)
 
 	try:
-		result = firmware_service.deploy_firmware(
+		result = deploy_firmware(
 			db=db,
 			firmware_id=firmware_id,
 			serial_number=payload.serial_number,
@@ -82,7 +93,7 @@ def cloud_to_many_device(
 		)
 
 	try:
-		result = firmware_service.cloud_to_many_device(
+		result = cloud_to_many_device(
 			db=db,
 			firmware_id=payload.firmware_id,
 			serial_numbers=payload.serial_numbers,
@@ -108,7 +119,7 @@ def get_compatible_devices(
 		raise HTTPException(status_code=403, detail="Only business managers can view compatible devices")
 
 	try:
-		result = firmware_service.get_compatible_devices(db=db, firmware_id=firmware_id)
+		result = get_compatible_devices(db=db, firmware_id=firmware_id)
 		return result
 	except ValueError as e:
 		if "not found" in str(e).lower():
@@ -143,7 +154,7 @@ async def upload_firmware(
 	file_content = await file.read()
 
 	try:
-		result = await firmware_service.upload_firmware(
+		result = await upload_firmware(
 			db=db,
 			file_content=file_content,
 			device_type=device_type,
@@ -165,7 +176,7 @@ def get_firmware_device_types(
 	authorization: Optional[str] = Header(default=None),
 ):
 	user = get_authenticated_user(authorization, db)
-	return firmware_service.get_firmware_device_types(db=db, user=user)
+	return get_firmware_device_types(db=db, user=user)
 
 
 @router.get("/firmware/status/{status}")
@@ -177,7 +188,7 @@ def get_firmware_by_status(
 	user = get_authenticated_user(authorization, db)
 
 	try:
-		results = firmware_service.get_firmware_by_status(db=db, status=status, user=user)
+		results = get_firmware_by_status(db=db, status=status, user=user)
 		return results
 	except ValueError as e:
 		raise HTTPException(status_code=400, detail=str(e))
@@ -191,7 +202,7 @@ def get_firmware_by_id(
 ):
 	user = get_authenticated_user(authorization, db)
 	try:
-		result = firmware_service.get_firmware_by_id(db=db, firmware_id=firmware_id, user=user)
+		result = get_firmware_by_id(db=db, firmware_id=firmware_id, user=user)
 		return result
 	except ValueError as e:
 		if "not found" in str(e).lower():
@@ -207,7 +218,7 @@ def download_firmware(
 ):
 	user = get_authenticated_user(authorization, db)
 	try:
-		content = firmware_service.download_firmware(db=db, firmware_id=firmware_id, user=user)
+		content = download_firmware(db=db, firmware_id=firmware_id, user=user)
 		return Response(
 			content=content,
 			media_type="application/octet-stream",
@@ -242,7 +253,7 @@ def reject_firmware(
 	user = get_authenticated_user(authorization, db)
 
 	try:
-		result = firmware_service.reject_firmware(
+		result = reject_firmware(
 			db=db,
 			firmware_id=firmware_id,
 			manager_id=user.id,
@@ -271,7 +282,7 @@ def approve_firmware(
 	user = get_authenticated_user(authorization, db)
 
 	try:
-		result = firmware_service.approve_firmware(
+		result = approve_firmware(
 			db=db,
 			firmware_id=firmware_id,
 			manager_id=user.id,
