@@ -2,7 +2,6 @@ from datetime import timedelta
 from enum import Enum
 from typing import Optional
 
-import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -10,8 +9,8 @@ from sqlalchemy.orm import Session
 
 from core.security import create_access_token, verify_token
 from database import SessionLocal
-from models import (BusinessManager, Developer, DeveloperManager,
-					FieldShopProfessional, User)
+from services.auth_service import (authenticate_user, create_user,
+								 get_user_by_username)
 
 router = APIRouter()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -39,71 +38,18 @@ class UserCreate(BaseModel):
 	developer_manager_id: Optional[int] = None
 
 
-def get_user_by_username(db: Session, username: str):
-	return db.query(User).filter(User.username == username).first()
-
-
-def create_user(db: Session, user: UserCreate):
-	hashed_password = bcrypt.hashpw(
-		user.password.encode("utf-8"), bcrypt.gensalt()
-	).decode("utf-8")
-
-	if user.role == UserRole.developer:
-		if not user.developer_manager_id:
-			raise HTTPException(
-				status_code=400, detail="Developer must have a developer manager ID"
-			)
-		developer_manager = (
-			db.query(DeveloperManager)
-			.filter(DeveloperManager.id == user.developer_manager_id)
-			.first()
-		)
-		if not developer_manager:
-			raise HTTPException(status_code=404, detail="Developer manager not found")
-		db_user = Developer(
-			username=user.username,
-			hashed_password=hashed_password,
-			manager_id=developer_manager.id,
-		)
-	elif user.role == UserRole.developer_manager:
-		db_user = DeveloperManager(
-			username=user.username, hashed_password=hashed_password
-		)
-	elif user.role == UserRole.business_manager:
-		db_user = BusinessManager(
-			username=user.username, hashed_password=hashed_password
-		)
-	elif user.role == UserRole.field_shop_professional:
-		db_user = FieldShopProfessional(
-			username=user.username, hashed_password=hashed_password
-		)
-	else:
-		raise HTTPException(status_code=400, detail="Invalid role type")
-
-	db.add(db_user)
-	db.commit()
-	db.refresh(db_user)
-
-	return "complete"
-
-
-def authenticate_user(username: str, password: str, db: Session):
-	user = db.query(User).filter(User.username == username).first()
-	if not user:
-		return False
-	if not bcrypt.checkpw(
-		password.encode("utf-8"), user.hashed_password.encode("utf-8")
-	):
-		return False
-	return user
-
-
 @router.post("/register")
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
 	db_user = get_user_by_username(db, username=user.username)
 	if db_user:
 		raise HTTPException(status_code=400, detail="Username already registered")
-	return create_user(db=db, user=user)
+	return create_user(
+		db=db,
+		role=user.role.value,
+		username=user.username,
+		password=user.password,
+		developer_manager_id=user.developer_manager_id,
+	)
 
 
 @router.post("/token")
