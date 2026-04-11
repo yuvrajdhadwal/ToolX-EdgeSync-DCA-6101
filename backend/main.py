@@ -58,31 +58,20 @@ Expected functions to be removed:
 """
 
 import os
-import threading
-import time
-from datetime import datetime, timezone
-from typing import Set
 
-from database import Base, SessionLocal, engine
+from database import Base, engine
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from iot import telemetry_listener
-from models import Device
 from routers.auth import router as auth_router
 from routers.devices import router as devices_router
 from routers.firmware import router as firmware_router
 from routers.users import router as users_router
-from acceptance_status import update_acceptance_status
-from core.security import (
-    create_access_token,
-    get_authenticated_user,
-    get_token_payload_from_header,
-    oauth2_scheme,
-    require_developer_manager,
-    verify_token,
+from services.telemetry_service import (
+    start_active_device_worker,
+    start_firmware_worker,
 )
 
 app = FastAPI()
@@ -105,64 +94,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-IOTHUB_CONNECTION_STRING = os.getenv("IOT_CONNECTION")
-EVENTHUB_CONNECTION_STRING = os.getenv("EVENTHUB_CONNECTION")
-ACTIVE_DEVICE_ONLINE_MESSAGE = os.getenv("ACTIVE_DEVICE_ONLINE_MESSAGE", "Device is Online")
-ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
-ACTIVE_DEVICE_RETRY_SECONDS = int(os.getenv("ACTIVE_DEVICE_RETRY_SECONDS", "5"))
-
-active_device_serials: Set[str] = set()
-active_device_last_seen: dict[str, datetime] = {}
-active_device_lock = threading.Lock()
-
-
-def _record_device_activity(device_id: str, body: str):
-    if ACTIVE_DEVICE_ONLINE_MESSAGE.lower() not in body.lower():
-        return
-
-    db = SessionLocal()
-    try:
-        device = db.query(Device).filter(Device.serial_number == device_id).first()
-        if not device:
-            return
-
-        device.last_online = datetime.now(timezone.utc)
-        db.commit()
-    finally:
-        db.close()
-
-
-def telemetry_activity_worker():
-    if not EVENTHUB_CONNECTION_STRING:
-        return
-
-    while True:
-        try:
-            telemetry_listener(on_activity=_record_device_activity)
-        except Exception as ex:
-            print(f"Active-device telemetry listener error: {ex}")
-
-def telemetry_install_accept_worker():
-    if not EVENTHUB_CONNECTION_STRING:
-        return
-
-    while True:
-        try:
-            telemetry_listener(on_activity=update_acceptance_status)
-        except Exception as ex:
-            print(f"Firmware telemetry listener error: {ex}")
-            
-
-@app.on_event("startup")
-def start_active_device_worker():
-    threading.Thread(target=telemetry_activity_worker, daemon=True).start()
-
-@app.on_event("startup")
-def start_firmware_worker():
-    threading.Thread(target=telemetry_install_accept_worker, daemon=True).start()
+app.on_event("startup")(start_active_device_worker)
+app.on_event("startup")(start_firmware_worker)
 
 if os.path.exists("static/assets"):
     app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
