@@ -8,20 +8,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from core.security import create_access_token, verify_token
-from database import SessionLocal
+from database import get_db
 from services.auth_service import (authenticate_user, create_user,
 								 get_user_by_username)
 
 router = APIRouter()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
-def get_db():
-	db = SessionLocal()
-	try:
-		yield db
-	finally:
-		db.close()
 
 
 class UserRole(str, Enum):

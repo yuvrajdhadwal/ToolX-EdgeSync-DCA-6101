@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from core.security import get_authenticated_user, require_developer_manager
-from database import SessionLocal
+from database import get_db
 from services.firmware import (
 	approve_firmware as approve_firmware_service,
 	cloud_to_many_device as cloud_to_many_device_service,
@@ -20,14 +20,6 @@ from services.firmware import (
 )
 
 router = APIRouter()
-
-
-def get_db():
-	db = SessionLocal()
-	try:
-		yield db
-	finally:
-		db.close()
 
 
 class DeployFirmwareRequest(BaseModel):

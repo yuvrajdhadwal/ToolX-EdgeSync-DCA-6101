@@ -4,18 +4,10 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from core.security import get_authenticated_user
-from database import SessionLocal
+from database import get_db
 from models import DeveloperManager, User
 
 router = APIRouter()
-
-
-def get_db():
-	db = SessionLocal()
-	try:
-		yield db
-	finally:
-		db.close()
 
 
 @router.get("/devmng")
