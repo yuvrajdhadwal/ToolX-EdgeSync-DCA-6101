@@ -476,12 +476,6 @@ const WorldMapPage: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <label
-                htmlFor="status-filter"
-                style={{ color: COLORS.textMuted, fontSize: '0.9rem', fontWeight: 600 }}
-              >
-                Status:
-              </label>
               <select
                 id="status-filter"
                 value={selectedStatus}
