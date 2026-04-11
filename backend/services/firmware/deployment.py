@@ -7,8 +7,7 @@ from sqlalchemy.orm import Session
 
 from iot import FirmwareOverview, deploy_helper
 from models import BusinessManager, Deploy, Device, FirmwareUpdate
-
-from .core import get_region_from_coordinates
+from services.device_service import get_region_from_coordinates
 
 
 def deploy_firmware(

@@ -11,7 +11,6 @@ from .core import (
     get_firmware_by_status,
     get_firmware_device_types,
     get_firmware_status,
-    get_region_from_coordinates,
     map_firmware_response,
     user_can_view_firmware,
 )
@@ -38,7 +37,6 @@ __all__ = [
     "get_firmware_status",
     "map_firmware_response",
     "user_can_view_firmware",
-    "get_region_from_coordinates",
     # Read operations
     "get_firmware_by_id",
     "get_firmware_by_status",
