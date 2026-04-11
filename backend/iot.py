@@ -1,3 +1,14 @@
+"""
+Expected functionality:
+- IoT Hub / Event Hub helper functions only.
+
+Expected functions to be added:
+- None
+
+Expected functions to be removed:
+- None
+"""
+
 import os
 import threading
 import time
