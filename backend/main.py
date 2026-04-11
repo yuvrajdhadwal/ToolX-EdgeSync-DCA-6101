@@ -64,33 +64,31 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import List, Optional, Set
 
-import bcrypt
 from azure.iot.hub import IoTHubRegistryManager
 from database import Base, SessionLocal, engine
 from dotenv import load_dotenv
 from fastapi import (Depends, FastAPI, File, Form, Header, HTTPException,
-                     Response, UploadFile, status)
+                     Response, UploadFile)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
 from pydantic import BaseModel, field_validator
+from routers.auth import router as auth_router
+from routers.devices import router as devices_router
 from sqlalchemy.orm import Session
 from acceptance_status import update_acceptance_status
 from core.security import (
-    create_access_token,
     get_authenticated_user,
-    get_token_payload_from_header,
-    oauth2_scheme,
     require_developer_manager,
-    verify_token,
 )
 
 app = FastAPI()
+app.include_router(auth_router)
+app.include_router(devices_router)
 Base.metadata.create_all(bind=engine)
 load_dotenv()
 
@@ -284,59 +282,10 @@ class DeployManyRequest(BaseModel):
     firmware_id: int
     isEmergency: bool = False
 
-
-def get_user_by_username(db: Session, username: str):
-    return db.query(User).filter(User.username == username).first()
-
-
 @app.get("/devmng")
 def get_devmng(db: Session = Depends(get_db)):
     managers = db.query(DeveloperManager).all()
     return [{"id": mng.id, "username": mng.username} for mng in managers]
-
-
-def create_user(db: Session, user: UserCreate):
-    hashed_password = bcrypt.hashpw(
-        user.password.encode("utf-8"), bcrypt.gensalt()
-    ).decode("utf-8")
-
-    if user.role == UserRole.developer:
-        if not user.developer_manager_id:
-            raise HTTPException(
-                status_code=400, detail="Developer must have a developer manager ID"
-            )
-        developer_manager = (
-            db.query(DeveloperManager)
-            .filter(DeveloperManager.id == user.developer_manager_id)
-            .first()
-        )
-        if not developer_manager:
-            raise HTTPException(status_code=404, detail="Developer manager not found")
-        db_user = Developer(
-            username=user.username,
-            hashed_password=hashed_password,
-            manager_id=developer_manager.id,
-        )
-    elif user.role == UserRole.developer_manager:
-        db_user = DeveloperManager(
-            username=user.username, hashed_password=hashed_password
-        )
-    elif user.role == UserRole.business_manager:
-        db_user = BusinessManager(
-            username=user.username, hashed_password=hashed_password
-        )
-    elif user.role == UserRole.field_shop_professional:
-        db_user = FieldShopProfessional(
-            username=user.username, hashed_password=hashed_password
-        )
-    else:
-        raise HTTPException(status_code=400, detail="Invalid role type")
-
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-
-    return "complete"
 
 
 # Update deploy-to-one-device endpoint
@@ -641,189 +590,6 @@ async def upload_firmware(
     return {"message": "upload successful"}
 
 
-@app.post("/add_device")
-def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
-    existing_device = (
-        db.query(Device).filter(Device.serial_number == device.serial_number).first()
-    )
-    if existing_device:
-        raise HTTPException(
-            status_code=400, detail="Device with this serial number already exists"
-        )
-
-    db_device = Device(
-        serial_number=device.serial_number,
-        firmware_id=None,
-        device_type=device.device_type,
-        location=device.location,
-        developer_manager=device.developer_manager,
-        description=device.description,
-        latitude=device.latitude,
-        longitude=device.longitude,
-        last_update=datetime.now(timezone.utc),
-    )
-    db.add(db_device)
-    db.commit()
-    db.refresh(db_device)
-    return {"message": "Device added successfully"}
-
-
-@app.get("/get_devices")
-def get_devices(db: Session = Depends(get_db)):
-    manager_lookup = {
-        manager.id: manager.username for manager in db.query(DeveloperManager).all()
-    }
-
-    def resolve_manager_name(value: Optional[str]) -> str:
-        if value is None:
-            return ""
-        raw_value = str(value).strip()
-        if not raw_value:
-            return ""
-        if raw_value.isdigit():
-            return manager_lookup.get(int(raw_value), raw_value)
-        return raw_value
-
-    devices = db.query(Device).all()
-    return [
-        {
-            "device_type": d.device_type,
-            "version_number": d.firmware.version_number if d.firmware else "N/A",
-            "last_update": (
-                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
-            ),
-            "location": d.location,
-            "serial_number": d.serial_number,
-            "description": d.description,
-            "developer_manager": resolve_manager_name(d.developer_manager),
-            "latitude": d.latitude,
-            "longitude": d.longitude,
-            "region": get_region_from_coordinates(d.latitude, d.longitude),
-        }
-        for d in devices
-    ]
-
-
-@app.get("/get_online_devices")
-def get_online_devices(db: Session = Depends(get_db)):
-    cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
-
-    manager_lookup = {
-        manager.id: manager.username for manager in db.query(DeveloperManager).all()
-    }
-
-    def resolve_manager_name(value: Optional[str]) -> str:
-        if value is None:
-            return ""
-        raw_value = str(value).strip()
-        if not raw_value:
-            return ""
-        if raw_value.isdigit():
-            return manager_lookup.get(int(raw_value), raw_value)
-        return raw_value
-
-    devices = (
-        db.query(Device)
-        .filter(Device.last_online.is_not(None), Device.last_online >= cutoff)
-        .all()
-    )
-
-    return [
-        {
-            "device_type": d.device_type,
-            "version_number": d.firmware.version_number if d.firmware else "N/A",
-            "last_update": (
-                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
-            ),
-            "location": d.location,
-            "serial_number": d.serial_number,
-            "description": d.description,
-            "developer_manager": resolve_manager_name(d.developer_manager),
-            "latitude": d.latitude,
-            "longitude": d.longitude,
-            "region": get_region_from_coordinates(d.latitude, d.longitude),
-        }
-        for d in devices
-    ]
-
-@app.get("/device/{serial_number}/deploy-history")
-def get_deploy_history(
-    serial_number: str,
-    db: Session = Depends(get_db),
-):
-    device = db.query(Device).filter(Device.serial_number == serial_number).first()
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-
-    deploys = (
-        db.query(Deploy)
-        .filter(Deploy.device_serial == serial_number)
-        .order_by(Deploy.timestamp.desc())
-        .all()
-    )
-
-    return [
-        {
-            "id": d.id,
-            "firmware_version": db.query(FirmwareUpdate)
-            .filter(FirmwareUpdate.id == d.target_firmware_id)
-            .first()
-            .version_number,
-            "timestamp": d.timestamp.strftime("%Y-%m-%d %H:%M"),
-            "isActive": d.isActive,
-        }
-        for d in deploys
-    ]
-
-
-@app.delete("/remove_device/{serial_number}")
-def delete_device(serial_number: str, db: Session = Depends(get_db)):
-    device = db.query(Device).filter(Device.serial_number == serial_number).first()
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-    db.delete(device)
-    db.commit()
-    return {"message": "Device deleted successfully"}
-
-
-@app.post("/register")
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = get_user_by_username(db, username=user.username)
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    return create_user(db=db, user=user)
-
-
-def authenticate_user(username: str, password: str, db: Session):
-    user = db.query(User).filter(User.username == username).first()
-    if not user:
-        return False
-    if not bcrypt.checkpw(
-        password.encode("utf-8"), user.hashed_password.encode("utf-8")
-    ):
-        return False
-    return user
-
-
-@app.post("/token")
-def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
-):
-    user = authenticate_user(form_data.username, form_data.password, db)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username, "role": user.type},
-        expires_delta=access_token_expires,
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
 def user_can_view_firmware(user: User, firmware_id: int) -> bool:
     return any(firmware.id == firmware_id for firmware in user.viewable_firmware)
 
@@ -841,16 +607,6 @@ def get_username_by_id(
         raise HTTPException(status_code=404, detail="User not found")
 
     return {"id": user.id, "username": user.username}
-
-
-@app.get("/verify-token/{token}")
-async def verify_user_token(token: str):
-    payload = verify_token(token=token)
-    return {
-        "message": "Token is valid",
-        "user": payload.get("sub"),
-        "role": payload.get("role"),
-    }
 
 
 class FirmwareResponse(BaseModel):
