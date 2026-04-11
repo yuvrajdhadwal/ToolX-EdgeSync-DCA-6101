@@ -61,27 +61,27 @@ import os
 import threading
 import time
 from datetime import datetime, timezone
-from typing import Optional, Set
+from typing import Set
 
 from database import Base, SessionLocal, engine
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from iot import telemetry_listener
-from models import DeveloperManager, Device, User
+from models import Device
 from routers.auth import router as auth_router
 from routers.devices import router as devices_router
 from routers.firmware import router as firmware_router
-from sqlalchemy.orm import Session
+from routers.users import router as users_router
 from acceptance_status import update_acceptance_status
-from core.security import get_authenticated_user
 
 app = FastAPI()
 app.include_router(auth_router)
 app.include_router(devices_router)
 app.include_router(firmware_router)
+app.include_router(users_router)
 Base.metadata.create_all(bind=engine)
 load_dotenv()
 
@@ -96,15 +96,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
@@ -164,27 +155,6 @@ def start_active_device_worker():
 @app.on_event("startup")
 def start_firmware_worker():
     threading.Thread(target=telemetry_install_accept_worker, daemon=True).start()
-
-@app.get("/devmng")
-def get_devmng(db: Session = Depends(get_db)):
-    managers = db.query(DeveloperManager).all()
-    return [{"id": mng.id, "username": mng.username} for mng in managers]
-
-
-@app.get("/users/{user_id}/username")
-def get_username_by_id(
-    user_id: int,
-    db: Session = Depends(get_db),
-    authorization: Optional[str] = Header(default=None),
-):
-    get_authenticated_user(authorization, db)
-
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return {"id": user.id, "username": user.username}
-
 
 if os.path.exists("static/assets"):
     app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
