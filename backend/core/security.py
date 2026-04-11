@@ -4,7 +4,6 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-import bcrypt
 from dotenv import load_dotenv
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
