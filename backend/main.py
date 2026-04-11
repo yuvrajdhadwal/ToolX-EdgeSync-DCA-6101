@@ -212,12 +212,6 @@ class UserRole(str, Enum):
     business_manager = "business_manager"
     field_shop_professional = "field_shop_professional"
 
-class UserCreate(BaseModel):
-    role: UserRole
-    username: str
-    password: str
-    developer_manager_id: Optional[int] = None
-
 class FirmwareCreate(BaseModel):
     objectBinary: str
     device_type: str
