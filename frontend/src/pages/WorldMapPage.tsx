@@ -35,6 +35,8 @@ type Device = {
 
 type DeviceActivityStatus = 'current_active' | 'recent' | 'stale' | 'inactive'
 
+type DeviceStatusFilter = 'all' | DeviceActivityStatus
+
 type FirmwareOption = {
   id: number
   version_number: string
@@ -77,6 +79,7 @@ const WorldMapPage: React.FC = () => {
   const [devices, setDevices] = React.useState<Device[]>([])
   const [selectedDeviceType, setSelectedDeviceType] = React.useState('all')
   const [selectedRegion, setSelectedRegion] = React.useState('all')
+  const [selectedStatus, setSelectedStatus] = React.useState<DeviceStatusFilter>('all')
   const [isSelectionMode, setIsSelectionMode] = React.useState(false)
   const [selectedSerials, setSelectedSerials] = React.useState<string[]>([])
   const [selectedDeployType, setSelectedDeployType] = React.useState<string | null>(null)
@@ -262,14 +265,16 @@ const WorldMapPage: React.FC = () => {
       const normalizedRegion = (device.region ?? '').toLowerCase()
       const matchesRegion =
         selectedRegion === 'all' || normalizedRegion === selectedRegion.toLowerCase()
+      const deviceStatus = getDeviceActivityStatus(device)
+      const matchesStatus = selectedStatus === 'all' || deviceStatus === selectedStatus
 
-      if (!matchesType || !matchesRegion) {
+      if (!matchesType || !matchesRegion || !matchesStatus) {
         return false
       }
 
       return true
     })
-  }, [devicesWithCoordinates, selectedDeviceType, selectedRegion])
+  }, [devicesWithCoordinates, selectedDeviceType, selectedRegion, selectedStatus, getDeviceActivityStatus])
 
   const selectedDevices = React.useMemo(
     () => filteredDevices.filter((device) => selectedSerials.includes(device.serial_number)),
@@ -428,6 +433,7 @@ const WorldMapPage: React.FC = () => {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <select
               value={selectedDeviceType}
               onChange={(event) => setSelectedDeviceType(event.target.value)}
@@ -467,6 +473,35 @@ const WorldMapPage: React.FC = () => {
                 </option>
               ))}
             </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <label
+                htmlFor="status-filter"
+                style={{ color: COLORS.textMuted, fontSize: '0.9rem', fontWeight: 600 }}
+              >
+                Status:
+              </label>
+              <select
+                id="status-filter"
+                value={selectedStatus}
+                onChange={(event) => setSelectedStatus(event.target.value as DeviceStatusFilter)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '6px',
+                  border: `1px solid ${COLORS.borderPrimary}`,
+                  backgroundColor: COLORS.backgroundPrimary,
+                  color: COLORS.textPrimary,
+                  minWidth: '180px',
+                }}
+              >
+                <option value="all">All status</option>
+                <option value="current_active">Current active</option>
+                <option value="recent">Last 15 min</option>
+                <option value="stale">Last 3 months</option>
+                <option value="inactive">Older</option>
+              </select>
+            </div>
 
             <button
               type="button"
@@ -513,7 +548,17 @@ const WorldMapPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setResetSignal(prev => prev + 1)}
+            onClick={() => {
+              setSelectedDeviceType('all')
+              setSelectedRegion('all')
+              setSelectedStatus('all')
+              setIsSelectionMode(false)
+              setSelectedSerials([])
+              setSelectedDeployType(null)
+              setDeployError('')
+              setDeploySuccess('')
+              setResetSignal((prev) => prev + 1)
+            }}
             style={{
               padding: '0.5rem 1.5rem',
               fontSize: '1rem',
