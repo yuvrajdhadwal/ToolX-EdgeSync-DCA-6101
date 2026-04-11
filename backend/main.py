@@ -76,6 +76,14 @@ from routers.devices import router as devices_router
 from routers.firmware import router as firmware_router
 from routers.users import router as users_router
 from acceptance_status import update_acceptance_status
+from core.security import (
+    create_access_token,
+    get_authenticated_user,
+    get_token_payload_from_header,
+    oauth2_scheme,
+    require_developer_manager,
+    verify_token,
+)
 
 app = FastAPI()
 app.include_router(auth_router)
