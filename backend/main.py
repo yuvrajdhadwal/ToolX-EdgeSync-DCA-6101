@@ -626,6 +626,7 @@ def get_devices(db: Session = Depends(get_db)):
             "last_update": (
                 d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
             ),
+            "last_online": d.last_online.isoformat() if d.last_online else None,
             "location": d.location,
             "serial_number": d.serial_number,
             "description": d.description,
@@ -669,6 +670,7 @@ def get_online_devices(db: Session = Depends(get_db)):
             "last_update": (
                 d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
             ),
+            "last_online": d.last_online.isoformat() if d.last_online else None,
             "location": d.location,
             "serial_number": d.serial_number,
             "description": d.description,

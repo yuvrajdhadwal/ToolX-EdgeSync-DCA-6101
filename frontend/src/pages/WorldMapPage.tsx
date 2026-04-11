@@ -24,6 +24,7 @@ type Device = {
   device_type: string
   version_number: string
   last_update: string
+  last_online?: string | null
   location: string
   region?: string
   serial_number: string
@@ -31,6 +32,8 @@ type Device = {
   latitude: number | null
   longitude: number | null
 }
+
+type DeviceActivityStatus = 'current_active' | 'recent' | 'stale' | 'inactive'
 
 type FirmwareOption = {
   id: number
@@ -86,8 +89,42 @@ const WorldMapPage: React.FC = () => {
   const [deploySuccess, setDeploySuccess] = React.useState('')
   const [isLoadingDevices, setIsLoadingDevices] = React.useState(true)
   const [loadError, setLoadError] = React.useState('')
+  const [currentActiveSerials, setCurrentActiveSerials] = React.useState<Set<string>>(new Set())
 
-  const pinIcon = React.useMemo(
+  const onlinePinIcon = React.useMemo(
+    () =>
+      L.divIcon({
+        className: '',
+        html: '<div style="width:14px;height:14px;border-radius:9999px;background:#2ea043;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      }),
+    [],
+  )
+
+  const selectedOnlinePinIcon = React.useMemo(
+    () =>
+      L.divIcon({
+        className: '',
+        html: '<div style="width:16px;height:16px;border-radius:9999px;background:#1f6feb;border:3px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      }),
+    [],
+  )
+
+  const currentActivePinIcon = React.useMemo(
+    () =>
+      L.divIcon({
+        className: '',
+        html: '<div style="width:14px;height:14px;border-radius:9999px;background:#0d1117;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      }),
+    [],
+  )
+
+  const offlinePinIcon = React.useMemo(
     () =>
       L.divIcon({
         className: '',
@@ -98,39 +135,84 @@ const WorldMapPage: React.FC = () => {
     [],
   )
 
-  const selectedPinIcon = React.useMemo(
+  const stalePinIcon = React.useMemo(
     () =>
       L.divIcon({
         className: '',
-        html: '<div style="width:16px;height:16px;border-radius:9999px;background:#2ea043;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
+        html: '<div style="width:14px;height:14px;border-radius:9999px;background:#d29922;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
       }),
     [],
   )
 
+  const getDeviceActivityStatus = React.useCallback((device: Device): DeviceActivityStatus => {
+    if (currentActiveSerials.has(device.serial_number)) {
+      return 'current_active'
+    }
+
+    if (!device.last_online) {
+      return 'inactive'
+    }
+
+    const timestampMs = Date.parse(device.last_online)
+    if (Number.isNaN(timestampMs)) {
+      return 'inactive'
+    }
+
+    const elapsedMs = Date.now() - timestampMs
+    const fifteenMinutesMs = 15 * 60 * 1000
+    const threeMonthsMs = 90 * 24 * 60 * 60 * 1000
+
+    if (elapsedMs <= fifteenMinutesMs) {
+      return 'recent'
+    }
+    if (elapsedMs <= threeMonthsMs) {
+      return 'stale'
+    }
+    return 'inactive'
+  }, [currentActiveSerials])
+
   React.useEffect(() => {
     let mounted = true
 
-    const loadOnlineDevices = async () => {
+    const loadDevices = async () => {
       if (mounted && devices.length === 0) {
         setIsLoadingDevices(true)
       }
       setLoadError('')
 
       try {
-        const res = await fetch('/get_online_devices')
-        if (!res.ok) {
-          throw new Error('Failed to load active devices')
+        const [allDevicesResponse, currentActiveDevicesResponse] = await Promise.all([
+          fetch('/get_devices'),
+          fetch('/get_online_devices'),
+        ])
+
+        if (!allDevicesResponse.ok || !currentActiveDevicesResponse.ok) {
+          throw new Error('Failed to load devices')
         }
-        const payload = await res.json()
-        const data = Array.isArray(payload) ? (payload as Device[]) : []
+
+        const allPayload = await allDevicesResponse.json()
+        const currentActivePayload = await currentActiveDevicesResponse.json()
+
+        const allDevices = Array.isArray(allPayload) ? (allPayload as Device[]) : []
+        const activeDevices = Array.isArray(currentActivePayload)
+          ? (currentActivePayload as Device[])
+          : []
+        const activeSerialSet = new Set(activeDevices.map((device) => device.serial_number))
+
         if (mounted) {
-          setDevices(data)
+          setDevices(allDevices)
+          setCurrentActiveSerials(activeSerialSet)
+          setSelectedSerials((previous) =>
+            previous.filter((serial) =>
+              activeSerialSet.has(serial),
+            ),
+          )
         }
       } catch {
         if (mounted) {
-          setLoadError('Failed to load active device pins.')
+          setLoadError('Failed to load device pins.')
         }
       } finally {
         if (mounted) {
@@ -139,16 +221,16 @@ const WorldMapPage: React.FC = () => {
       }
     }
 
-    void loadOnlineDevices()
+    void loadDevices()
     const timer = window.setInterval(() => {
-      void loadOnlineDevices()
+      void loadDevices()
     }, 10000)
 
     return () => {
       mounted = false
       window.clearInterval(timer)
     }
-  }, [])
+  }, [devices.length])
 
   const devicesWithCoordinates = React.useMemo(
     () =>
@@ -236,6 +318,11 @@ const WorldMapPage: React.FC = () => {
       if (nextSelected.length === 0) {
         setSelectedDeployType(null)
       }
+      return
+    }
+
+    if (!currentActiveSerials.has(device.serial_number)) {
+      setDeployError('Only current active devices can be selected for deploy.')
       return
     }
 
@@ -451,7 +538,7 @@ const WorldMapPage: React.FC = () => {
           </p>
         ) : null}
         {!isLoadingDevices && !loadError && filteredDevices.length === 0 ? (
-          <p style={{ margin: 0, color: COLORS.textMuted }}>No active devices match the selected filters.</p>
+          <p style={{ margin: 0, color: COLORS.textMuted }}>No devices match the selected filters.</p>
         ) : null}
         <div style={{ width: '77%', margin: '0 auto', minHeight: '600px', border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
           <MapContainer
@@ -468,13 +555,23 @@ const WorldMapPage: React.FC = () => {
               <Marker
                 key={device.serial_number}
                 position={[device.latitude as number, device.longitude as number]}
-                icon={selectedSerials.includes(device.serial_number) ? selectedPinIcon : pinIcon}
+                icon={
+                  selectedSerials.includes(device.serial_number)
+                    ? selectedOnlinePinIcon
+                    : getDeviceActivityStatus(device) === 'current_active'
+                      ? currentActivePinIcon
+                      : getDeviceActivityStatus(device) === 'recent'
+                        ? onlinePinIcon
+                        : getDeviceActivityStatus(device) === 'stale'
+                          ? stalePinIcon
+                          : offlinePinIcon
+                }
                 eventHandlers={{
                   click: () => handleMarkerClick(device),
                 }}
               >
                 <Tooltip direction="top" offset={[0, -10]}>
-                  {device.device_type}
+                  {device.device_type} ({getDeviceActivityStatus(device) === 'current_active' ? 'Current active' : getDeviceActivityStatus(device) === 'recent' ? 'Last 15 minutes' : getDeviceActivityStatus(device) === 'stale' ? 'Last 3 months' : 'Older than 3 months'})
                 </Tooltip>
               </Marker>
             ))}
