@@ -71,6 +71,7 @@ from fastapi import (Depends, FastAPI, File, Form, Header, HTTPException,
                      Response, UploadFile, status)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
 from jose import JWTError, jwt
