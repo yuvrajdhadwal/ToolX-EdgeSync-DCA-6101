@@ -76,8 +76,9 @@ from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from routers.auth import router as auth_router
+from routers.devices import router as devices_router
 from sqlalchemy.orm import Session
 from acceptance_status import update_acceptance_status
 from verification.security import (
@@ -91,6 +92,7 @@ from verification.security import (
 
 app = FastAPI()
 app.include_router(auth_router)
+app.include_router(devices_router)
 Base.metadata.create_all(bind=engine)
 load_dotenv()
 
@@ -121,7 +123,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 IOTHUB_CONNECTION_STRING = os.getenv("IOT_CONNECTION")
 EVENTHUB_CONNECTION_STRING = os.getenv("EVENTHUB_CONNECTION")
 ACTIVE_DEVICE_ONLINE_MESSAGE = os.getenv("ACTIVE_DEVICE_ONLINE_MESSAGE", "Device is Online")
-ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
 ACTIVE_DEVICE_RETRY_SECONDS = int(os.getenv("ACTIVE_DEVICE_RETRY_SECONDS", "5"))
 
 active_device_serials: Set[str] = set()
@@ -221,49 +222,6 @@ class FirmwareCreate(BaseModel):
     version_number: str
     isEmergency: bool
     description: str
-
-
-class DeviceCreate(BaseModel):
-    serial_number: str
-    device_type: str
-    version_number: Optional[str] = None
-    description: str
-    location: str
-    developer_manager: str
-    longitude: Optional[float] = None
-    latitude: Optional[float] = None
-
-    @field_validator(
-        "device_type",
-        "serial_number",
-        "version_number",
-        "description",
-        "location",
-        "developer_manager",
-    )
-    @classmethod
-    def fields_must_not_be_empty(cls, v):
-        if not v.strip():
-            raise ValueError("Field must not be empty")
-        return v
-
-    @field_validator("latitude")
-    @classmethod
-    def latitude_must_be_valid(cls, value: Optional[float]):
-        if value is None:
-            return value
-        if value < -90 or value > 90:
-            raise ValueError("Latitude must be between -90 and 90")
-        return value
-
-    @field_validator("longitude")
-    @classmethod
-    def longitude_must_be_valid(cls, value: Optional[float]):
-        if value is None:
-            return value
-        if value < -180 or value > 180:
-            raise ValueError("Longitude must be between -180 and 180")
-        return value
 
 
 # Add Pydantic model for deploy request
@@ -585,153 +543,6 @@ async def upload_firmware(
     db.commit()
     db.refresh(firmware)
     return {"message": "upload successful"}
-
-
-@app.post("/add_device")
-def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
-    existing_device = (
-        db.query(Device).filter(Device.serial_number == device.serial_number).first()
-    )
-    if existing_device:
-        raise HTTPException(
-            status_code=400, detail="Device with this serial number already exists"
-        )
-
-    db_device = Device(
-        serial_number=device.serial_number,
-        firmware_id=None,
-        device_type=device.device_type,
-        location=device.location,
-        developer_manager=device.developer_manager,
-        description=device.description,
-        latitude=device.latitude,
-        longitude=device.longitude,
-        last_update=datetime.now(timezone.utc),
-    )
-    db.add(db_device)
-    db.commit()
-    db.refresh(db_device)
-    return {"message": "Device added successfully"}
-
-
-@app.get("/get_devices")
-def get_devices(db: Session = Depends(get_db)):
-    manager_lookup = {
-        manager.id: manager.username for manager in db.query(DeveloperManager).all()
-    }
-
-    def resolve_manager_name(value: Optional[str]) -> str:
-        if value is None:
-            return ""
-        raw_value = str(value).strip()
-        if not raw_value:
-            return ""
-        if raw_value.isdigit():
-            return manager_lookup.get(int(raw_value), raw_value)
-        return raw_value
-
-    devices = db.query(Device).all()
-    return [
-        {
-            "device_type": d.device_type,
-            "version_number": d.firmware.version_number if d.firmware else "N/A",
-            "last_update": (
-                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
-            ),
-            "location": d.location,
-            "serial_number": d.serial_number,
-            "description": d.description,
-            "developer_manager": resolve_manager_name(d.developer_manager),
-            "latitude": d.latitude,
-            "longitude": d.longitude,
-            "region": get_region_from_coordinates(d.latitude, d.longitude),
-        }
-        for d in devices
-    ]
-
-
-@app.get("/get_online_devices")
-def get_online_devices(db: Session = Depends(get_db)):
-    cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
-
-    manager_lookup = {
-        manager.id: manager.username for manager in db.query(DeveloperManager).all()
-    }
-
-    def resolve_manager_name(value: Optional[str]) -> str:
-        if value is None:
-            return ""
-        raw_value = str(value).strip()
-        if not raw_value:
-            return ""
-        if raw_value.isdigit():
-            return manager_lookup.get(int(raw_value), raw_value)
-        return raw_value
-
-    devices = (
-        db.query(Device)
-        .filter(Device.last_online.is_not(None), Device.last_online >= cutoff)
-        .all()
-    )
-
-    return [
-        {
-            "device_type": d.device_type,
-            "version_number": d.firmware.version_number if d.firmware else "N/A",
-            "last_update": (
-                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
-            ),
-            "location": d.location,
-            "serial_number": d.serial_number,
-            "description": d.description,
-            "developer_manager": resolve_manager_name(d.developer_manager),
-            "latitude": d.latitude,
-            "longitude": d.longitude,
-            "region": get_region_from_coordinates(d.latitude, d.longitude),
-        }
-        for d in devices
-    ]
-
-@app.get("/device/{serial_number}/deploy-history")
-def get_deploy_history(
-    serial_number: str,
-    db: Session = Depends(get_db),
-):
-    device = db.query(Device).filter(Device.serial_number == serial_number).first()
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-
-    deploys = (
-        db.query(Deploy)
-        .filter(Deploy.device_serial == serial_number)
-        .order_by(Deploy.timestamp.desc())
-        .all()
-    )
-
-    return [
-        {
-            "id": d.id,
-            "firmware_version": db.query(FirmwareUpdate)
-            .filter(FirmwareUpdate.id == d.target_firmware_id)
-            .first()
-            .version_number,
-            "timestamp": d.timestamp.strftime("%Y-%m-%d %H:%M"),
-            "isActive": d.isActive,
-        }
-        for d in deploys
-    ]
-
-
-@app.delete("/remove_device/{serial_number}")
-def delete_device(serial_number: str, db: Session = Depends(get_db)):
-    device = db.query(Device).filter(Device.serial_number == serial_number).first()
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-    db.delete(device)
-    db.commit()
-    return {"message": "Device deleted successfully"}
-
-
 
 
 def user_can_view_firmware(user: User, firmware_id: int) -> bool:
