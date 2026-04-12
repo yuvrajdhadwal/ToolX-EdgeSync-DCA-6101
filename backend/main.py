@@ -149,11 +149,9 @@ def telemetry_install_accept_worker():
 def start_active_device_worker():
     threading.Thread(target=telemetry_activity_worker, daemon=True).start()
 
-class UserRole(str, Enum):
-    developer = "developer"
-    developer_manager = "developer_manager"
-    business_manager = "business_manager"
-    field_shop_professional = "field_shop_professional"
+@app.on_event("startup")
+def start_firmware_worker():
+    threading.Thread(target=telemetry_install_accept_worker, daemon=True).start()
 
 
 @app.get("/devmng")
