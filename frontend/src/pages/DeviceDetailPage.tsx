@@ -84,7 +84,7 @@ const DeviceDetailPage: React.FC = () => {
         if (res.status === 404) {
           setAcceptanceStatus(null)
           setHasNoDeployments(true)
-          return null  // ← stop here, don't try to parse JSON
+          return null
         }
         if (!res.ok) throw new Error('Failed to fetch acceptance status')
         return res.json() as Promise<{ isAccepted: boolean | null }>
@@ -124,7 +124,7 @@ const DeviceDetailPage: React.FC = () => {
         if (!device?.version_number) return 'No recent deployment'
         return 'Field/Shop Person did not review yet'
       })(),
-    },  ]
+    }, ]
 
   const handleConfirmRemove = async () => {
     if (!device || isRemoving) {

@@ -1,8 +1,6 @@
 from database import SessionLocal
-from models import (Deploy, Device)
-
-from fastapi import (Depends, HTTPException, APIRouter)
-
+from models import Deploy, Device
+from fastapi import Depends, HTTPException, APIRouter
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -58,9 +56,8 @@ def get_acceptance_status(
         .order_by(Deploy.timestamp.desc())
         .first()
     )
-    
+
     if not latest_deploy:
         raise HTTPException(status_code=404, detail="No deployments found for this device")
-    
     
     return {"isAccepted": latest_deploy.isAccepted}
