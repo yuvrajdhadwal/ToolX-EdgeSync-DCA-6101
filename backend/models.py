@@ -25,6 +25,14 @@ downloads_table = Table(
     Column("firmware_id", Integer, ForeignKey("firmware_updates.id"), primary_key=True),
 )
 
+# Professional - Device M:N Relationship
+manages_table = Table(
+    "manages",
+    Base.metadata,
+    Column("professional_id", Integer, ForeignKey("field_shop_professionals.id", ondelete="CASCADE"), primary_key=True),
+    Column("device_serial", String(100), ForeignKey("devices.serial_number", ondelete="CASCADE"), primary_key=True),
+)
+
 # ======================
 #       User Tables
 # ======================
@@ -83,6 +91,8 @@ class FieldShopProfessional(User):
 
     # Firmware Downloading Relationship M:N
     download_firmware = relationship("FirmwareUpdate", secondary=downloads_table)
+    managed_devices = relationship("Device", secondary=manages_table, back_populates="assigned_professionals")
+
 
 
 # ==========================
@@ -126,6 +136,7 @@ class Device(Base):
     latitude = Column(Float)
     longitude = Column(Float)
 
+    assigned_professionals = relationship("FieldShopProfessional", secondary=manages_table, back_populates="managed_devices")
     firmware = relationship(
         "FirmwareUpdate",
         backref=backref("installed_devices", passive_deletes=True)
