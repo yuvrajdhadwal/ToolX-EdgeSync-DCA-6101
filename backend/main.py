@@ -22,8 +22,11 @@ from models import (BusinessManager, Deploy, Developer, DeveloperManager,
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from acceptance_status import update_acceptance_status
+from acceptance_status import router as acceptance_status_router
 
 app = FastAPI()
+app.include_router(acceptance_status_router)
+
 Base.metadata.create_all(bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 load_dotenv()

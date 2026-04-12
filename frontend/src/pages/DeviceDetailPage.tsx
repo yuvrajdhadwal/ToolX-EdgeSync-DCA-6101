@@ -32,6 +32,8 @@ const DeviceDetailPage: React.FC = () => {
   const [isRemoving, setIsRemoving] = useState(false)
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const [error, setError] = useState('')
+  const [acceptanceStatus, setAcceptanceStatus] = useState<boolean | null>(null)
+  const [hasNoDeployments, setHasNoDeployments] = useState(false)
 
   const decodedSerial = useMemo(() => (serialNumber ? decodeURIComponent(serialNumber) : ''), [serialNumber])
   const backRoute = useMemo(() => {
@@ -74,6 +76,29 @@ const DeviceDetailPage: React.FC = () => {
       })
   }, [decodedSerial, device])
 
+  useEffect(() => {
+    if (!decodedSerial) return
+  
+    fetch(`/device/${encodeURIComponent(decodedSerial)}/acceptance-status`)
+      .then((res) => {
+        if (res.status === 404) {
+          setAcceptanceStatus(null)
+          setHasNoDeployments(true)
+          return null  // ← stop here, don't try to parse JSON
+        }
+        if (!res.ok) throw new Error('Failed to fetch acceptance status')
+        return res.json() as Promise<{ isAccepted: boolean | null }>
+      })
+      .then((data) => {
+        if (!data) return
+        console.log('Acceptance status raw response:', data)
+        setAcceptanceStatus(data.isAccepted)
+      })
+      .catch(() => {
+        setAcceptanceStatus(null)
+      })
+  }, [decodedSerial])
+
   const detailRows: Array<{ label: string; value: string | null | undefined }> = [
     { label: 'Device Type', value: device?.device_type },
     { label: 'Firmware Version', value: device?.version_number },
@@ -90,7 +115,16 @@ const DeviceDetailPage: React.FC = () => {
     },
     { label: 'Serial Number', value: device?.serial_number },
     { label: 'Description', value: device?.description },
-  ]
+    {
+      label: 'Acceptance Status',
+      value: (() => {
+        if (hasNoDeployments) return 'No recent deployment'
+        if (acceptanceStatus === true) return 'Accepted'
+        if (acceptanceStatus === false) return 'Rejected'
+        if (!device?.version_number) return 'No recent deployment'
+        return 'Field/Shop Person did not review yet'
+      })(),
+    },  ]
 
   const handleConfirmRemove = async () => {
     if (!device || isRemoving) {
