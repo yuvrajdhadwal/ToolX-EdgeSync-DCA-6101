@@ -1,13 +1,4 @@
-"""
-Expected functionality:
-- Telemetry-based firmware acceptance status update helper.
 
-Expected functions to be added:
-- None
-
-Expected functions to be removed:
-- None
-"""
 
 from database import SessionLocal
 from models import Deploy
