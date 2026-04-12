@@ -1,13 +1,3 @@
-"""
-Expected functionality:
-- SQLAlchemy models and relationship tables only.
-
-Expected functions to be added:
-- None
-
-Expected functions to be removed:
-- None
-"""
 
 from sqlalchemy import (Column, Integer, String, Boolean, Float, LargeBinary,
     ForeignKey, DateTime, Table, ForeignKeyConstraint, UniqueConstraint)
