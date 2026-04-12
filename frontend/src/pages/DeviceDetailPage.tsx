@@ -91,7 +91,6 @@ const DeviceDetailPage: React.FC = () => {
       })
       .then((data) => {
         if (!data) return
-        console.log('Acceptance status raw response:', data)
         setAcceptanceStatus(data.isAccepted)
       })
       .catch(() => {
@@ -121,7 +120,6 @@ const DeviceDetailPage: React.FC = () => {
         if (hasNoDeployments) return 'No recent deployment'
         if (acceptanceStatus === true) return 'Accepted'
         if (acceptanceStatus === false) return 'Rejected'
-        if (!device?.version_number) return 'No recent deployment'
         return 'Field/Shop Person did not review yet'
       })(),
     }, ]
