@@ -1,3 +1,14 @@
+"""
+Expected functionality:
+- Database initialization helper.
+
+Expected functions to be added:
+- None
+
+Expected functions to be removed:
+- None
+"""
+
 from database import engine, Base
 import models
 

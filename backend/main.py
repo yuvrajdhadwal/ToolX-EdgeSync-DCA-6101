@@ -1,3 +1,62 @@
+"""
+Expected functionality:
+- FastAPI app bootstrap and wiring only.
+- CORS, static file serving, router inclusion, and startup hooks.
+
+Expected functions to be added:
+- None
+
+Expected functions to be removed:
+- get_db
+- get_region_from_coordinates
+- _record_device_activity
+- telemetry_activity_worker
+- telemetry_install_accept_worker
+- start_active_device_worker
+- start_firmware_worker
+- UserRole
+- UserCreate
+- FirmwareCreate
+- DeviceCreate
+- DeployFirmwareRequest
+- DeployManyRequest
+- get_user_by_username
+- get_devmng
+- create_user
+- deploy_firmware
+- cloud_to_many_device
+- get_compatible_devices
+- upload_firmware
+- add_device
+- get_devices
+- get_online_devices
+- get_deploy_history
+- delete_device
+- register_user
+- authenticate_user
+- create_access_token
+- login_for_access_token
+- verify_token
+- get_token_payload_from_header
+- get_authenticated_user
+- user_can_view_firmware
+- require_developer_manager
+- get_username_by_id
+- verify_user_token
+- FirmwareResponse
+- RejectFirmwareRequest
+- ApproveFirmwareRequest
+- get_firmware_status
+- map_firmware_response
+- get_firmware_device_types
+- get_firmware_by_status
+- get_firmware_by_id
+- download_firmware
+- reject_firmware
+- approve_firmware
+- serve_react_app
+"""
+
 import os
 import threading
 import time
@@ -13,7 +72,7 @@ from fastapi import (Depends, FastAPI, File, Form, Header, HTTPException,
                      Response, UploadFile, status)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
 from jose import JWTError, jwt
@@ -22,10 +81,17 @@ from models import (BusinessManager, Deploy, Developer, DeveloperManager,
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from acceptance_status import update_acceptance_status
+from verification.security import (
+    create_access_token,
+    get_authenticated_user,
+    get_token_payload_from_header,
+    oauth2_scheme,
+    require_developer_manager,
+    verify_token,
+)
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 load_dotenv()
 
 origins = [
@@ -739,17 +805,6 @@ def authenticate_user(username: str, password: str, db: Session):
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encode_jwt
-
-
 @app.post("/token")
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
@@ -769,59 +824,8 @@ def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-def verify_token(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise HTTPException(status_code=403, detail="Token is invalid or expired")
-        return payload
-    except JWTError:
-        raise HTTPException(status_code=403, detail="Token is invalid or expired")
-
-
-def get_token_payload_from_header(authorization: Optional[str]) -> dict:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401, detail="Missing or invalid authorization header"
-        )
-    token = authorization.split(" ", 1)[1]
-    return verify_token(token=token)
-
-
-def get_authenticated_user(authorization: Optional[str], db: Session) -> User:
-    token = authorization.split(" ", 1)[1]
-    payload = verify_token(token=token)
-    username = payload.get("sub")
-
-    if not username:
-        raise HTTPException(status_code=403, detail="Token is invalid or expired")
-
-    user = db.query(User).filter(User.username == username).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user
-
-
 def user_can_view_firmware(user: User, firmware_id: int) -> bool:
     return any(firmware.id == firmware_id for firmware in user.viewable_firmware)
-
-
-def require_developer_manager(authorization: Optional[str]) -> str:
-    payload = get_token_payload_from_header(authorization)
-    role = payload.get("role")
-    username = payload.get("sub")
-
-    if role != UserRole.developer_manager.value:
-        raise HTTPException(
-            status_code=403, detail="Only developer managers can perform this action"
-        )
-
-    if not username:
-        raise HTTPException(status_code=403, detail="Token is invalid or expired")
-
-    return username
 
 
 @app.get("/users/{user_id}/username")
