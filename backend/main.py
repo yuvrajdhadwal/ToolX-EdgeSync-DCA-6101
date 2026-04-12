@@ -81,7 +81,7 @@ from models import (BusinessManager, Deploy, Developer, DeveloperManager,
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from acceptance_status import update_acceptance_status
-from core.security import (
+from verification.security import (
     create_access_token,
     get_authenticated_user,
     get_token_payload_from_header,
