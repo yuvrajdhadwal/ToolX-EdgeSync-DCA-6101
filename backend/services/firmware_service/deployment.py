@@ -10,6 +10,7 @@ from azure.iot.hub import IoTHubRegistryManager
 from iot import FirmwareOverview, deploy_helper
 from models import BusinessManager, Deploy, Device, FirmwareUpdate, User
 from sqlalchemy.orm import Session
+from services.device_service import get_region_from_coordinates
 
 from . import utils
 
@@ -21,9 +22,6 @@ def get_compatible_devices(firmware: FirmwareUpdate, db: Session) -> Dict[str, A
         d for d in devices
         if not d.firmware or d.firmware.version_number != firmware.version_number
     ]
-
-    # Import here to avoid circular imports
-    from main import get_region_from_coordinates
 
     all_regions = [
         "Africa", "Antarctica", "Asia", "Europe",
