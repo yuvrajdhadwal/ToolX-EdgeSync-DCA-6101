@@ -1,6 +1,6 @@
 import pytest
 
-from models import Developer
+from backend.database.models import Developer
 
 
 pytestmark = pytest.mark.developer

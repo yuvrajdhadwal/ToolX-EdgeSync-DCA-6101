@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError, SAWarning
 
 # Make sure to import your models here! 
 # Ensure Developer, DeveloperManager, etc., inherit from User.
-from models import (
+from backend.database.models import (
     Base, User, Developer, DeveloperManager, BusinessManager, 
     FieldShopProfessional, FirmwareUpdate, Device, Deploy, Install, Rejection
 )

@@ -1,0 +1,100 @@
+def deploy_to_devices(payload: DeployManyRequest,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = get_authenticated_user(authorization, db)
+
+    if user.type != UserRole.business_manager.value:
+        raise HTTPException(
+            status_code=403, detail="Only business managers can deploy firmware"
+        )
+
+    firmware = (
+        db.query(FirmwareUpdate)
+        .filter(FirmwareUpdate.id == payload.firmware_id)
+        .first()
+    )
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    if firmware.approved_by is None or firmware.declined_by is not None:
+        raise HTTPException(
+            status_code=400, detail="Only approved firmware can be deployed"
+        )
+
+    business_manager = (
+        db.query(BusinessManager).filter(BusinessManager.id == user.id).first()
+    )
+    if not business_manager:
+        raise HTTPException(status_code=404, detail="Business manager not found")
+
+    connection_str = os.getenv("IOT_CONNECTION")
+    iot_hub = (
+        IoTHubRegistryManager.from_connection_string(connection_str)
+        if connection_str
+        else None
+    )
+
+    firmware_overview = FirmwareOverview(
+        id=str(firmware.id),
+        device_type=firmware.device_type,
+        developer=str(firmware.uploaded_by or ""),
+        version_number=firmware.version_number,
+        isEmergency="1" if (firmware.isEmergency or payload.isEmergency)  else "0",
+        description=firmware.description or "",
+    )
+
+    results = []
+    for serial in payload.serial_numbers:
+        device = db.query(Device).filter(Device.serial_number == serial).first()
+        if not device:
+            results.append({"serial_number": serial, "status": "not found"})
+            continue
+
+        iot_status = "not configured"
+        if iot_hub:
+            try:
+                sent = deploy_helper(serial, iot_hub, firmware_overview)
+                iot_status = "sent" if sent else "failed"
+            except Exception as e:
+                print(f"IoT error for {serial}: {e}")
+                iot_status = "failed"
+
+
+        existing_deploy = (
+            db.query(Deploy)
+            .filter(
+                Deploy.device_serial == serial,
+                Deploy.isActive == True,
+            )
+            .first()
+        )
+        if existing_deploy:
+            existing_deploy.isActive = False
+
+        device.firmware_id = payload.firmware_id
+        device.last_update = datetime.now(timezone.utc)
+
+        deploy = Deploy(
+            manager_id=business_manager.id,
+            target_firmware_id=payload.firmware_id,
+            device_serial=serial,
+            device_firmware_id=payload.firmware_id,
+            timestamp=datetime.now(timezone.utc),
+            isActive=True,
+            isEmergency=payload.isEmergency,
+        )
+        db.add(deploy)
+        results.append(
+            {
+                "serial_number": serial,
+                "status": "deployed",
+                "iot_notification": iot_status,
+            }
+        )
+
+    db.commit()
+    return {
+        "message": f"Deployed to {len([r for r in results if r['status'] == 'deployed'])} device(s)",
+        "results": results,
+    }

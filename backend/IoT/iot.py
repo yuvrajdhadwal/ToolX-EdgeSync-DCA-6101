@@ -11,16 +11,6 @@ from pydantic import BaseModel
 
 load_dotenv()
 
-
-class FirmwareOverview(BaseModel):
-    id: str
-    device_type: str
-    developer: str
-    version_number: str
-    isEmergency: str
-    description: str
-
-
 def deploy_helper(
     device_id: str, iot_hub: IoTHubRegistryManager, firmware: FirmwareOverview
 ) -> bool:
@@ -59,9 +49,7 @@ def deploy_helper(
         success = False
     finally:
         return success
-
-
-
+    
 
 def telemetry_listener(
     on_activity: Optional[Callable[[str, str], None]] = None,
@@ -110,7 +98,6 @@ def on_event_batch(
         else:
             # Fallback logging if no callback provided
             print(f"[{device_id}] {body}")
-    
     
     partition_context.update_checkpoint()
 

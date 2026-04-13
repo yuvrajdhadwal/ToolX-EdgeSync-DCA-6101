@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
-from models import Base
+from backend.database.models import Base
 from tests.factories import ModelFactory
 
 

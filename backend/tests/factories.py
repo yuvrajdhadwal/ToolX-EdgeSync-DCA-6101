@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from models import (
+from backend.database.models import (
     BusinessManager,
     Deploy,
     Developer,
