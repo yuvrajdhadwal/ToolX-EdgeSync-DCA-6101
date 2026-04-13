@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import List, Optional, Set
 
+from acceptance_status import update_acceptance_status
 from azure.iot.hub import IoTHubRegistryManager
 from database import Base, SessionLocal, engine
 from dotenv import load_dotenv
@@ -14,7 +15,7 @@ from fastapi import (Depends, FastAPI, File, Form, Header, HTTPException,
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
+from iot import FirmwareOverview, deploy_helper, telemetry_listener
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
@@ -23,15 +24,10 @@ from routers.auth import router as auth_router
 from routers.devices import router as devices_router
 from routers.firmware import router as firmware_router
 from sqlalchemy.orm import Session
-from acceptance_status import update_acceptance_status
-from verification.security import (
-    create_access_token,
-    get_authenticated_user,
-    get_token_payload_from_header,
-    oauth2_scheme,
-    require_developer_manager,
-    verify_token,
-)
+from verification.security import (create_access_token, get_authenticated_user,
+                                   get_token_payload_from_header,
+                                   oauth2_scheme, require_developer_manager,
+                                   verify_token)
 
 app = FastAPI()
 app.include_router(auth_router)
