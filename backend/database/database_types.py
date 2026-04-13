@@ -1,3 +1,8 @@
+
+from enum import Enum
+from typing import Optional
+from pydantic import BaseModel, field_validator
+
 class UserRole(str, Enum):
     developer = "developer"
     developer_manager = "developer_manager"
@@ -62,4 +67,3 @@ class Device(BaseModel):
         if value < -180 or value > 180:
             raise ValueError("Longitude must be between -180 and 180")
         return value
-
