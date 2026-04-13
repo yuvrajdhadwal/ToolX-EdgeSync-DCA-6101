@@ -1,3 +1,13 @@
+from typing import Optional
+from backend.database.models import FirmwareUpdate
+from fastapi import Header, HTTPException
+from sqlalchemy.orm import Session
+from backend.database.models import Deploy
+from backend.login.authentication import get_authenticated_user
+from backend.database.database_types import UserRole
+from backend.firmware.firmware_types import convert_firmware_update_to_response
+from backend.firmware.isolation import user_can_view_firmware
+
 def get_firmware_status(firmware: FirmwareUpdate, db: Session = None) -> str:
     if firmware.declined_by is not None:
         return "rejected"
@@ -15,7 +25,7 @@ def get_firmware_status(firmware: FirmwareUpdate, db: Session = None) -> str:
 
 def get_firmware_by_status(
     status: str,
-    db: Session = Depends(get_db),
+    db: Session,
     authorization: Optional[str] = Header(default=None),
 ):
     user = get_authenticated_user(authorization, db)
@@ -108,11 +118,11 @@ def get_firmware_by_status(
                 .all()
             )
 
-    return [map_firmware_response(record) for record in records]
+    return [convert_firmware_update_to_response(record) for record in records]
 
 def get_firmware_by_id(
     firmware_id: int,
-    db: Session = Depends(get_db),
+    db: Session,
     authorization: Optional[str] = Header(default=None),
 ):
     user = get_authenticated_user(authorization, db)
@@ -123,7 +133,7 @@ def get_firmware_by_id(
 
     # Business managers can view all firmware
     if user.type == UserRole.business_manager.value:
-        return map_firmware_response(firmware)
+        return convert_firmware_update_to_response(firmware)
 
     if (
         not user_can_view_firmware(user, firmware.id)
@@ -131,4 +141,4 @@ def get_firmware_by_id(
     ):
         raise HTTPException(status_code=404, detail="Firmware not found")
 
-    return map_firmware_response(firmware)
+    return convert_firmware_update_to_response(firmware)

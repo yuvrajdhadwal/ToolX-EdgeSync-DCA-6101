@@ -1,3 +1,10 @@
+from datetime import datetime
+from typing import Optional
+from backend.database.models import FirmwareUpdate
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from backend.firmware.firmware import get_firmware_status
+
 class FirmwareResponse(BaseModel):
     id: int
     version_number: str

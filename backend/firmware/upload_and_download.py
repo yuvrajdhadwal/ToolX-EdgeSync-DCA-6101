@@ -1,11 +1,20 @@
+from typing import Optional
+from backend.database.models import FirmwareUpdate
+from fastapi import Header, HTTPException, UploadFile, Response
+from sqlalchemy.orm import Session
+from backend.database.models import Developer, DeveloperManager
+from backend.login.authentication import get_authenticated_user
+from backend.database.database_types import UserRole
+from backend.firmware.isolation import user_can_view_firmware
+
 async def upload_firmware(    
-    file: UploadFile = File(...),
-    device_type: str = Form(...),
-    version_number: str = Form(...),
-    isEmergency: bool = Form(...),
-    description: str = Form(...),
-    authorization: Optional[str] = Header(default=None),
-    db: Session = Depends(get_db),):
+    file: UploadFile,
+    device_type: str,
+    version_number: str,
+    isEmergency: bool,
+    description: str,
+    authorization: Optional[str],
+    db: Session):
     if not authorization:
         raise HTTPException(
             status_code=401, detail="Missing or invalid authorization header"
@@ -55,9 +64,10 @@ async def upload_firmware(
     db.refresh(firmware)
     return {"message": "upload successful"}
 
+
 def download_firmware(
     firmware_id: int,
-    db: Session = Depends(get_db),
+    db: Session,
     authorization: Optional[str] = Header(default=None),
 ):
     user = get_authenticated_user(authorization, db)

@@ -1,7 +1,16 @@
+from typing import Optional
+from backend.database.models import FirmwareUpdate
+from fastapi import Header, HTTPException
+from sqlalchemy.orm import Session
+from backend.firmware.firmware_types import RejectFirmwareRequest, ApproveFirmwareRequest
+from backend.login.isolation import require_developer_manager
+from backend.database.models import Developer, DeveloperManager
+from backend.firmware.firmware_types import convert_firmware_update_to_response
+
 def reject_firmware(
     firmware_id: int,
     payload: RejectFirmwareRequest,
-    db: Session = Depends(get_db),
+    db: Session,
     authorization: Optional[str] = Header(default=None),
 ):
     token_username = require_developer_manager(authorization)
@@ -50,12 +59,13 @@ def reject_firmware(
     db.commit()
     db.refresh(firmware)
 
-    return map_firmware_response(firmware)
+    return convert_firmware_update_to_response(firmware)
+
 
 def approve_firmware(
     firmware_id: int,
     payload: ApproveFirmwareRequest,
-    db: Session = Depends(get_db),
+    db: Session,
     authorization: Optional[str] = Header(default=None),
 ):
     token_username = require_developer_manager(authorization)
@@ -96,4 +106,4 @@ def approve_firmware(
     db.commit()
     db.refresh(firmware)
 
-    return map_firmware_response(firmware)
+    return convert_firmware_update_to_response(firmware)
