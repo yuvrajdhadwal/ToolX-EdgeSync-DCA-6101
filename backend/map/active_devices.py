@@ -1,3 +1,10 @@
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+from sqlalchemy.orm import Session
+from backend.database.database import SessionLocal
+from backend.database.models import DeveloperManager, Device
+from main import ACTIVE_DEVICE_ONLINE_MESSAGE, ONLINE_DEVICE_TTL_SECONDS
+
 def get_region_from_coordinates(
     latitude: Optional[float],
     longitude: Optional[float],
@@ -46,7 +53,7 @@ def _record_device_activity(device_id: str, body: str):
     finally:
         db.close()
 
-def get_active_devices():
+def get_active_devices(db: Session):
     cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
 
     manager_lookup = {
