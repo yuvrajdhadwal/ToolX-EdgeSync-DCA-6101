@@ -120,6 +120,7 @@ class Device(Base):
     device_type = Column(String(50))
     location = Column(String(255))
     developer_manager = Column(String(100))
+    field_shop_professional = Column(String(100), nullable=True)
     description = Column(String(255))
     last_update = Column(DateTime)
     last_online = Column(DateTime)

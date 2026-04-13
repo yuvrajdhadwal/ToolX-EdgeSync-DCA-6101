@@ -27,6 +27,7 @@ class DeviceCreate(BaseModel):
 	developer_manager: str
 	longitude: Optional[float] = None
 	latitude: Optional[float] = None
+	field_shop_user: Optional[str] = None
 
 	@field_validator(
 		"device_type",
@@ -72,6 +73,7 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
 		developer_manager=device.developer_manager,
 		latitude=device.latitude,
 		longitude=device.longitude,
+		field_shop_user=device.field_shop_user,
 	)
 
 

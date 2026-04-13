@@ -184,6 +184,15 @@ def get_devmng(db: Session = Depends(get_db)):
     managers = db.query(DeveloperManager).all()
     return [{"id": mng.id, "username": mng.username} for mng in managers]
 
+@app.get("/field-shop-professionals")
+def get_field_shop_professionals(
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    get_authenticated_user(authorization, db)
+    professionals = db.query(FieldShopProfessional).all()
+    return [{"id": p.id, "username": p.username} for p in professionals]
+
 
 # Update deploy-to-one-device endpoint
 @app.post("/firmware/{firmware_id}/deploy-to-one-device")

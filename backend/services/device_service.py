@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from models import Deploy, DeveloperManager, Device, FirmwareUpdate
+from models import Deploy, DeveloperManager, Device, FirmwareUpdate, FieldShopProfessional
 
 ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
 
@@ -53,6 +53,7 @@ def add_device(
 	developer_manager: str,
 	latitude: Optional[float],
 	longitude: Optional[float],
+	field_shop_user: Optional[str] = None,
 ):
 	existing_device = db.query(Device).filter(Device.serial_number == serial_number).first()
 	if existing_device:
@@ -66,6 +67,7 @@ def add_device(
 		device_type=device_type,
 		location=location,
 		developer_manager=developer_manager,
+		field_shop_professional=field_shop_user if field_shop_user else None,
 		description=description,
 		latitude=latitude,
 		longitude=longitude,
@@ -74,6 +76,21 @@ def add_device(
 	db.add(db_device)
 	db.commit()
 	db.refresh(db_device)
+
+	if field_shop_user:
+		professional = db.query(FieldShopProfessional).filter(
+			FieldShopProfessional.username == field_shop_user
+		).first()
+		if professional:
+			approved_firmware = db.query(FirmwareUpdate).filter(
+				FirmwareUpdate.device_type == device_type,
+				FirmwareUpdate.approved_by.isnot(None),
+			).all()
+			for fw in approved_firmware:
+				if fw not in professional.download_firmware:
+					professional.download_firmware.append(fw)
+
+	db.commit()
 	return {"message": "Device added successfully"}
 
 
@@ -105,6 +122,7 @@ def get_devices(db: Session):
 			"serial_number": d.serial_number,
 			"description": d.description,
 			"developer_manager": _resolve_manager_name(d.developer_manager, manager_lookup),
+			"field_shop_professional": d.field_shop_professional or "",
 			"latitude": d.latitude,
 			"longitude": d.longitude,
 			"region": get_region_from_coordinates(d.latitude, d.longitude),
@@ -137,6 +155,7 @@ def get_online_devices(db: Session):
 			"serial_number": d.serial_number,
 			"description": d.description,
 			"developer_manager": _resolve_manager_name(d.developer_manager, manager_lookup),
+			"field_shop_professional": d.field_shop_professional or "",
 			"latitude": d.latitude,
 			"longitude": d.longitude,
 			"region": get_region_from_coordinates(d.latitude, d.longitude),
