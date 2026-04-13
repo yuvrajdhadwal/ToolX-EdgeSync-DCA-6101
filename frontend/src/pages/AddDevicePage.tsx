@@ -18,12 +18,7 @@ interface ItemInfo {
   field_shop_professionals: number[];
 }
 
-type devmngOption = {
-  username: string;
-  id: number;
-}
-
-type fieldShopProfessionalOption = {
+type userOption = {
   username: string;
   id: number;
 }
@@ -38,21 +33,21 @@ const AddDevicePage: React.FC = () => {
   const navigate = useNavigate()
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [developerManagers, setDeveloperManagers] = useState<devmngOption[]>([]);
-  const [fieldShopProfessionals, setFieldShopProfessionals] = useState<devmngOption[]>([]);
+  const [developerManagers, setDeveloperManagers] = useState<userOption[]>([]);
+  const [fieldShopProfessionals, setFieldShopProfessionals] = useState<userOption[]>([]);
 
   
   useEffect(() => {
     fetch('/devmng')
       .then((res) => res.json())
-      .then((data: devmngOption[]) => setDeveloperManagers(data))
+      .then((data: userOption[]) => setDeveloperManagers(data))
       .catch(() => setError('Failed to load developer managers'));
   }, []);
   
   useEffect(() => {
     fetch('/get_field_shop_professional')
       .then((res) => res.json())
-      .then((data: fieldShopProfessionalOption[]) => setFieldShopProfessionals(data))
+      .then((data: userOption[]) => setFieldShopProfessionals(data))
       .catch(() => setError('Failed to load developer managers'));
   }, []);
   
