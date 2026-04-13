@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
+import MultiSelectProfessionals from '../components/MultiSelectProfessionals'
+
 
 interface ItemInfo {
     device_type: string;
@@ -13,9 +15,15 @@ interface ItemInfo {
     developer_manager: string;
   latitude: string;
   longitude: string;
+  field_shop_professionals: number[];
 }
 
 type devmngOption = {
+  username: string;
+  id: number;
+}
+
+type fieldShopProfessionalOption = {
   username: string;
   id: number;
 }
@@ -31,11 +39,20 @@ const AddDevicePage: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [developerManagers, setDeveloperManagers] = useState<devmngOption[]>([]);
+  const [fieldShopProfessionals, setFieldShopProfessionals] = useState<devmngOption[]>([]);
+
   
   useEffect(() => {
     fetch('/devmng')
       .then((res) => res.json())
       .then((data: devmngOption[]) => setDeveloperManagers(data))
+      .catch(() => setError('Failed to load developer managers'));
+  }, []);
+  
+  useEffect(() => {
+    fetch('/get_field_shop_professional')
+      .then((res) => res.json())
+      .then((data: fieldShopProfessionalOption[]) => setFieldShopProfessionals(data))
       .catch(() => setError('Failed to load developer managers'));
   }, []);
   
@@ -47,6 +64,7 @@ const AddDevicePage: React.FC = () => {
     description: '',
     latitude: '',
     longitude: '',
+    field_shop_professionals: [],
   });
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -102,6 +120,7 @@ const AddDevicePage: React.FC = () => {
                 location: formData.location,
                 latitude,
                 longitude,
+                field_shop_professionals: formData.field_shop_professionals,
             }),
         });
         setLoading(false);
@@ -223,6 +242,15 @@ const AddDevicePage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+
+                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
+                  Field Shop Professionals:
+                </label>
+                <MultiSelectProfessionals
+                  options={fieldShopProfessionals}
+                  selected={formData.field_shop_professionals}
+                  onChange={(selected) => setFormData({ ...formData, field_shop_professionals: selected })}
+                />
 
                   <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
                     Latitude / Longitude:
