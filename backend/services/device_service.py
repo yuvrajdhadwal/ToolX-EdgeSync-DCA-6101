@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from models import Deploy, DeveloperManager, Device, FirmwareUpdate
+from models import Deploy, DeveloperManager, Device, FirmwareUpdate, FieldShopProfessional
 
 ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
 
@@ -53,6 +53,7 @@ def add_device(
 	developer_manager: str,
 	latitude: Optional[float],
 	longitude: Optional[float],
+	field_shop_professionals: Optional[list[int]] = None
 ):
 	existing_device = db.query(Device).filter(Device.serial_number == serial_number).first()
 	if existing_device:
@@ -71,6 +72,13 @@ def add_device(
 		longitude=longitude,
 		last_update=datetime.now(timezone.utc),
 	)
+
+	if field_shop_professionals:
+		professionals = db.query(FieldShopProfessional).filter(
+            FieldShopProfessional.id.in_(field_shop_professionals)
+        ).all()
+		db_device.assigned_professionals = professionals
+
 	db.add(db_device)
 	db.commit()
 	db.refresh(db_device)

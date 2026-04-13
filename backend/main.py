@@ -31,10 +31,12 @@ from verification.security import (
     require_developer_manager,
     verify_token,
 )
+from field_professional_getter import router as get_field_shop_professional_router
 
 app = FastAPI()
 app.include_router(auth_router)
 app.include_router(devices_router)
+app.include_router(get_field_shop_professional_router)
 Base.metadata.create_all(bind=engine)
 load_dotenv()
 
