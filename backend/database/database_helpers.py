@@ -1,12 +1,21 @@
+from typing import Optional
+from fastapi import Header, HTTPException
+from backend.database.models import DeveloperManager, User
+from sqlalchemy.orm import Session
+from backend.login.authentication import get_authenticated_user
+
+
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
+
 
 def get_developer_manager(db):
     managers = db.query(DeveloperManager).all()
     return [{"id": mng.id, "username": mng.username} for mng in managers]
 
+
 def get_username_by_id(user_id: int,
-    db: Session = Depends(get_db),
+    db: Session,
     authorization: Optional[str] = Header(default=None),):
     get_authenticated_user(authorization, db)
 
