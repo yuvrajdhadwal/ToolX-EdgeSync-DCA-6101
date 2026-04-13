@@ -25,7 +25,6 @@ from backend.devices.acceptance_status import update_acceptance_status
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 load_dotenv()
 
 origins = [
@@ -58,6 +57,8 @@ ACTIVE_DEVICE_ONLINE_MESSAGE = os.getenv("ACTIVE_DEVICE_ONLINE_MESSAGE", "Device
 ONLINE_DEVICE_TTL_SECONDS = int(os.getenv("ONLINE_DEVICE_TTL_SECONDS", "60"))
 ACTIVE_DEVICE_RETRY_SECONDS = int(os.getenv("ACTIVE_DEVICE_RETRY_SECONDS", "5"))
 DATABASE = get_db()
+OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="token")
+
 
 active_device_serials: Set[str] = set()
 active_device_last_seen: dict[str, datetime] = {}
@@ -100,7 +101,7 @@ async def verify_user_token(token: str):
     }
 
 @app.get("/firmware-device-types", response_model=List[str])
-def get_firmware_device_types(
+def get_firmware_device_types_endpoint(
     authorization: Optional[str] = Header(default=None),
 ):
     return get_firmware_device_types(DATABASE, authorization)
@@ -121,7 +122,7 @@ async def upload_firmware_endpoint(
     return upload_firmware(file, device_type, version_number, isEmergency, description, authorization, DATABASE)
 
 @app.get("/firmware/status/{status}", response_model=List[FirmwareResponse])
-def get_firmware_by_status(
+def get_firmware_by_status_endpoint(
     status: str,
     authorization: Optional[str] = Header(default=None),
 ):
@@ -205,10 +206,6 @@ def get_compatible_devices(
 @app.get("/get_online_devices")
 def get_online_devices():
     return get_active_devices(DATABASE)
-
-################################################################################################################################
-# Azure IoT
-################################################################################################################################
 
 ################################################################################################################################
 # Helpers
