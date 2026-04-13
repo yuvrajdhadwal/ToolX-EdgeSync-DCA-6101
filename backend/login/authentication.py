@@ -1,3 +1,14 @@
+import bcrypt
+from typing import Optional
+from datetime import datetime, timedelta, timezone
+from jose import JWTError, jwt
+from backend.database.database_types import User
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+from main import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, OAUTH2_SCHEME
+
+
 def authenticate_user(username: str, password: str, db: Session):
     user = db.query(User).filter(User.username == username).first()
     if not user:
@@ -7,6 +18,7 @@ def authenticate_user(username: str, password: str, db: Session):
     ):
         return False
     return user
+
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
@@ -18,7 +30,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encode_jwt
 
-def verify_token(token: str = Depends(oauth2_scheme)):
+
+def verify_token(token: str = Depends(OAUTH2_SCHEME)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -52,7 +65,8 @@ def get_authenticated_user(authorization: Optional[str], db: Session) -> User:
 
     return user
 
-def login_with_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+
+def login_with_token(form_data: OAuth2PasswordRequestForm, db: Session):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(

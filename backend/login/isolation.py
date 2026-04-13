@@ -1,3 +1,11 @@
+from typing import Optional
+from fastapi import Depends, HTTPException, Header
+from sqlalchemy.orm import Session
+from authentication import get_token_payload_from_header, get_authenticated_user
+from backend.database.database_types import UserRole
+from backend.database.models import FirmwareUpdate, Developer
+
+
 def require_developer_manager(authorization: Optional[str]) -> str:
     payload = get_token_payload_from_header(authorization)
     role = payload.get("role")
@@ -14,7 +22,7 @@ def require_developer_manager(authorization: Optional[str]) -> str:
     return username
 
 def get_firmware_device_types(
-    db: Session = Depends(get_db),
+    db: Session,
     authorization: Optional[str] = Header(default=None),
 ):
     user = get_authenticated_user(authorization, db)
