@@ -4,11 +4,13 @@ class UserRole(str, Enum):
     business_manager = "business_manager"
     field_shop_professional = "field_shop_professional"
 
-class User(BaseModel):
+
+class UserType(BaseModel):
     role: UserRole
     username: str
     password: str
     developer_manager_id: Optional[int] = None
+
 
 class Firmware(BaseModel):
     objectBinary: str
@@ -17,6 +19,7 @@ class Firmware(BaseModel):
     version_number: str
     isEmergency: bool
     description: str
+
 
 class Device(BaseModel):
     serial_number: str
@@ -59,3 +62,4 @@ class Device(BaseModel):
         if value < -180 or value > 180:
             raise ValueError("Longitude must be between -180 and 180")
         return value
+

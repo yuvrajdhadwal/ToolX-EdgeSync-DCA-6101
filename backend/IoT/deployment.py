@@ -1,10 +1,27 @@
-def deploy_to_devices(payload: DeployManyRequest,
-    db: Session = Depends(get_db),
-    authorization: Optional[str] = Header(default=None),
+import datetime
+import os
+from datetime import datetime, timezone
+from typing import Optional
+
+import msrest
+from azure.iot.hub import IoTHubRegistryManager
+from database.database_types import UserRole
+from database.models import BusinessManager, Deploy, Device, FirmwareUpdate
+from fastapi import HTTPException
+from firmware.firmware_types import FirmwareOverview
+from iot_types import DeployManyRequest
+from login.authentication import get_authenticated_user
+from sqlalchemy.orm import Session
+
+
+def deploy_to_devices(
+    payload: DeployManyRequest,
+    db: Session,
+    authorization: Optional[str],
 ):
     user = get_authenticated_user(authorization, db)
 
-    if user.type != UserRole.business_manager.value:
+    if user.type != UserRole.business_manager:
         raise HTTPException(
             status_code=403, detail="Only business managers can deploy firmware"
         )
@@ -40,7 +57,7 @@ def deploy_to_devices(payload: DeployManyRequest,
         device_type=firmware.device_type,
         developer=str(firmware.uploaded_by or ""),
         version_number=firmware.version_number,
-        isEmergency="1" if (firmware.isEmergency or payload.isEmergency)  else "0",
+        isEmergency="1" if (bool(firmware.isEmergency) or payload.isEmergency) else "0",
         description=firmware.description or "",
     )
 
@@ -54,12 +71,11 @@ def deploy_to_devices(payload: DeployManyRequest,
         iot_status = "not configured"
         if iot_hub:
             try:
-                sent = deploy_helper(serial, iot_hub, firmware_overview)
+                sent = deploy_cloud_to_device(serial, iot_hub, firmware_overview)
                 iot_status = "sent" if sent else "failed"
             except Exception as e:
                 print(f"IoT error for {serial}: {e}")
                 iot_status = "failed"
-
 
         existing_deploy = (
             db.query(Deploy)
@@ -70,10 +86,10 @@ def deploy_to_devices(payload: DeployManyRequest,
             .first()
         )
         if existing_deploy:
-            existing_deploy.isActive = False
+            existing_deploy.isActive = False  # type: ignore
 
-        device.firmware_id = payload.firmware_id
-        device.last_update = datetime.now(timezone.utc)
+        device.firmware_id = payload.firmware_id  # type: ignore
+        device.last_update = datetime.now(timezone.utc)  # type: ignore
 
         deploy = Deploy(
             manager_id=business_manager.id,
@@ -98,3 +114,38 @@ def deploy_to_devices(payload: DeployManyRequest,
         "message": f"Deployed to {len([r for r in results if r['status'] == 'deployed'])} device(s)",
         "results": results,
     }
+
+
+def deploy_cloud_to_device(
+    device_id: str, iot_hub: IoTHubRegistryManager, firmware: FirmwareOverview
+) -> bool:
+    """
+    @brief Sends a Deployment Message from Cloud to Edge Device
+    """
+    success = False
+    try:
+        iot_hub.send_c2d_message(
+            device_id,
+            "New Firmware Update Deployed",
+            properties={
+                "isDeployment": "1",
+                "firmwareID": firmware.id,
+                "isEmergency": "1" if firmware.isEmergency == "1" else "0",
+                "deviceType": firmware.device_type,
+                "versionNumber": firmware.version_number,
+                "developer": firmware.developer,
+                "description": firmware.description,
+            },
+        )
+        success = True
+    except msrest.exceptions.HttpOperationError as ex:
+        print("HttpOperationError error {0}".format(ex.response.text))
+        success = False
+    except Exception as ex:
+        print("Unexpected error {0}".format(ex))
+        success = False
+    except KeyboardInterrupt:
+        print("{} stopped".format(__file__))
+        success = False
+    finally:
+        return success
