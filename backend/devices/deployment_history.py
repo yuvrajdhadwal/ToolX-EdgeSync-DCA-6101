@@ -1,5 +1,10 @@
+
+from fastapi import Depends, HTTPException
+from backend.database.models import Deploy, Device, FirmwareUpdate
+from sqlalchemy.orm import Session
+
 def get_deploy_history(serial_number: str,
-    db: Session = Depends(get_db)):
+    db: Session):
     device = db.query(Device).filter(Device.serial_number == serial_number).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")

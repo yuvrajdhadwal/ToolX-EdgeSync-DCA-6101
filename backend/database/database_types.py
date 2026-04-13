@@ -17,7 +17,7 @@ class UserType(BaseModel):
     developer_manager_id: Optional[int] = None
 
 
-class Firmware(BaseModel):
+class FirmwareType(BaseModel):
     objectBinary: str
     device_type: str
     developer: str
@@ -26,7 +26,7 @@ class Firmware(BaseModel):
     description: str
 
 
-class Device(BaseModel):
+class DeviceType(BaseModel):
     serial_number: str
     device_type: str
     version_number: Optional[str] = None
