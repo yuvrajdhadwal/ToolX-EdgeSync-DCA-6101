@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import List, Optional, Set
 
+from acceptance_status import update_acceptance_status
 from azure.iot.hub import IoTHubRegistryManager
 from database import Base, SessionLocal, engine
 from dotenv import load_dotenv
@@ -14,7 +15,7 @@ from fastapi import (Depends, FastAPI, File, Form, Header, HTTPException,
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from iot import (FirmwareOverview, deploy_helper, telemetry_listener)
+from iot import FirmwareOverview, deploy_helper, telemetry_listener
 from jose import JWTError, jwt
 from models import (BusinessManager, Deploy, Developer, DeveloperManager,
                     Device, FieldShopProfessional, FirmwareUpdate, User)
@@ -22,15 +23,10 @@ from pydantic import BaseModel
 from routers.auth import router as auth_router
 from routers.devices import router as devices_router
 from sqlalchemy.orm import Session
-from acceptance_status import update_acceptance_status
-from verification.security import (
-    create_access_token,
-    get_authenticated_user,
-    get_token_payload_from_header,
-    oauth2_scheme,
-    require_developer_manager,
-    verify_token,
-)
+from verification.security import (create_access_token, get_authenticated_user,
+                                   get_token_payload_from_header,
+                                   oauth2_scheme, require_developer_manager,
+                                   verify_token)
 
 app = FastAPI()
 app.include_router(auth_router)
@@ -466,8 +462,14 @@ async def upload_firmware(
     )
     if not manager_user:
         raise HTTPException(status_code=404, detail="Developer manager not found")
-    if not file.filename or not file.filename.lower().endswith(".bin"):
-        raise HTTPException(status_code=400, detail="Only .bin files can be uploaded")
+
+    header = await file.read(4)  # reads the first 4 bytes (this is where headers are)
+    await file.seek(0)  # returns file pointer to start, so bugs dont appear
+
+    elf = b"\x7fELF"  # actual elf code
+
+    if not header == elf:
+        raise HTTPException(status_code=400, detail="Only ELF files can be uploaded")
 
     file_content = await file.read()
     firmware = FirmwareUpdate(

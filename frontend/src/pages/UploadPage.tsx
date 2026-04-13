@@ -90,10 +90,6 @@ const UploadPage: React.FC = () => {
       console.error('Firmware file is required');
       return;
     }
-    if (!formData.file.name.toLowerCase().endsWith('.bin')) {
-      setError('Only .bin files are allowed');
-      return;
-    }
     setLoading(true);
     const data = new FormData();
     if (formData.file) {
@@ -196,7 +192,6 @@ const UploadPage: React.FC = () => {
                     }}
                     type='file'
                     name='file'
-                    accept='.bin'
                     onChange={handleInputChange}>
                 </input>
 
