@@ -1,11 +1,11 @@
 import bcrypt
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from backend.database.database_types import UserRole, User
+from backend.database.database_types import UserRole, UserType
 from backend.database.models import Developer, DeveloperManager, BusinessManager, FieldShopProfessional
 from backend.database.database_helpers import get_user_by_username
 
-def create_user(db: Session, user: User):
+def create_user(db: Session, user: UserType):
     hashed_password = bcrypt.hashpw(
         user.password.encode("utf-8"), bcrypt.gensalt()
     ).decode("utf-8")
@@ -48,7 +48,7 @@ def create_user(db: Session, user: User):
 
     return "complete"
 
-def register_user(user: User, db: Session):
+def register_user(user: UserType, db: Session):
     db_user = get_user_by_username(db, username=user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
