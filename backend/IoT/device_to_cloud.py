@@ -1,5 +1,8 @@
+import os
+from typing import Optional, Callable
+from main import EVENTHUB_CONNECTION_STRING
+from backend.map.active_devices import _record_device_activity
 from azure.eventhub import EventHubConsumerClient
-from azure.iot.hub import IoTHubRegistryManager
 
 
 def telemetry_activity_worker():
