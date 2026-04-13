@@ -1,5 +1,16 @@
+
+from datetime import datetime, timezone
+from typing import Optional
+from fastapi import Header, HTTPException
+from backend.database.models import (DeveloperManager, Device, FirmwareUpdate)
+from sqlalchemy.orm import Session
+from backend.login.authentication import get_authenticated_user
+from backend.database.database_types import UserRole, DeviceType
+from backend.map.active_devices import get_region_from_coordinates
+
+
 def get_deployable_devices(firmware_id: int,
-    db: Session = Depends(get_db),
+    db: Session,
     authorization: Optional[str] = Header(default=None),):
     user = get_authenticated_user(authorization, db)
 
@@ -35,7 +46,7 @@ def get_deployable_devices(firmware_id: int,
         "all_regions": all_regions,
     }
 
-def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
+def add_device(device: DeviceType, db: Session):
     existing_device = (
         db.query(Device).filter(Device.serial_number == device.serial_number).first()
     )
@@ -60,7 +71,7 @@ def add_device(device: DeviceCreate, db: Session = Depends(get_db)):
     db.refresh(db_device)
     return {"message": "Device added successfully"}
 
-def get_devices():
+def get_devices(db: Session):
     manager_lookup = {
         manager.id: manager.username for manager in db.query(DeveloperManager).all()
     }
@@ -94,7 +105,7 @@ def get_devices():
         for d in devices
     ]
 
-def delete_devices(serial_number: str, db: Session = Depends(get_db)):
+def delete_devices(serial_number: str, db: Session):
     device = db.query(Device).filter(Device.serial_number == serial_number).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
