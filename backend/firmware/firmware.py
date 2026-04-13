@@ -1,11 +1,13 @@
 from typing import Optional
+
+from database.database_types import UserRole
 from database.models import FirmwareUpdate
 from fastapi import Header, HTTPException
-from sqlalchemy.orm import Session
-from login.authentication import get_authenticated_user
-from database.database_types import UserRole
 from firmware.firmware_types import convert_firmware_update_to_response
 from firmware.isolation import user_can_view_firmware
+from login.authentication import get_authenticated_user
+from sqlalchemy.orm import Session
+
 
 def get_firmware_by_status(
     status: str,
@@ -21,7 +23,7 @@ def get_firmware_by_status(
         )
 
     if status == "pending":
-        if user.type == UserRole.developer.value:
+        if user.type == UserRole.developer.value:  # type: ignore
             records = (
                 db.query(FirmwareUpdate)
                 .filter(
@@ -31,7 +33,7 @@ def get_firmware_by_status(
                 )
                 .all()
             )
-        elif user.type == UserRole.developer_manager.value:
+        elif user.type == UserRole.developer_manager.value:  # type: ignore
             records = [
                 firmware
                 for firmware in user.viewable_firmware
@@ -49,7 +51,7 @@ def get_firmware_by_status(
             )
 
     elif status == "current":
-        if user.type == UserRole.developer.value:
+        if user.type == UserRole.developer.value:  # type: ignore
             records = (
                 db.query(FirmwareUpdate)
                 .filter(
@@ -59,7 +61,7 @@ def get_firmware_by_status(
                 )
                 .all()
             )
-        elif user.type == UserRole.developer_manager.value:
+        elif user.type == UserRole.developer_manager.value:  # type: ignore
             records = [
                 firmware
                 for firmware in user.viewable_firmware
@@ -77,7 +79,7 @@ def get_firmware_by_status(
             )
 
     else:  # rejected
-        if user.type == UserRole.developer.value:
+        if user.type == UserRole.developer.value:  # type: ignore
             records = (
                 db.query(FirmwareUpdate)
                 .filter(
@@ -86,7 +88,7 @@ def get_firmware_by_status(
                 )
                 .all()
             )
-        elif user.type == UserRole.developer_manager.value:
+        elif user.type == UserRole.developer_manager.value:  # type: ignore
             records = [
                 firmware
                 for firmware in user.viewable_firmware
@@ -117,13 +119,14 @@ def get_firmware_by_id(
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     # Business managers can view all firmware
-    if user.type == UserRole.business_manager.value:
+    if user.type == UserRole.business_manager.value:  # type: ignore
         return convert_firmware_update_to_response(firmware)
 
     if (
-        not user_can_view_firmware(user, firmware.id)
+        not user_can_view_firmware(user, firmware.id)  # type: ignore
         and firmware.uploaded_by != user.id
     ):
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     return convert_firmware_update_to_response(firmware)
+

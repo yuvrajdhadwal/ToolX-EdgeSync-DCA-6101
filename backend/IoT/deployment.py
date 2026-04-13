@@ -21,7 +21,7 @@ def deploy_to_devices(
 ):
     user = get_authenticated_user(authorization, db)
 
-    if user.type != UserRole.business_manager:
+    if bool(user.type != UserRole.business_manager):
         raise HTTPException(
             status_code=403, detail="Only business managers can deploy firmware"
         )
@@ -54,11 +54,11 @@ def deploy_to_devices(
 
     firmware_overview = FirmwareOverview(
         id=str(firmware.id),
-        device_type=firmware.device_type,
+        device_type=firmware.device_type,  # type: ignore
         developer=str(firmware.uploaded_by or ""),
-        version_number=firmware.version_number,
+        version_number=firmware.version_number,  # type: ignore
         isEmergency="1" if (bool(firmware.isEmergency) or payload.isEmergency) else "0",
-        description=firmware.description or "",
+        description=firmware.description or "",  # type: ignore
     )
 
     results = []

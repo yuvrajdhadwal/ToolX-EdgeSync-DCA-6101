@@ -1,9 +1,10 @@
 from typing import Optional
-from fastapi import HTTPException, Header
-from sqlalchemy.orm import Session
-from login.authentication import get_token_payload_from_header, get_authenticated_user
+
 from database.database_types import UserRole
-from database.models import FirmwareUpdate, Developer
+from database.models import Developer, FirmwareUpdate
+from fastapi import Header, HTTPException
+from login.authentication import get_authenticated_user, get_token_payload_from_header
+from sqlalchemy.orm import Session
 
 
 def require_developer_manager(authorization: Optional[str]) -> str:
@@ -28,7 +29,7 @@ def get_firmware_device_types(
 ):
     user = get_authenticated_user(authorization, db)
 
-    if user.type == UserRole.developer.value:
+    if user.type == UserRole.developer.value:  # type: ignore
         device_types = [
             device_type
             for (device_type,) in db.query(FirmwareUpdate.device_type)
@@ -37,7 +38,7 @@ def get_firmware_device_types(
             .order_by(FirmwareUpdate.device_type)
             .all()
         ]
-    elif user.type == UserRole.developer_manager.value:
+    elif user.type == UserRole.developer_manager.value:  # type: ignore
         device_types = [
             device_type
             for (device_type,) in db.query(FirmwareUpdate.device_type)
@@ -58,3 +59,4 @@ def get_firmware_device_types(
         ]
 
     return device_types
+

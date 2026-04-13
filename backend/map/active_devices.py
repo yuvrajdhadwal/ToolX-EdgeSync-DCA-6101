@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from sqlalchemy.orm import Session
+
+from config import ACTIVE_DEVICE_ONLINE_MESSAGE, ONLINE_DEVICE_TTL_SECONDS
 from database.database import SessionLocal
 from database.models import DeveloperManager, Device
-from config import ACTIVE_DEVICE_ONLINE_MESSAGE, ONLINE_DEVICE_TTL_SECONDS
+from sqlalchemy.orm import Session
+
 
 def get_region_from_coordinates(
     latitude: Optional[float],
@@ -38,6 +40,7 @@ def get_region_from_coordinates(
 
     return "Unknown"
 
+
 def _record_device_activity(device_id: str, body: str):
     if ACTIVE_DEVICE_ONLINE_MESSAGE.lower() not in body.lower():
         return
@@ -48,10 +51,11 @@ def _record_device_activity(device_id: str, body: str):
         if not device:
             return
 
-        device.last_online = datetime.now(timezone.utc)
+        device.last_online = datetime.now(timezone.utc)  # type: ignore
         db.commit()
     finally:
         db.close()
+
 
 def get_active_devices(db: Session):
     cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
@@ -81,15 +85,16 @@ def get_active_devices(db: Session):
             "device_type": d.device_type,
             "version_number": d.firmware.version_number if d.firmware else "N/A",
             "last_update": (
-                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"
+                d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"  # type: ignore
             ),
             "location": d.location,
             "serial_number": d.serial_number,
             "description": d.description,
-            "developer_manager": resolve_manager_name(d.developer_manager),
+            "developer_manager": resolve_manager_name(d.developer_manager),  # type: ignore
             "latitude": d.latitude,
             "longitude": d.longitude,
-            "region": get_region_from_coordinates(d.latitude, d.longitude),
+            "region": get_region_from_coordinates(d.latitude, d.longitude),  # type: ignore
         }
         for d in devices
     ]
+

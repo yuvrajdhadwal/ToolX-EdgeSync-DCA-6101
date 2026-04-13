@@ -1,11 +1,15 @@
 from typing import Optional
-from database.models import FirmwareUpdate
+
+from database.models import Developer, DeveloperManager, FirmwareUpdate
 from fastapi import Header, HTTPException
-from sqlalchemy.orm import Session
-from firmware.firmware_types import RejectFirmwareRequest, ApproveFirmwareRequest
+from firmware.firmware_types import (
+    ApproveFirmwareRequest,
+    RejectFirmwareRequest,
+    convert_firmware_update_to_response,
+)
 from login.isolation import require_developer_manager
-from database.models import Developer, DeveloperManager
-from firmware.firmware_types import convert_firmware_update_to_response
+from sqlalchemy.orm import Session
+
 
 def reject_firmware(
     firmware_id: int,
@@ -54,12 +58,12 @@ def reject_firmware(
         uploader.viewable_firmware.append(firmware)
 
     firmware.declined_by = manager.id
-    firmware.declined_comment = payload.rejection_reason.strip()
+    firmware.declined_comment = payload.rejection_reason.strip()  # type: ignore
 
     db.commit()
     db.refresh(firmware)
 
-    return convert_firmware_update_to_response(firmware)
+    return convert_firmware_update_to_response(firmware, db)
 
 
 def approve_firmware(
@@ -100,10 +104,11 @@ def approve_firmware(
         uploader.viewable_firmware.append(firmware)
 
     firmware.approved_by = manager.id
-    firmware.declined_by = None
-    firmware.declined_comment = None
+    firmware.declined_by = None  # type: ignore
+    firmware.declined_comment = None  # type: ignore
 
     db.commit()
     db.refresh(firmware)
 
-    return convert_firmware_update_to_response(firmware)
+    return convert_firmware_update_to_response(firmware, db)
+

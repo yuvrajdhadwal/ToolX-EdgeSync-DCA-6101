@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Optional
-from database.models import FirmwareUpdate
+
+from database.models import Deploy, FirmwareUpdate
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from database.models import Deploy
+
 
 class FirmwareResponse(BaseModel):
     id: int
@@ -21,14 +22,17 @@ class FirmwareResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class RejectFirmwareRequest(BaseModel):
     rejecting_manager_username: str
     rejection_reason: str
 
+
 class ApproveFirmwareRequest(BaseModel):
     confirmation_text: str
 
-def get_firmware_status(firmware: FirmwareUpdate, db: Session = None) -> str:
+
+def get_firmware_status(firmware: FirmwareUpdate, db: Session) -> str:
     if firmware.declined_by is not None:
         return "rejected"
     if firmware.approved_by is not None:
@@ -45,7 +49,7 @@ def get_firmware_status(firmware: FirmwareUpdate, db: Session = None) -> str:
 
 
 def convert_firmware_update_to_response(
-    firmware: FirmwareUpdate, db: Session = None
+    firmware: FirmwareUpdate, db: Session
 ) -> FirmwareResponse:
     return FirmwareResponse(
         id=firmware.id,
@@ -61,6 +65,7 @@ def convert_firmware_update_to_response(
         status=get_firmware_status(firmware, db),
     )
 
+
 class FirmwareOverview(BaseModel):
     id: str
     device_type: str
@@ -68,3 +73,4 @@ class FirmwareOverview(BaseModel):
     version_number: str
     isEmergency: str
     description: str
+

@@ -1,27 +1,29 @@
 from typing import Optional
-from database.models import FirmwareUpdate
-from fastapi import Header, HTTPException, UploadFile, Response
-from sqlalchemy.orm import Session
-from database.models import Developer, DeveloperManager
-from login.authentication import get_authenticated_user
-from database.database_types import UserRole
-from firmware.isolation import user_can_view_firmware
 
-async def upload_firmware(    
+from database.database_types import UserRole
+from database.models import Developer, DeveloperManager, FirmwareUpdate
+from fastapi import Header, HTTPException, Response, UploadFile
+from firmware.isolation import user_can_view_firmware
+from login.authentication import get_authenticated_user
+from sqlalchemy.orm import Session
+
+
+async def upload_firmware(
     file: UploadFile,
     device_type: str,
     version_number: str,
     isEmergency: bool,
     description: str,
     authorization: Optional[str],
-    db: Session):
+    db: Session,
+):
     if not authorization:
         raise HTTPException(
             status_code=401, detail="Missing or invalid authorization header"
         )
 
     authenticated_user = get_authenticated_user(authorization, db)
-    if authenticated_user.type != UserRole.developer.value:
+    if authenticated_user.type != UserRole.developer.value:  # type: ignore
         raise HTTPException(
             status_code=403, detail="Only developers can upload firmware"
         )
@@ -76,7 +78,7 @@ def download_firmware(
         raise HTTPException(status_code=404, detail="Firmware not found")
 
     # Business managers can download all firmware
-    if user.type == UserRole.business_manager.value:
+    if user.type == UserRole.business_manager.value:  # type: ignore
         return Response(
             content=firmware.objectBinary,
             media_type="application/octet-stream",
@@ -86,7 +88,7 @@ def download_firmware(
         )
 
     if (
-        not user_can_view_firmware(user, firmware.id)
+        not user_can_view_firmware(user, firmware.id)  # type: ignore
         and firmware.uploaded_by != user.id
     ):
         raise HTTPException(status_code=404, detail="Firmware not found")
@@ -98,3 +100,4 @@ def download_firmware(
             "Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"
         },
     )
+

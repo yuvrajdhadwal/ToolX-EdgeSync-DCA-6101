@@ -1,8 +1,8 @@
-import os
-from typing import Optional, Callable
+from typing import Callable, Optional
+
+from azure.eventhub import EventHubConsumerClient
 from config import EVENTHUB_CONNECTION_STRING
 from map.active_devices import _record_device_activity
-from azure.eventhub import EventHubConsumerClient
 
 
 def telemetry_activity_worker():
@@ -13,6 +13,7 @@ def telemetry_activity_worker():
         try:
             telemetry_listener(on_activity=_record_device_activity)
         except Exception as ex:
+            print(EVENTHUB_CONNECTION_STRING)
             print(f"Active-device telemetry listener error: {ex}")
 
 
@@ -25,7 +26,7 @@ def telemetry_listener(
     If on_activity is provided, calls on_activity(device_id, body) for each event.
     """
     client = EventHubConsumerClient.from_connection_string(
-        conn_str=os.getenv("EVENTHUB_CONNECTION"), consumer_group="$Default"
+        conn_str=EVENTHUB_CONNECTION_STRING, consumer_group="$Default"
     )
 
     with client:
@@ -84,4 +85,3 @@ def on_error(partition_context, error, on_error_callback: Optional[Callable] = N
 
     if on_error_callback:
         on_error_callback(partition_context, error)
-

@@ -1,12 +1,14 @@
-import bcrypt
-from typing import Optional
 from datetime import datetime, timedelta, timezone
-from jose import JWTError, jwt
+from typing import Optional
+
+import bcrypt
+from config import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, OAUTH2_SCHEME, SECRET_KEY
 from database.models import User
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, OAUTH2_SCHEME
+
 
 def authenticate_user(username: str, password: str, db: Session):
     user = db.query(User).filter(User.username == username).first()
@@ -33,7 +35,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 def verify_token(token: str = Depends(OAUTH2_SCHEME)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username: str | None = payload.get("sub")
         if username is None:
             raise HTTPException(status_code=403, detail="Token is invalid or expired")
         return payload
@@ -50,7 +52,7 @@ def get_token_payload_from_header(authorization: Optional[str]) -> dict:
     return verify_token(token=token)
 
 
-def get_authenticated_user(authorization: Optional[str], db: Session) -> User:
+def get_authenticated_user(authorization: str, db: Session) -> User:
     token = authorization.split(" ", 1)[1]
     payload = verify_token(token=token)
     username = payload.get("sub")
@@ -79,3 +81,4 @@ def login_with_token(form_data: OAuth2PasswordRequestForm, db: Session):
         expires_delta=access_token_expires,
     )
     return {"access_token": access_token, "token_type": "bearer"}
+

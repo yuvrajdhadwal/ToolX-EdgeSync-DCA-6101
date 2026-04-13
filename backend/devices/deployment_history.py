@@ -1,10 +1,9 @@
-
-from fastapi import HTTPException
 from database.models import Deploy, Device, FirmwareUpdate
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-def get_deploy_history(serial_number: str,
-    db: Session):
+
+def get_deploy_history(serial_number: str, db: Session):
     device = db.query(Device).filter(Device.serial_number == serial_number).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -22,9 +21,10 @@ def get_deploy_history(serial_number: str,
             "firmware_version": db.query(FirmwareUpdate)
             .filter(FirmwareUpdate.id == d.target_firmware_id)
             .first()
-            .version_number,
+            .version_number,  # type: ignore
             "timestamp": d.timestamp.strftime("%Y-%m-%d %H:%M"),
             "isActive": d.isActive,
         }
         for d in deploys
     ]
+
