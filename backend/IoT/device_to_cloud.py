@@ -1,7 +1,7 @@
 import os
 from typing import Optional, Callable
-from main import EVENTHUB_CONNECTION_STRING
-from backend.map.active_devices import _record_device_activity
+from config import EVENTHUB_CONNECTION_STRING
+from map.active_devices import _record_device_activity
 from azure.eventhub import EventHubConsumerClient
 
 

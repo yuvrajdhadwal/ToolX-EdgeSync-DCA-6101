@@ -1,9 +1,9 @@
 import bcrypt
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from backend.database.database_types import UserRole, UserType
-from backend.database.models import Developer, DeveloperManager, BusinessManager, FieldShopProfessional
-from backend.database.database_helpers import get_user_by_username
+from database.database_types import UserRole, UserType
+from database.models import Developer, DeveloperManager, BusinessManager, FieldShopProfessional
+from database.database_helpers import get_user_by_username
 
 def create_user(db: Session, user: UserType):
     hashed_password = bcrypt.hashpw(

@@ -1,27 +1,11 @@
 from typing import Optional
-from backend.database.models import FirmwareUpdate
+from database.models import FirmwareUpdate
 from fastapi import Header, HTTPException
 from sqlalchemy.orm import Session
-from backend.database.models import Deploy
-from backend.login.authentication import get_authenticated_user
-from backend.database.database_types import UserRole
-from backend.firmware.firmware_types import convert_firmware_update_to_response
-from backend.firmware.isolation import user_can_view_firmware
-
-def get_firmware_status(firmware: FirmwareUpdate, db: Session = None) -> str:
-    if firmware.declined_by is not None:
-        return "rejected"
-    if firmware.approved_by is not None:
-        if db:
-            deployed = (
-                db.query(Deploy)
-                .filter(Deploy.target_firmware_id == firmware.id)
-                .first()
-            )
-            if deployed:
-                return "deployed"
-        return "current"
-    return "pending"
+from login.authentication import get_authenticated_user
+from database.database_types import UserRole
+from firmware.firmware_types import convert_firmware_update_to_response
+from firmware.isolation import user_can_view_firmware
 
 def get_firmware_by_status(
     status: str,
@@ -119,6 +103,7 @@ def get_firmware_by_status(
             )
 
     return [convert_firmware_update_to_response(record) for record in records]
+
 
 def get_firmware_by_id(
     firmware_id: int,

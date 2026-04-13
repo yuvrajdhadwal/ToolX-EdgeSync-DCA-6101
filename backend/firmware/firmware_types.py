@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Optional
-from backend.database.models import FirmwareUpdate
+from database.models import FirmwareUpdate
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from backend.firmware.firmware import get_firmware_status
+from database.models import Deploy
 
 class FirmwareResponse(BaseModel):
     id: int
@@ -27,6 +27,22 @@ class RejectFirmwareRequest(BaseModel):
 
 class ApproveFirmwareRequest(BaseModel):
     confirmation_text: str
+
+def get_firmware_status(firmware: FirmwareUpdate, db: Session = None) -> str:
+    if firmware.declined_by is not None:
+        return "rejected"
+    if firmware.approved_by is not None:
+        if db:
+            deployed = (
+                db.query(Deploy)
+                .filter(Deploy.target_firmware_id == firmware.id)
+                .first()
+            )
+            if deployed:
+                return "deployed"
+        return "current"
+    return "pending"
+
 
 def convert_firmware_update_to_response(
     firmware: FirmwareUpdate, db: Session = None

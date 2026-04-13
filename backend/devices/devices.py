@@ -2,11 +2,11 @@
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import Header, HTTPException
-from backend.database.models import (DeveloperManager, Device, FirmwareUpdate)
+from database.models import (DeveloperManager, Device, FirmwareUpdate)
 from sqlalchemy.orm import Session
-from backend.login.authentication import get_authenticated_user
-from backend.database.database_types import UserRole, DeviceType
-from backend.map.active_devices import get_region_from_coordinates
+from login.authentication import get_authenticated_user
+from database.database_types import UserRole, DeviceType
+from map.active_devices import get_region_from_coordinates
 
 
 def get_deployable_devices(firmware_id: int,
@@ -45,6 +45,7 @@ def get_deployable_devices(firmware_id: int,
         ],
         "all_regions": all_regions,
     }
+
 
 def add_device(device: DeviceType, db: Session):
     existing_device = (
@@ -104,6 +105,7 @@ def get_devices(db: Session):
         }
         for d in devices
     ]
+
 
 def delete_devices(serial_number: str, db: Session):
     device = db.query(Device).filter(Device.serial_number == serial_number).first()

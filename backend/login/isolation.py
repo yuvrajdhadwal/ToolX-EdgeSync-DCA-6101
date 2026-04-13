@@ -1,9 +1,9 @@
 from typing import Optional
-from fastapi import Depends, HTTPException, Header
+from fastapi import HTTPException, Header
 from sqlalchemy.orm import Session
-from authentication import get_token_payload_from_header, get_authenticated_user
-from backend.database.database_types import UserRole
-from backend.database.models import FirmwareUpdate, Developer
+from login.authentication import get_token_payload_from_header, get_authenticated_user
+from database.database_types import UserRole
+from database.models import FirmwareUpdate, Developer
 
 
 def require_developer_manager(authorization: Optional[str]) -> str:
@@ -20,6 +20,7 @@ def require_developer_manager(authorization: Optional[str]) -> str:
         raise HTTPException(status_code=403, detail="Token is invalid or expired")
 
     return username
+
 
 def get_firmware_device_types(
     db: Session,

@@ -1,5 +1,5 @@
-from backend.database.database import SessionLocal
-from backend.database.models import Deploy
+from database.database import SessionLocal
+from database.models import Deploy
 
 def update_acceptance_status(device_id: str, body: str):
     if "Accepted" in body:

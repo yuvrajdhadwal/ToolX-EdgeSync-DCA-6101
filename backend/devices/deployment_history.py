@@ -1,6 +1,6 @@
 
-from fastapi import Depends, HTTPException
-from backend.database.models import Deploy, Device, FirmwareUpdate
+from fastapi import HTTPException
+from database.models import Deploy, Device, FirmwareUpdate
 from sqlalchemy.orm import Session
 
 def get_deploy_history(serial_number: str,

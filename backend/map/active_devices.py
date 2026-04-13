@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
-from backend.database.database import SessionLocal
-from backend.database.models import DeveloperManager, Device
-from main import ACTIVE_DEVICE_ONLINE_MESSAGE, ONLINE_DEVICE_TTL_SECONDS
+from database.database import SessionLocal
+from database.models import DeveloperManager, Device
+from config import ACTIVE_DEVICE_ONLINE_MESSAGE, ONLINE_DEVICE_TTL_SECONDS
 
 def get_region_from_coordinates(
     latitude: Optional[float],

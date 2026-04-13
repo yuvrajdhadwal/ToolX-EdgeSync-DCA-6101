@@ -1,7 +1,7 @@
 from sqlalchemy import (Column, Integer, String, Boolean, Float, LargeBinary,
     ForeignKey, DateTime, Table, ForeignKeyConstraint, UniqueConstraint)
 from sqlalchemy.orm import relationship, backref
-from backend.database.database import Base
+from database.database import Base
 from datetime import datetime
 
 # ==============================

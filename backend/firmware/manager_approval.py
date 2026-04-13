@@ -1,11 +1,11 @@
 from typing import Optional
-from backend.database.models import FirmwareUpdate
+from database.models import FirmwareUpdate
 from fastapi import Header, HTTPException
 from sqlalchemy.orm import Session
-from backend.firmware.firmware_types import RejectFirmwareRequest, ApproveFirmwareRequest
-from backend.login.isolation import require_developer_manager
-from backend.database.models import Developer, DeveloperManager
-from backend.firmware.firmware_types import convert_firmware_update_to_response
+from firmware.firmware_types import RejectFirmwareRequest, ApproveFirmwareRequest
+from login.isolation import require_developer_manager
+from database.models import Developer, DeveloperManager
+from firmware.firmware_types import convert_firmware_update_to_response
 
 def reject_firmware(
     firmware_id: int,

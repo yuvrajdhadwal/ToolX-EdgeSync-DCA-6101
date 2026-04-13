@@ -9,7 +9,7 @@ from database.database_types import UserRole
 from database.models import BusinessManager, Deploy, Device, FirmwareUpdate
 from fastapi import HTTPException
 from firmware.firmware_types import FirmwareOverview
-from iot_types import DeployManyRequest
+from IoT.iot_types import DeployManyRequest
 from login.authentication import get_authenticated_user
 from sqlalchemy.orm import Session
 
