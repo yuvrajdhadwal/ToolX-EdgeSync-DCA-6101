@@ -135,6 +135,7 @@ def deploy_cloud_to_device(
                 "versionNumber": firmware.version_number,
                 "developer": firmware.developer,
                 "description": firmware.description,
+                "download_link": f"http://localhost:8000/firmware/{firmware.id}/device_download",
             },
         )
         success = True

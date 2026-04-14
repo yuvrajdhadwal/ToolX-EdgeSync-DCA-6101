@@ -92,7 +92,7 @@ def download_firmware(
             content=firmware.objectBinary,
             media_type="application/octet-stream",
             headers={
-                "Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"
+                "Content-Disposition": f"attachment; filename=firmware_{firmware.id}"
             },
         )
 
@@ -105,8 +105,20 @@ def download_firmware(
     return Response(
         content=firmware.objectBinary,
         media_type="application/octet-stream",
-        headers={
-            "Content-Disposition": f"attachment; filename=firmware_{firmware.id}.bin"
-        },
+        headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}"},
     )
 
+
+def download_firmware_from_device(
+    firmware_id: int,
+    db: Session,
+):
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    return Response(
+        content=firmware.objectBinary,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}"},
+    )
