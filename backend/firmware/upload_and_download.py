@@ -1,7 +1,7 @@
 from typing import Optional
 
 from database.database_types import UserRole
-from database.models import Developer, DeveloperManager, FirmwareUpdate
+from database.models import Developer, DeveloperManager, Device, FirmwareUpdate
 from fastapi import Header, HTTPException, Response, UploadFile
 from firmware.isolation import user_can_view_firmware
 from login.authentication import get_authenticated_user
@@ -113,6 +113,27 @@ def download_firmware_from_device(
     firmware_id: int,
     db: Session,
 ):
+    firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
+    if not firmware:
+        raise HTTPException(status_code=404, detail="Firmware not found")
+
+    return Response(
+        content=firmware.objectBinary,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename=firmware_{firmware.id}"},
+    )
+
+
+def download_current_firmware_for_device(
+    device_serial_number: str,
+    db: Session,
+):
+    firmware_id = (
+        db.query(Device).filter(Device.serial_number == device_serial_number).first()
+    )
+    if not firmware_id:
+        raise HTTPException(status_code=404, detail="Device not found")
+    firmware_id = firmware_id.firmware_id
     firmware = db.query(FirmwareUpdate).filter(FirmwareUpdate.id == firmware_id).first()
     if not firmware:
         raise HTTPException(status_code=404, detail="Firmware not found")

@@ -14,6 +14,18 @@ auto main() -> int {
     std::cerr << "Please set env var for connection string - check readme\n";
     return 1;
   }
+  std::string externalAPIURL{getEnvVar("EXTERNAL_API_URL_EDGE_DEVICE")};
+  if (externalAPIURL == "") {
+    std::cerr << "Please set env var for external api url\n";
+    return 1;
+  }
+  std::string deviceID{getEnvVar("DEVICE_ID")};
+  if (deviceID == "") {
+    std::cerr << "Please set env var for external api url\n";
+    return 1;
+  }
+
+  mostRecentURL = externalAPIURL + "/firmware/current_device_firmware/" + deviceID;
 
   CURLcode result = curl_global_init(CURL_GLOBAL_ALL);
   if (result != CURLE_OK) {
