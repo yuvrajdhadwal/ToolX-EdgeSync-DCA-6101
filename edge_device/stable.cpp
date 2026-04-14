@@ -22,7 +22,7 @@ void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
 
 void publishMessage(const std::string &msg,
                     IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
-  std::cout << "Sending Message: " << msg << '\n';
+  // std::cout << "Sending Message: " << msg << '\n';
   IOTHUB_MESSAGE_HANDLE message_handle =
       IoTHubMessage_CreateFromString(msg.data());
   IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle,
@@ -41,6 +41,7 @@ void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
 
 void deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   // TODO: Handle firmware installation and further states
+  downloadFirmware();
   publishMessage(
       "Firmware Deployment Accepted by Field Technician ... Installing Now",
       device_ll_handle);
@@ -114,6 +115,11 @@ auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
         if (strcmp("isEmergency", (char *)keys[i]) == 0 &&
             strcmp("1", (char *)values[i]) == 0) {
           isEmergency = true;
+        }
+        if (strcmp("download_link", (char *)keys[i]) == 0) {
+          if (static_cast<bool>(curl)) {
+            curl_easy_setopt(curl, CURLOPT_URL, (char *)values[i]);
+          }
         }
       }
     }

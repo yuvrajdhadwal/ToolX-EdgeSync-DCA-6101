@@ -2,6 +2,10 @@
 void shutdown() {
   // Free all the sdk subsystem
   IoTHub_Deinit();
+  if (static_cast<bool>(curl)) {
+    curl_easy_cleanup(curl);
+  }
+  curl_global_cleanup();
 
   printf("Press any key to continue");
   (void)getchar();

@@ -4,12 +4,28 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
+CURL *curl;
+
 // TODO: Handle default firmware/current/latest incoming one
 auto main() -> int {
   std::string connectionString{getEnvVar("IOTHUB_CONNECTION_STRING")};
   if (connectionString == "") {
     std::cerr << "Please set env var for connection string - check readme\n";
     return 1;
+  }
+
+  CURLcode result = curl_global_init(CURL_GLOBAL_ALL);
+  if (result != CURLE_OK) {
+    std::cerr << "Could not initialize CURL\n";
+    return static_cast<int>(result);
+  }
+
+  curl = curl_easy_init();
+
+  if (static_cast<bool>(curl)) {
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);  // TODO: set to 0 when not debugging
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, filewrite_callback);
   }
 
   IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol{MQTT_Protocol};
@@ -71,7 +87,7 @@ auto main() -> int {
         deploymentInstallation(device_ll_handle);
       } else {
         // NOTE: Going to Rejected State
-        
+
         // TODO: Handle rejection comment
         std::cout << "Rejected Firmware Deployment from Cloud ... \n";
         deploymentRejection(device_ll_handle);

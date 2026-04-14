@@ -30,6 +30,7 @@ COPY main.cpp .
 COPY setup.cpp .
 COPY shutdown.cpp .
 COPY stable.cpp .
+COPY download.cpp .
 
 RUN cmake -S . -B build -DCMAKE_PREFIX_PATH=/usr/local && \
     cmake --build build --config Release
