@@ -401,7 +401,7 @@ const WorldMapPage: React.FC = () => {
                 borderRadius: '6px',
                 border: `1px solid ${COLORS.borderPrimary}`,
                 backgroundColor: isSelectionMode ? COLORS.backgroundTertiary : COLORS.backgroundPrimary,
-                color: COLORS.textPrimary,
+                color: COLORS.white,
                 cursor: 'pointer',
               }}
             >
@@ -438,7 +438,7 @@ const WorldMapPage: React.FC = () => {
               borderRadius: '6px',
               border: `1px solid ${COLORS.accentPrimary}`,
               backgroundColor: 'transparent',
-              color: COLORS.textPrimary,
+              color: COLORS.white,
               fontWeight: 500,
             }}
           >

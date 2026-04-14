@@ -226,8 +226,8 @@ const BizMngDevicesPage: React.FC = () => {
                 onClick={() => handleDelete(confirmDevice.serial_number)}
                 style={{
                   padding: '0.5rem 1.5rem', borderRadius: '6px', cursor: 'pointer',
-                  border: `1px solid ${COLORS.danger}`,
-                  backgroundColor: 'transparent', color: COLORS.dangerText, fontWeight: 500,
+                  border: `1px solid ${COLORS.white}`,
+                  backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
                 }}
               >
                 Remove
@@ -238,7 +238,7 @@ const BizMngDevicesPage: React.FC = () => {
                 style={{
                   padding: '0.5rem 1.5rem', borderRadius: '6px', cursor: 'pointer',
                   border: `1px solid ${COLORS.white}`,
-                  backgroundColor: 'transparent', color: COLORS.textPrimary, fontWeight: 500,
+                  backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
                 }}
               >
                 Cancel

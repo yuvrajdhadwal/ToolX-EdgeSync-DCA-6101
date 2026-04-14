@@ -175,9 +175,9 @@ const DeviceDetailPage: React.FC = () => {
                 style={{
                   padding: '0.5rem 1rem',
                   borderRadius: '6px',
-                  border: `1px solid ${COLORS.danger}`,
+                  border: `1px solid ${COLORS.accentPrimary}`,
                   backgroundColor: 'transparent',
-                  color: COLORS.dangerText,
+                  color: COLORS.white,
                   cursor: isRemoving ? 'not-allowed' : 'pointer',
                 }}
               >
@@ -193,7 +193,7 @@ const DeviceDetailPage: React.FC = () => {
                 borderRadius: '6px',
                 border: `1px solid ${COLORS.accentPrimary}`,
                 backgroundColor: 'transparent',
-                color: COLORS.textPrimary,
+                color: COLORS.white,
                 cursor: 'pointer',
               }}
             >
