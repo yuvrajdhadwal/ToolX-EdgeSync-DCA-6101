@@ -15,8 +15,7 @@ const WelcomePage: React.FC = () => {
             alt="SLB Logo"
           />
         </div>
-
-        <h1 className="welcome-title">Welcome to ToolX Edgesync</h1>
+        <h1 className="welcome-title">ToolX Edgesync</h1>
         <p className="welcome-text">Login or create an account to continue.</p>
 
         <div className="welcome-actions"
