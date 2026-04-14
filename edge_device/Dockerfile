@@ -31,6 +31,7 @@ COPY setup.cpp .
 COPY shutdown.cpp .
 COPY stable.cpp .
 COPY download.cpp .
+COPY field_decision.cpp .
 
 RUN cmake -S . -B build -DCMAKE_PREFIX_PATH=/usr/local && \
     cmake --build build --config Release

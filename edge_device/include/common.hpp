@@ -42,5 +42,7 @@ inline auto getEnvVar(const std::string &key) -> std::string {
   return (val == nullptr) ? "" : std::string{val};
 }
 
+void publishMessage(const std::string &msg,
+                    IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 extern std::string mostRecentURL;
 extern bool isNewFirmwareDownloaded;

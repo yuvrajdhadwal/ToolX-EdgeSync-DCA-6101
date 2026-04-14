@@ -35,26 +35,6 @@ void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   publishMessage("Device is Online", device_ll_handle);
 }
 
-void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
-  publishMessage("Firmware Deployment Rejected by Field Technician",
-                 device_ll_handle);
-}
-
-void deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
-  // TODO: Handle firmware installation and further states
-  std::thread downloadThread([device_ll_handle]() -> void {
-    isNewFirmwareDownloaded = downloadFirmware();
-    if (isNewFirmwareDownloaded) {
-      publishMessage(
-          "Firmware Deployment Accepted by Field Technician ... Installing Now",
-          device_ll_handle);
-    } else {
-      deploymentRejection(device_ll_handle);
-    }
-  });
-  downloadThread.detach();
-}
-
 auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
     -> IOTHUBMESSAGE_DISPOSITION_RESULT {
   const char *messageId{IoTHubMessage_GetMessageId(message)};

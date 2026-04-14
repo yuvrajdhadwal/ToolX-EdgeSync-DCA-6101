@@ -17,6 +17,7 @@ add_executable(main
     shutdown.cpp
     stable.cpp
     download.cpp
+    field_decision.cpp
 )
 
 target_include_directories(main PRIVATE
