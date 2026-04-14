@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <thread>
 
 auto setup(const char *connectionString,
            IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol, void *incomingDeployment)
@@ -35,6 +36,11 @@ auto setup(const char *connectionString,
     std::cout << "ERROR: IoTHubClient_LL_SetMessageCallback..........FAILED!\n";
     return nullptr;
   }
+
+  std::thread downloadThread([device_ll_handle]() -> void {
+    isNewFirmwareDownloaded = downloadFirmware();
+  });
+  downloadThread.detach();
 
   return device_ll_handle;
 }
