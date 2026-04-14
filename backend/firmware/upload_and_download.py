@@ -51,6 +51,7 @@ async def upload_firmware(
 
     header = await file.read(4)  # reads the first 4 bytes of the file
     await file.seek(0)  # returns file pointer to first byte
+
     if not header == ELF:
         raise HTTPException(
             status_code=400,
