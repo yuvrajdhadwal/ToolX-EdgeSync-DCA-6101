@@ -138,7 +138,7 @@ const UploadPage: React.FC = () => {
           alignItems: 'stretch',
           minHeight: '4.5rem',
           width: '100%',
-          padding: '0 1.5rem 0 0',
+          padding: 0,
           backgroundColor: COLORS.accentPrimary,
           color: COLORS.white,
         }}
@@ -157,7 +157,7 @@ const UploadPage: React.FC = () => {
             />
           </button>
         </div>
-        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0 }}>
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0, marginLeft: 'auto' }}>
           <Profile />
           <Logout />
         </div>

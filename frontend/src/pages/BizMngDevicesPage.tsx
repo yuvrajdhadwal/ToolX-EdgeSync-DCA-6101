@@ -86,7 +86,7 @@ const BizMngDevicesPage: React.FC = () => {
       backgroundColor: COLORS.backgroundPrimary,
     }}>
       {/* Header with SLB */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', minHeight: '4.5rem', width: '100%', padding: '0 1.5rem 0 0', backgroundColor: COLORS.accentPrimary, color: COLORS.white }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', minHeight: '4.5rem', width: '100%', padding: 0, backgroundColor: COLORS.accentPrimary, color: COLORS.white }}>
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <button 
             type="button" 
@@ -101,7 +101,7 @@ const BizMngDevicesPage: React.FC = () => {
           </button>
         </div>
               
-        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0 }}>
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0, marginLeft: 'auto' }}>
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.ADD_DEVICES)}
