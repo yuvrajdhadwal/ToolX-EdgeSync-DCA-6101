@@ -104,7 +104,7 @@ def get_firmware_by_status(
                 .all()
             )
 
-    return [convert_firmware_update_to_response(record) for record in records]
+    return [convert_firmware_update_to_response(record, db) for record in records]
 
 
 def get_firmware_by_id(
