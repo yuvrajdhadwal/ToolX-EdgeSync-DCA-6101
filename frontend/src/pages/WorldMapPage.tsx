@@ -301,16 +301,16 @@ const WorldMapPage: React.FC = () => {
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      padding: '2rem',
-      gap: '2rem',
+      padding: 0,
+      gap: 0,
       backgroundColor: COLORS.backgroundPrimary,
     }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', minHeight: '4.5rem', width: '100%', padding: '0 1.5rem 0 0', backgroundColor: COLORS.accentPrimary, color: COLORS.white }}>
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <button
             type="button"
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
-            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+            style={{ padding: '0 0.85rem', backgroundColor: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
           >
             <img
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
@@ -318,10 +318,14 @@ const WorldMapPage: React.FC = () => {
               style={{ width: '100px', height: 'auto' }}
             />
           </button>
-          <Profile />
         </div>
-        <Logout />
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0 }}>
+          <Profile />
+          <Logout />
+        </div>
       </header>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '2rem' }}>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `3px solid ${COLORS.borderPrimary}` }}>
         <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLORS.white, marginBottom: '0.5rem' }}>
@@ -482,6 +486,7 @@ const WorldMapPage: React.FC = () => {
           </MapContainer>
         </div>
       </main>
+      </div>
 
       {showDeployPopup && (
         <div style={{

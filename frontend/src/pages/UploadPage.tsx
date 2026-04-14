@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { getHomeRouteFromToken, ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
+import Logout from '../components/Logout'
 
 
 
@@ -131,8 +132,8 @@ const UploadPage: React.FC = () => {
       minHeight: '100vh', 
       display: 'flex', 
       flexDirection: 'column', 
-      padding: '2rem',
-      gap: '2rem',
+      padding: 0,
+      gap: 0,
       backgroundColor: COLORS.backgroundPrimary,
       width: '100%',
       boxSizing: 'border-box',
@@ -143,15 +144,20 @@ const UploadPage: React.FC = () => {
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'stretch',
+          minHeight: '4.5rem',
+          width: '100%',
+          padding: '0 1.5rem 0 0',
+          backgroundColor: COLORS.accentPrimary,
+          color: COLORS.white,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center'}}>
+        <div style={{ display: 'flex', alignItems: 'stretch'}}>
           <button 
             type="button" 
             onClick={() => navigate(getHomeRouteFromToken())}
 
-            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+            style={{ padding: '0 0.85rem', backgroundColor: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
           >
             <img 
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
@@ -159,9 +165,13 @@ const UploadPage: React.FC = () => {
               style={{ width: '100px', height: 'auto' }} 
             />
           </button>
-          <Profile></Profile>
+        </div>
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0 }}>
+          <Profile />
+          <Logout />
         </div>
       </header>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '2rem' }}>
             <div style={{ 
                 minHeight: '100vh', 
                 display: 'flex', 
@@ -305,6 +315,7 @@ const UploadPage: React.FC = () => {
 
                 
             </form>
+          </div>
           </div>
     </div>
     

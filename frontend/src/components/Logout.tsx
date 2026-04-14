@@ -8,7 +8,7 @@ const Logout = () => {
         localStorage.removeItem('token');
       }
   return (
-    <div>
+    <div style={{ height: '100%', display: 'flex' }}>
         <button
         type="button" 
         onClick={() => {
@@ -16,13 +16,16 @@ const Logout = () => {
                     handleLogout();
                     }}
         style={{
-            padding: '0.5rem 1.5rem',
+            padding: '0 1.5rem',
             fontSize: '1rem',
             cursor: 'pointer',
+            border: 'none',
+            borderLeft: `1px solid ${COLORS.white}`,
             backgroundColor: 'transparent',
             color: COLORS.white,
             fontWeight: 500,
             transition: 'all 0.2s',
+            height: '100%',
         }}
         >
             Logout
