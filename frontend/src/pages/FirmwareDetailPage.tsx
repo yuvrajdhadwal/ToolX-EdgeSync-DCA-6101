@@ -190,7 +190,7 @@ const FirmwareDetailPage: React.FC = () => {
   const [deployIsEmergency, setDeployIsEmergency] = useState(false);
 
   const canModerateFirmware = userRole === 'developer_manager' && firmware?.status === 'pending';
-  const canDeployFirmware = userRole === 'business_manager' && firmware?.status === 'current';
+  const canDeployFirmware = userRole === 'business_manager' && (firmware?.status === 'current' || firmware?.status === 'deployed');
 
   const getReturnRoute = () => {
     if (userRole === 'business_manager') return ROUTES.HOME;
