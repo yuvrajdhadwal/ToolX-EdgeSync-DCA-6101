@@ -1,14 +1,14 @@
 .welcome-page {
   width: 100%;
-  min-height: calc(100vh - 4rem);
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   overflow: hidden;
   background:
-    linear-gradient(135deg, var(--color-brand-700) 0%, var(--color-brand-700) 24%, transparent 24%, transparent 100%),
-    linear-gradient(315deg, var(--color-brand-700) 0%, var(--color-brand-700) 24%, transparent 24%, transparent 100%),
+    linear-gradient(135deg, var(--color-brand-900) 0%, var(--color-brand-600) 24%, transparent 24%, transparent 100%),
+    linear-gradient(315deg, var(--color-brand-900) 0%, var(--color-brand-600) 24%, transparent 24%, transparent 100%),
     var(--color-background);
 }
 
