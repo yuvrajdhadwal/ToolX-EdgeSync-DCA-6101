@@ -82,23 +82,24 @@ const UploadPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
     if (!canUpload) {
       return;
     }
+
     if (!formData.file) {
       setLoading(false);
       console.error('Firmware file is required');
       return;
     }
-    if (!formData.file.name.toLowerCase().endsWith('.bin')) {
-      setError('Only .bin files are allowed');
-      return;
-    }
+
     setLoading(true);
     const data = new FormData();
+
     if (formData.file) {
     data.append('file', formData.file); 
     }
+
     data.append('device_type', formData.device_type);
     data.append('version_number', formData.version_number);
     data.append('description', formData.description);
@@ -196,7 +197,6 @@ const UploadPage: React.FC = () => {
                     }}
                     type='file'
                     name='file'
-                    accept='.bin'
                     onChange={handleInputChange}>
                 </input>
 

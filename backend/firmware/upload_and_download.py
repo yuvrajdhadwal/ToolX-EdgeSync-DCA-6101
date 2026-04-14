@@ -7,6 +7,8 @@ from firmware.isolation import user_can_view_firmware
 from login.authentication import get_authenticated_user
 from sqlalchemy.orm import Session
 
+ELF = b"\x7fELF"  # actual binary elf magic key
+
 
 async def upload_firmware(
     file: UploadFile,
@@ -46,8 +48,14 @@ async def upload_firmware(
     )
     if not manager_user:
         raise HTTPException(status_code=404, detail="Developer manager not found")
-    if not file.filename or not file.filename.lower().endswith(".bin"):
-        raise HTTPException(status_code=400, detail="Only .bin files can be uploaded")
+
+    header = await file.read(4)  # reads the first 4 bytes of the file
+    await file.seek(0)  # returns file pointer to first byte
+    if not header == ELF:
+        raise HTTPException(
+            status_code=400,
+            detail="Only Executable and Linkable (ELF) Files can be uploaded",
+        )
 
     file_content = await file.read()
     firmware = FirmwareUpdate(
