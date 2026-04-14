@@ -76,7 +76,14 @@ const BizMngPage: React.FC = () => {
         boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
       }}>
         {/* Buttons for World Map, Devices, and Firmware */}
-        <div style={{ display: 'flex', gap: '3rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: 'clamp(1rem, 2vw, 3rem)',
+            width: '100%',
+          }}
+        >
           {[
             { label: 'World Map', value: 'worldmap' as const, image: worldMapImage },
             { label: 'Devices', value: 'devices' as const, image: devicesImage },
@@ -94,8 +101,9 @@ const BizMngPage: React.FC = () => {
                 border: `1px solid ${COLORS.borderPrimary}`,
                 backgroundColor: COLORS.backgroundPrimary,
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                width: '400px',
-                height: '560px',
+                width: '100%',
+                minWidth: 0,
+                height: 'clamp(320px, 38vw, 560px)',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
@@ -111,7 +119,7 @@ const BizMngPage: React.FC = () => {
                 alt={label}
                 style={{
                   width: '100%',
-                  height: '75%',
+                  height: '80%',
                   objectFit: 'cover',
                   objectPosition: 'center',
                   display: 'block',
@@ -126,7 +134,7 @@ const BizMngPage: React.FC = () => {
                   backgroundColor: COLORS.accentPrimary,
                   color: COLORS.white,
                   fontWeight: 600,
-                  fontSize: '1.5rem',
+                  fontSize: 'clamp(1rem, 1.5vw, 1.5rem)',
                   whiteSpace: 'nowrap',
                 }}
               >
