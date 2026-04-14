@@ -5,6 +5,7 @@ import { COLORS } from '../constants/colors'
 import { getHomeRouteFromToken, ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 import Logout from '../components/Logout'
+import './UploadPage.css'
 
 
 
@@ -128,17 +129,7 @@ const UploadPage: React.FC = () => {
   }
   
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      padding: 0,
-      gap: 0,
-      backgroundColor: COLORS.backgroundPrimary,
-      width: '100%',
-      boxSizing: 'border-box',
-
-    }}>
+    <div className="upload-page">
       {/* Header with SLB */}
       <header
         style={{
@@ -171,155 +162,84 @@ const UploadPage: React.FC = () => {
           <Logout />
         </div>
       </header>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '2rem' }}>
-            <div style={{ 
-                minHeight: '100vh', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                padding: '2rem',
-                gap: '2rem',
-                backgroundColor: COLORS.backgroundSecondary,
-                borderRadius: '10px',
-                }}>
-          <h2 style={{ textAlign: 'left', marginBottom: '2.5rem', fontSize: '1.5rem', color: COLORS.textPrimary, paddingLeft: '5rem' }}>
-            Create New Update
-          </h2>
-            <form style={{display: 'grid', gridTemplateColumns: 'max-content 1fr max-content 1fr', gap: '.5rem', alignItems: 'center'}}
-                onSubmit={handleSubmit}>
-                <label style={{
-                    color: COLORS.textPrimary,
-                    fontSize:'1rem',
-                    fontWeight: 500,
-                    paddingLeft: '5rem',
-                    textAlign: 'right',
-                    
-                    }}>
-                        Firmware File:
-                </label>
-                <input style={{
-                        padding: '0.5rem',
-                        borderRadius: '6px',
-                        border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: COLORS.backgroundPrimary,
-                        width: '11rem',
-                        textAlign: 'right',
-                        
-                    }}
-                    type='file'
-                    name='file'
-                    onChange={handleInputChange}>
-                </input>
+      <div className="upload-content">
+        <section className="upload-card">
+          <h2 className="upload-title">Create New Update</h2>
 
-                <label style={{
-                    color: COLORS.textPrimary,
-                    fontSize:'1rem',
-                    fontWeight: 500,
-                    textAlign: 'right'
-                    }}>
-                        Emergency:
-                </label>
-                <input style = {{
+          <form className="upload-form" onSubmit={handleSubmit}>
+            <div className="upload-row">
+              <label className="upload-label" htmlFor="upload-file">Firmware File:</label>
+              <input
+                id="upload-file"
+                className="upload-input"
+                type='file'
+                name='file'
+                onChange={handleInputChange}
+              />
+            </div>
 
-                    width: '1rem',
-                    alignItems:'center'
-                    }}
-                    type='checkbox'
-                    checked = {formData.isEmergency}
-                    name='isEmergency'
-                    onChange={handleInputChange}>
-                </input>
-                
-                <label style={{
-                    color: COLORS.textPrimary,
-                    fontSize:'1rem',
-                    fontWeight: 500,
-                    textAlign: 'right'
-                    }}>
-                        Device Type:
-                </label>
-                <input style = {{
-                    padding: '0.5rem',
-                    borderRadius: '6px',
-                    border: `1px solid ${COLORS.borderPrimary}`,
-                    backgroundColor: COLORS.backgroundPrimary,
-                    width: '20rem',
-                    }}
-                    type='text'
-                    name='device_type'
-                    value={formData.device_type}
-                    onChange={handleInputChange}>
-                </input>
+            <div className="upload-row">
+              <label className="upload-label" htmlFor="upload-device-type">Device Type:</label>
+              <input
+                id="upload-device-type"
+                className="upload-input"
+                type='text'
+                name='device_type'
+                value={formData.device_type}
+                onChange={handleInputChange}
+              />
+            </div>
 
-                <label style={{
-                    color: COLORS.textPrimary,
-                    fontSize:'1rem',
-                    fontWeight: 500,
-                    textAlign: 'right'
-                }}>
-                    Version:
-                </label>
-                <input style = {{
-                    padding: '0.5rem',
-                    borderRadius: '6px',
-                    border: `1px solid ${COLORS.borderPrimary}`,
-                    backgroundColor: COLORS.backgroundPrimary,
-                    width: '20rem',
-                    }}
-                    type='text'
-                    name='version_number'
-                    value={formData.version_number}
-                    onChange={handleInputChange}>
-                </input>
+            <div className="upload-row">
+              <label className="upload-label" htmlFor="upload-version">Version:</label>
+              <input
+                id="upload-version"
+                className="upload-input"
+                type='text'
+                name='version_number'
+                value={formData.version_number}
+                onChange={handleInputChange}
+              />
+            </div>
 
-                <label style={{
-                    color: COLORS.textPrimary,
-                    fontSize:'1rem',
-                    fontWeight: 500,
-                    textAlign: 'right',
-                    gridColumnStart:1,
-                    alignSelf: 'start',
-                }}>
-                    Description:
-                </label>
-                <textarea style = {{
-                    padding: '0.5rem',
-                    borderRadius: '6px',
-                    border: `1px solid ${COLORS.borderPrimary}`,
-                    backgroundColor: COLORS.backgroundPrimary,
-                    width: '59rem',
-                    gridColumn:'2/5',
-                    minHeight: '5rem',
-                    resize: 'vertical',
-                    }}
-                    name='description'
-                    value={formData.description}
-                    onChange={handleInputChange}>
-                </textarea>
-                <div style={{ gridColumn: '4', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
-                <button style={{
-                    backgroundColor: COLORS.success,
-                    placeSelf: 'center',
-                    gridColumn: '4',
-                    maxWidth: '10rem',
-                    cursor: loading || !canUpload ? 'not-allowed' : 'pointer',
-                  }}
-                  disabled={loading || !canUpload}
-                  type='submit'
-                    >
-                    {loading? 'Uploading...':'Submit Update'}
-                </button>
-                {error && <p style={{ color: COLORS.error, placeSelf: "center" }}>{error}</p>}
+            <div className="upload-row upload-row--checkbox" style={{ alignItems: 'center' , display: 'flex', gap: '0.65rem' }}>
+              <label className="upload-label" htmlFor="upload-emergency">Emergency:</label>
+              <input
+                id="upload-emergency"
+                className="upload-checkbox"
+                type='checkbox'
+                checked={formData.isEmergency}
+                name='isEmergency'
+                onChange={handleInputChange}
+              />
+            </div>
 
-                </div>
+            <div className="upload-row">
+              <label className="upload-label" htmlFor="upload-description">Description:</label>
+              <textarea
+                id="upload-description"
+                className="upload-textarea"
+                name='description'
+                value={formData.description}
+                onChange={handleInputChange}
+              />
+            </div>
 
+            <div className="upload-footer">
+              <button
+                className="upload-submit"
+                disabled={loading || !canUpload}
+                type='submit'
+              >
+                {loading ? 'Uploading...' : 'Submit Update'}
+              </button>
+            </div>
 
-                
-            </form>
-          </div>
-          </div>
+            {error && <p className="upload-error">{error}</p>}
+          </form>
+        </section>
+      </div>
     </div>
-    
-    
   )
 }
 
