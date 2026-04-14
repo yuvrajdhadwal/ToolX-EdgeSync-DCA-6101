@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <thread>
 
 static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result,
                                   void *userContextCallback) {
@@ -32,18 +33,6 @@ void publishMessage(const std::string &msg,
 
 void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   publishMessage("Device is Online", device_ll_handle);
-}
-
-void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
-  publishMessage("Firmware Deployment Rejected by Field Technician",
-                 device_ll_handle);
-}
-
-void deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
-  // TODO: Handle firmware installation and further states
-  publishMessage(
-      "Firmware Deployment Accepted by Field Technician ... Installing Now",
-      device_ll_handle);
 }
 
 auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
@@ -114,6 +103,9 @@ auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
         if (strcmp("isEmergency", (char *)keys[i]) == 0 &&
             strcmp("1", (char *)values[i]) == 0) {
           isEmergency = true;
+        }
+        if (strcmp("download_link", (char *)keys[i]) == 0) {
+          mostRecentURL = (char *)values[i];
         }
       }
     }

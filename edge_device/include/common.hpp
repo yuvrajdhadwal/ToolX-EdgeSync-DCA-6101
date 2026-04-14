@@ -10,14 +10,16 @@
 
 #include "iothubtransportmqtt.h"
 
+#include <curl/curl.h>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 
-IOTHUB_DEVICE_CLIENT_LL_HANDLE setup(const char *connectionString,
-                                     IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol,
-                                     void *incomingDeployment);
+auto setup(const char *connectionString,
+           IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol, void *incomingDeployment)
+    -> IOTHUB_DEVICE_CLIENT_LL_HANDLE;
+
 void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
                                 IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
                                 void *user_context);
@@ -25,12 +27,22 @@ void stable(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 
 void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 void deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
-IOTHUBMESSAGE_DISPOSITION_RESULT
-receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context);
+
+auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
+    -> IOTHUBMESSAGE_DISPOSITION_RESULT;
+
+auto filewrite_callback(char *ptr, std::size_t size, std::size_t nmemb,
+                        void *stream) -> std::size_t;
 void shutdown();
 void shutdown(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
+auto downloadFirmware() -> bool;
 
-inline std::string getEnvVar(const std::string &key) {
+inline auto getEnvVar(const std::string &key) -> std::string {
   const char *val{std::getenv(key.c_str())};
   return (val == nullptr) ? "" : std::string{val};
 }
+
+void publishMessage(const std::string &msg,
+                    IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
+extern std::string mostRecentURL;
+extern bool isNewFirmwareDownloaded;

@@ -44,7 +44,7 @@ type CompatibleDevicesResponse = {
 const downloadFirmware = async (firmwareId: number) => {
   const token = localStorage.getItem('token');
   const response = await fetch(`/firmware/${firmwareId}/download`, {
-    method: 'POST',
+    method: 'GET',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!response.ok) throw new Error('Failed to download firmware');
@@ -52,7 +52,7 @@ const downloadFirmware = async (firmwareId: number) => {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.setAttribute('download', `firmware_${firmwareId}.bin`);
+  link.setAttribute('download', `firmware_${firmwareId}`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

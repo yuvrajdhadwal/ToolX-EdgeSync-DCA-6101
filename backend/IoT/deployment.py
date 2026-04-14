@@ -5,6 +5,7 @@ from typing import Optional
 
 import msrest
 from azure.iot.hub import IoTHubRegistryManager
+from config import EXTERNAL_API_URL
 from database.database_types import UserRole
 from database.models import BusinessManager, Deploy, Device, FirmwareUpdate
 from fastapi import HTTPException
@@ -124,6 +125,7 @@ def deploy_cloud_to_device(
     """
     success = False
     try:
+        print(EXTERNAL_API_URL)
         iot_hub.send_c2d_message(
             device_id,
             "New Firmware Update Deployed",
@@ -135,6 +137,7 @@ def deploy_cloud_to_device(
                 "versionNumber": firmware.version_number,
                 "developer": firmware.developer,
                 "description": firmware.description,
+                "download_link": f"{EXTERNAL_API_URL}/firmware/{firmware.id}/device_download",
             },
         )
         success = True

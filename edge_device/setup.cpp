@@ -7,7 +7,7 @@ auto setup(const char *connectionString,
   (void)IoTHub_Init();
 
   IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle;
-  std::cout << "Creating IoTHub Device handle\n";
+  // std::cout << "Creating IoTHub Device handle\n";
   // Create the iothub handle here
   device_ll_handle = IoTHubDeviceClient_LL_CreateFromConnectionString(
       connectionString, protocol);

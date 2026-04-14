@@ -7,8 +7,12 @@ from database.database import Base, SessionLocal, engine
 from database.database_helpers import get_developer_manager, get_username_by_id
 from database.database_types import DeviceType, UserType
 from devices.deployment_history import get_deploy_history
-from devices.devices import (add_device, delete_devices,
-                             get_deployable_devices, get_devices)
+from devices.devices import (
+    add_device,
+    delete_devices,
+    get_deployable_devices,
+    get_devices,
+)
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,10 +20,17 @@ from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from firmware.firmware import get_firmware_by_id, get_firmware_by_status
-from firmware.firmware_types import (ApproveFirmwareRequest, FirmwareResponse,
-                                     RejectFirmwareRequest)
+from firmware.firmware_types import (
+    ApproveFirmwareRequest,
+    FirmwareResponse,
+    RejectFirmwareRequest,
+)
 from firmware.manager_approval import approve_firmware, reject_firmware
-from firmware.upload_and_download import download_firmware, upload_firmware
+from firmware.upload_and_download import (
+    download_firmware,
+    download_firmware_from_device,
+    upload_firmware,
+)
 from IoT.deployment import deploy_to_devices
 from IoT.device_to_cloud import telemetry_activity_worker
 from IoT.iot_types import DeployManyRequest
@@ -140,13 +151,20 @@ def get_firmware_by_id_endpoint(
     return get_firmware_by_id(firmware_id, db, authorization)
 
 
-@app.post("/firmware/{firmware_id}/download")
+@app.get("/firmware/{firmware_id}/download")
 def download_firmware_endpoint(
     firmware_id: int,
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(default=None),
 ):
     return download_firmware(firmware_id, db, authorization)
+
+
+@app.get("/firmware/{firmware_id}/device_download")
+def download_firmware_from_device_endpoint(
+    firmware_id: int, db: Session = Depends(get_db)
+):
+    return download_firmware_from_device(firmware_id, db)
 
 
 @app.post("/firmware/{firmware_id}/reject", response_model=FirmwareResponse)
@@ -254,4 +272,3 @@ async def serve_react_app(full_path: str):
     if os.path.exists("static/index.html"):
         return FileResponse("static/index.html")
     return {"error": "Frontend not deployed"}
-
