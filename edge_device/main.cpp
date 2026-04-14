@@ -4,7 +4,8 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-CURL *curl;
+std::string mostRecentURL;
+bool isNewFirmwareDownloaded = false;
 
 // TODO: Handle default firmware/current/latest incoming one
 auto main() -> int {
@@ -18,14 +19,6 @@ auto main() -> int {
   if (result != CURLE_OK) {
     std::cerr << "Could not initialize CURL\n";
     return static_cast<int>(result);
-  }
-
-  curl = curl_easy_init();
-
-  if (static_cast<bool>(curl)) {
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);  // TODO: set to 0 when not debugging
-    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, filewrite_callback);
   }
 
   IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol{MQTT_Protocol};

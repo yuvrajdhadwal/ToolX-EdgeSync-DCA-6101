@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <thread>
 
 static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result,
                                   void *userContextCallback) {
@@ -22,7 +23,7 @@ void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
 
 void publishMessage(const std::string &msg,
                     IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
-  // std::cout << "Sending Message: " << msg << '\n';
+  std::cout << "Sending Message: " << msg << '\n';
   IOTHUB_MESSAGE_HANDLE message_handle =
       IoTHubMessage_CreateFromString(msg.data());
   IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle,
@@ -41,10 +42,17 @@ void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
 
 void deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   // TODO: Handle firmware installation and further states
-  downloadFirmware();
-  publishMessage(
-      "Firmware Deployment Accepted by Field Technician ... Installing Now",
-      device_ll_handle);
+  std::thread downloadThread([device_ll_handle]() -> void {
+    isNewFirmwareDownloaded = downloadFirmware();
+    if (isNewFirmwareDownloaded) {
+      publishMessage(
+          "Firmware Deployment Accepted by Field Technician ... Installing Now",
+          device_ll_handle);
+    } else {
+      deploymentRejection(device_ll_handle);
+    }
+  });
+  downloadThread.detach();
 }
 
 auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
@@ -117,9 +125,7 @@ auto receive_msg_callback(IOTHUB_MESSAGE_HANDLE message, void *user_context)
           isEmergency = true;
         }
         if (strcmp("download_link", (char *)keys[i]) == 0) {
-          if (static_cast<bool>(curl)) {
-            curl_easy_setopt(curl, CURLOPT_URL, (char *)values[i]);
-          }
+          mostRecentURL = (char *)values[i];
         }
       }
     }
