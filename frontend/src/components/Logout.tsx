@@ -19,10 +19,8 @@ const Logout = () => {
             padding: '0.5rem 1.5rem',
             fontSize: '1rem',
             cursor: 'pointer',
-            borderRadius: '6px',
-            border: `1px solid ${COLORS.danger}`,
             backgroundColor: 'transparent',
-            color: COLORS.dangerText,
+            color: COLORS.white,
             fontWeight: 500,
             transition: 'all 0.2s',
         }}

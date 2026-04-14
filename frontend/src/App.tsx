@@ -1,6 +1,6 @@
 // import { useState } from 'react'
 import './App.css'
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import WelcomePage from './pages/WelcomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -23,10 +23,6 @@ function AppLayout() {
     <>
       {showAuthNav ? (
         <div className="app-auth-shell">
-          <nav className="navbar-container app-auth-shell__nav">
-            <Link className="navbar-link" to={ROUTES.LOGIN}>Login</Link>
-            <Link className="navbar-link" to={ROUTES.REGISTER}>Register</Link>
-          </nav>
           <Routes>
             <Route path={ROUTES.WELCOME} element={<WelcomePage></WelcomePage>}></Route>
             <Route path={ROUTES.LOGIN} element={<LoginPage></LoginPage>}></Route>

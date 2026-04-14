@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { COLORS } from '../constants/colors';
+import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/routes';
+import './AuthPages.css'
+import './LoginPage.css';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -66,34 +67,53 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
-      <h1>This is LoginPage</h1>
-      <form onSubmit={handleSubmit}>
-          <div>
-            <label>
-              Username:
-            </label>
-            <input 
-            type='text'
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)}
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-brand auth-brand--ribbon">
+          <img
+            className="auth-brand__logo"
+            src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
+            alt="SLB Logo"
+          />
+        </div>
+
+        <h1 className="login-title">Welcome</h1>
+        <p className="login-subtitle">Enter username and password to log in</p>
+
+        <form className="login-form" onSubmit={handleSubmit}>
+          <div className="login-field">
+            <label className="login-label" htmlFor="username">Username</label>
+            <input
+              id="username"
+              className="login-input"
+              type='text'
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
           </div>
-          <div>
-            <label>
-              password:
-            </label>
-            <input 
-            type='password'
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)}
+
+          <div className="login-field">
+            <label className="login-label" htmlFor="password">Password</label>
+            <input
+              id="password"
+              className="login-input"
+              type='password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <button type='submit' disabled={loading}>
+
+          <button className="login-button" type='submit' disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
-          {error && <p style={{ color: COLORS.error }}>{error}</p>}
+
+          {error && <p className="login-error">{error}</p>}
+
+          <Link className="login-register" to={ROUTES.REGISTER}>
+            Don&apos;t have an account? Register here
+          </Link>
         </form>
+      </div>
     </div>
   )
 }

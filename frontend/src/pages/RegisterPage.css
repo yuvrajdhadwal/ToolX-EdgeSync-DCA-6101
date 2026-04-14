@@ -1,0 +1,92 @@
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  padding: 2.25rem 2rem;
+}
+
+.register-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.register-title {
+  margin: 0;
+  text-align: center;
+  color: var(--color-brand-700);
+  font-size: 2rem;
+}
+
+.register-subtitle {
+  margin: 0.5rem 0 1.5rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.register-success {
+  margin: 0 0 1rem;
+  color: var(--color-success);
+  text-align: center;
+  font-weight: 600;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.register-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.register-label {
+  font-weight: 600;
+  color: var(--color-brand-700);
+}
+
+.register-input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  color: var(--color-brand-700);
+  padding: 0.85rem 0.95rem;
+}
+
+.register-button {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.register-login {
+  display: block;
+  margin-top: 0.9rem;
+  text-align: center;
+  color: var(--color-brand-700);
+  font-weight: 600;
+}
+
+.register-login:hover {
+  color: var(--color-brand-800);
+  text-decoration: underline;
+}
+
+.register-error {
+  margin: 0;
+  color: var(--color-danger);
+  text-align: center;
+}
