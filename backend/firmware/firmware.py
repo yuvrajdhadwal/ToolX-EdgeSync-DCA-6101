@@ -120,7 +120,7 @@ def get_firmware_by_id(
 
     # Business managers can view all firmware
     if user.type == UserRole.business_manager.value:  # type: ignore
-        return convert_firmware_update_to_response(firmware)
+        return convert_firmware_update_to_response(firmware, db)
 
     if (
         not user_can_view_firmware(user, firmware.id)  # type: ignore
@@ -128,5 +128,5 @@ def get_firmware_by_id(
     ):
         raise HTTPException(status_code=404, detail="Firmware not found")
 
-    return convert_firmware_update_to_response(firmware)
+    return convert_firmware_update_to_response(firmware, db)
 
