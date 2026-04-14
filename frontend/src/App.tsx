@@ -22,11 +22,10 @@ function AppLayout() {
   return (
     <>
       {showAuthNav ? (
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '2rem' }}>
-          <nav className="navbar-container"
-          style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <Link to={ROUTES.LOGIN}>Login</Link>
-            <Link to={ROUTES.REGISTER}>Register</Link>
+        <div className="app-auth-shell">
+          <nav className="navbar-container app-auth-shell__nav">
+            <Link className="navbar-link" to={ROUTES.LOGIN}>Login</Link>
+            <Link className="navbar-link" to={ROUTES.REGISTER}>Register</Link>
           </nav>
           <Routes>
             <Route path={ROUTES.WELCOME} element={<WelcomePage></WelcomePage>}></Route>
@@ -55,15 +54,10 @@ function AppLayout() {
 function App() {
 
   return (
-    <div>
-      
+    <div className="app-shell">
       <Router>
         <AppLayout />
       </Router>
-
-
-
-
     </div>
 
   )
