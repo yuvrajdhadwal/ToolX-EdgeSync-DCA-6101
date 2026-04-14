@@ -343,8 +343,8 @@ const WorldMapPage: React.FC = () => {
         borderRadius: '8px',
         boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
             <select
               value={selectedDeviceType}
               onChange={(event) => setSelectedDeviceType(event.target.value)}
@@ -397,12 +397,16 @@ const WorldMapPage: React.FC = () => {
                 }
               }}
               style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '6px',
+                padding: '0.65rem 1.2rem',
+                borderRadius: '8px',
                 border: `1px solid ${COLORS.borderPrimary}`,
                 backgroundColor: isSelectionMode ? COLORS.backgroundTertiary : COLORS.backgroundPrimary,
                 color: COLORS.white,
                 cursor: 'pointer',
+                minHeight: '42px',
+                minWidth: '130px',
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
               }}
             >
               {isSelectionMode ? 'Selection On' : 'Select Pins'}
@@ -415,13 +419,17 @@ const WorldMapPage: React.FC = () => {
               }}
               disabled={!isSelectionMode || selectedSerials.length === 0}
               style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '6px',
+                padding: '0.65rem 1.2rem',
+                borderRadius: '8px',
                 border: 'none',
                 backgroundColor: COLORS.success,
                 color: COLORS.white,
                 cursor: !isSelectionMode || selectedSerials.length === 0 ? 'not-allowed' : 'pointer',
                 opacity: !isSelectionMode || selectedSerials.length === 0 ? 0.6 : 1,
+                minHeight: '42px',
+                minWidth: '180px',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
               }}
             >
               Deploy Selected ({selectedSerials.length})

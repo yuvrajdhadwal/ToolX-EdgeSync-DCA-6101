@@ -76,7 +76,7 @@ const BizMngPage: React.FC = () => {
         boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
       }}>
         {/* Buttons for World Map, Devices, and Firmware */}
-        <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '3rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           {[
             { label: 'World Map', value: 'worldmap' as const, image: worldMapImage },
             { label: 'Devices', value: 'devices' as const, image: devicesImage },
@@ -94,7 +94,7 @@ const BizMngPage: React.FC = () => {
                 border: `1px solid ${COLORS.borderPrimary}`,
                 backgroundColor: COLORS.backgroundPrimary,
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                width: '420px',
+                width: '400px',
                 height: '560px',
                 overflow: 'hidden',
                 display: 'flex',
