@@ -123,8 +123,8 @@ const BizMngDevicesPage: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '2rem' }}>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `3px solid ${COLORS.borderPrimary}` }}>
-        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLORS.white, marginBottom: '0.5rem' }}>
-          Dashboard
+        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLORS.textPrimary, marginBottom: '0.5rem' }}>
+          Devices
         </h1>
       </div>
 
@@ -173,8 +173,8 @@ const BizMngDevicesPage: React.FC = () => {
                           onClick={(e) => { e.stopPropagation(); setConfirmDevice(device) }}
                           style={{
                             padding: '0.25rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
-                            borderRadius: '4px', border: `1px solid ${COLORS.danger}`,
-                            backgroundColor: 'transparent', color: COLORS.dangerText, fontWeight: 500,
+                            borderRadius: '4px', border: `1px solid ${COLORS.white}`,
+                            backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
                           }}
                         >
                           X

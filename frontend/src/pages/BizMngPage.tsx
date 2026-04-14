@@ -4,9 +4,13 @@ import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 import Logout from '../components/Logout'
+import worldMapImage from '../assets/business_manager/world_map.avif'
+import devicesImage from '../assets/business_manager/device.jpg'
+import firmwareImage from '../assets/business_manager/firmware.jpg'
 
 const BizMngPage: React.FC = () => {
   const navigate = useNavigate()
+  const [hoveredCard, setHoveredCard] = React.useState<string | null>(null)
 
   const handleButtonClick = (value: 'worldmap' | 'devices' | 'firmware') => {
     if (value === 'worldmap') navigate(ROUTES.WORLD_MAP)
@@ -52,7 +56,7 @@ const BizMngPage: React.FC = () => {
           margin: 0,
           fontSize: '2rem',
           fontWeight: 700,
-          color: COLORS.white,
+          color: COLORS.textPrimary,
           textAlign: 'left',
           marginBottom: '0.5rem',
         }}>
@@ -72,29 +76,62 @@ const BizMngPage: React.FC = () => {
         boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
       }}>
         {/* Buttons for World Map, Devices, and Firmware */}
-        <div style={{ display: 'flex', gap: '7.5rem', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           {[
-            { label: 'World Map', value: 'worldmap' as const },
-            { label: 'Devices', value: 'devices' as const },
-            { label: 'Firmware', value: 'firmware' as const },
-          ].map(({ label, value }) => (
+            { label: 'World Map', value: 'worldmap' as const, image: worldMapImage },
+            { label: 'Devices', value: 'devices' as const, image: devicesImage },
+            { label: 'Firmware', value: 'firmware' as const, image: firmwareImage },
+          ].map(({ label, value, image }) => (
             <button
               key={value}
               type="button"
               onClick={() => handleButtonClick(value)}
+              onMouseEnter={() => setHoveredCard(value)}
+              onMouseLeave={() => setHoveredCard(null)}
               style={{
-                whiteSpace: 'nowrap',
-                padding: '1rem 6.5rem',
-                fontSize: '1.15rem',
                 cursor: 'pointer',
-                borderRadius: '8px',
-                border: `2px solid ${COLORS.accentPrimary}`,
-                backgroundColor: 'transparent',
-                color: COLORS.white,
-                transition: 'all 0.2s',
+                borderRadius: 0,
+                border: `1px solid ${COLORS.borderPrimary}`,
+                backgroundColor: COLORS.backgroundPrimary,
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                width: '420px',
+                height: '560px',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                padding: 0,
+                transform: hoveredCard === value ? 'translateY(-8px)' : 'translateY(0)',
+                boxShadow: hoveredCard === value
+                  ? `0 22px 34px ${COLORS.shadowStrong}`
+                  : `0 8px 16px ${COLORS.shadowStrong}`,
               }}
             >
-              {label}
+              <img
+                src={image}
+                alt={label}
+                style={{
+                  width: '100%',
+                  height: '75%',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                  display: 'block',
+                }}
+              />
+              <div
+                style={{
+                  height: '20%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.accentPrimary,
+                  color: COLORS.white,
+                  fontWeight: 600,
+                  fontSize: '1.5rem',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {label}
+              </div>
             </button>
           ))}
         </div>
