@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/routes';
-import './AuthPages.css'
-import './LoginPage.css';
+import './styles/AuthPages.css'
+import './styles/LoginPage.css';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');

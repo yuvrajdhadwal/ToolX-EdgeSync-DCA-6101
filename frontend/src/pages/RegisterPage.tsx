@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/routes';
-import './AuthPages.css'
-import './RegisterPage.css';
+import './styles/AuthPages.css'
+import './styles/RegisterPage.css';
 
 type roleOption = {
   role: string;

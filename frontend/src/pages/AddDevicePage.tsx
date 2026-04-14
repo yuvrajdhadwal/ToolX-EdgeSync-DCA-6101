@@ -5,7 +5,7 @@ import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 import Logout from '../components/Logout'
-import './AddDevicePage.css'
+import './styles/AddDevicePage.css'
 
 interface ItemInfo {
     device_type: string;

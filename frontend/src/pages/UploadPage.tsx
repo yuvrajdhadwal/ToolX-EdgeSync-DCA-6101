@@ -5,7 +5,7 @@ import { COLORS } from '../constants/colors'
 import { getHomeRouteFromToken, ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
 import Logout from '../components/Logout'
-import './UploadPage.css'
+import './styles/UploadPage.css'
 
 
 

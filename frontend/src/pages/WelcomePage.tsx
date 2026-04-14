@@ -1,8 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../constants/routes'
-import './AuthPages.css'
-import './WelcomePage.css'
+import './styles/AuthPages.css'
+import './styles/WelcomePage.css'
 
 const WelcomePage: React.FC = () => {
   return (
