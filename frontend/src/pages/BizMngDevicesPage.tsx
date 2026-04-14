@@ -29,6 +29,7 @@ const BizMngDevicesPage: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isAddButtonHovering, setIsAddButtonHovering] = useState(false)
   const [confirmDevice, setConfirmDevice] = useState<Device | null>(null)
 
   const tableHeaders = ['Device Type', 'Firmware Version', 'Last Updated', 'Region', 'Serial Number', 'Device Description', 'Remove']
@@ -105,12 +106,16 @@ const BizMngDevicesPage: React.FC = () => {
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.ADD_DEVICES)}
+            onMouseEnter={() => setIsAddButtonHovering(true)}
+            onMouseLeave={() => setIsAddButtonHovering(false)}
             style={{
               padding: '0 1.5rem', fontSize: '1rem', cursor: 'pointer',
               border: 'none',
               borderLeft: `1px solid ${COLORS.white}`,
-              backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
+              backgroundColor: isAddButtonHovering ? COLORS.brand900 : COLORS.accentPrimary,
+              color: COLORS.white, fontWeight: 500,
               height: '100%',
+              transition: 'background-color 0.2s',
             }}
           >
             Add New Device

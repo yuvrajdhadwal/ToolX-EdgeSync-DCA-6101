@@ -404,7 +404,8 @@ const WorldMapPage: React.FC = () => {
                 color: COLORS.white,
                 cursor: 'pointer',
                 minHeight: '42px',
-                minWidth: '130px',
+                width: '150px',
+                flexShrink: 0,
                 fontWeight: 500,
                 whiteSpace: 'nowrap',
               }}
@@ -427,7 +428,8 @@ const WorldMapPage: React.FC = () => {
                 cursor: !isSelectionMode || selectedSerials.length === 0 ? 'not-allowed' : 'pointer',
                 opacity: !isSelectionMode || selectedSerials.length === 0 ? 0.6 : 1,
                 minHeight: '42px',
-                minWidth: '180px',
+                width: '210px',
+                flexShrink: 0,
                 fontWeight: 600,
                 whiteSpace: 'nowrap',
               }}

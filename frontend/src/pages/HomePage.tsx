@@ -81,6 +81,7 @@ const HomePage: React.FC = () => {
   const [uploads, setUploads] = useState<UploadItem[]>([])
   const [deviceTypes, setDeviceTypes] = useState<string[]>([])
   const [selectedDeviceType, setSelectedDeviceType] = useState('All Device Types')
+  const [isUploadHovering, setIsUploadHovering] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -206,13 +207,15 @@ const HomePage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate(ROUTES.UPLOAD)}
+              onMouseEnter={() => setIsUploadHovering(true)}
+              onMouseLeave={() => setIsUploadHovering(false)}
               style={{
                 padding: '0 1.5rem',
                 fontSize: '1rem',
                 cursor: 'pointer',
                 border: 'none',
                 borderLeft: `1px solid ${COLORS.white}`,
-                backgroundColor: 'transparent',
+                backgroundColor: isUploadHovering ? COLORS.brand900 : COLORS.accentPrimary,
                 color: COLORS.white,
                 fontWeight: 500,
                 transition: 'background-color 0.2s',

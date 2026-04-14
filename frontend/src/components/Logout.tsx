@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 
 const Logout = () => {
     const navigate = useNavigate()
+    const [isHovering, setIsHovering] = useState(false)
     const handleLogout = () => {
         localStorage.removeItem('token');
       }
@@ -11,6 +13,8 @@ const Logout = () => {
     <div style={{ height: '100%', display: 'flex' }}>
         <button
         type="button" 
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
         onClick={() => {
                     navigate(ROUTES.LOGIN, { replace:true }),
                     handleLogout();
@@ -21,10 +25,10 @@ const Logout = () => {
             cursor: 'pointer',
             border: 'none',
             borderLeft: `1px solid ${COLORS.white}`,
-            backgroundColor: 'transparent',
+            backgroundColor: isHovering ? COLORS.brand900 : COLORS.accentPrimary,
             color: COLORS.white,
             fontWeight: 500,
-            transition: 'all 0.2s',
+            transition: 'background-color 0.2s',
             height: '100%',
         }}
         >

@@ -10,6 +10,7 @@ interface Profiledata {
 export default function Profile() {
     const [profile, setProfile] = useState<Profiledata | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
     const location = useLocation();
 
     useEffect(() => {
@@ -37,16 +38,19 @@ export default function Profile() {
             <button
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
                 style={{
                     padding: '0 1.25rem',
                     fontSize: '1rem',
                     border: 'none',
                     borderLeft: `1px solid ${COLORS.white}`,
-                    backgroundColor: 'transparent',
+                    backgroundColor: isHovering ? COLORS.brand900 : COLORS.accentPrimary,
                     color: COLORS.white,
                     fontWeight: 500,
                     cursor: 'pointer',
                     height: '100%',
+                    transition: 'background-color 0.2s',
                 }}
             >
                 Profile
