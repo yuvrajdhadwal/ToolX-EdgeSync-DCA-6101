@@ -215,7 +215,7 @@ const HomePage: React.FC = () => {
                 cursor: 'pointer',
                 border: 'none',
                 borderLeft: `1px solid ${COLORS.white}`,
-                backgroundColor: isUploadHovering ? COLORS.brand900 : COLORS.accentPrimary,
+                backgroundColor: isUploadHovering ? COLORS.accentHover : COLORS.accentPrimary,
                 color: COLORS.white,
                 fontWeight: 500,
                 transition: 'background-color 0.2s',
