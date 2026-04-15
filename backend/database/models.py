@@ -24,6 +24,14 @@ downloads_table = Table(
     Column("firmware_id", Integer, ForeignKey("firmware_updates.id"), primary_key=True),
 )
 
+# Field Professional -> Device Relationship M:N
+field2device_table = Table(
+    "field2device",
+    Base.metadata,
+    Column("device_serial", String(100), ForeignKey("devices.serial_number"), primary_key=True),
+    Column("professional_id", Integer, ForeignKey("field_shop_professionals.id"), primary_key=True),
+)
+
 # ======================
 #       User Tables
 # ======================
@@ -128,6 +136,13 @@ class Device(Base):
     firmware = relationship(
         "FirmwareUpdate",
         backref=backref("installed_devices", passive_deletes=True)
+    )
+
+    # M:N relationship w/ Field Shop Professional
+    field_shop_professionals = relationship(
+        "FieldShopProfessional",
+        secondary=field2device_table,
+        backref="assigned_devices",
     )
 
 # ===================================

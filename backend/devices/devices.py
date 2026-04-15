@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from database.database_types import DeviceType, UserRole
-from database.models import DeveloperManager, Device, FirmwareUpdate
+from database.models import DeveloperManager, Device, FirmwareUpdate, FieldShopProfessional
 from fastapi import Header, HTTPException
 from login.authentication import get_authenticated_user
 from map.active_devices import get_region_from_coordinates
@@ -81,6 +81,31 @@ def add_device(device: DeviceType, db: Session):
     db.add(db_device)
     db.commit()
     db.refresh(db_device)
+
+    # Updated -> Assigns Field Shop Professionals to device
+    for username in device.field_shop_users:
+        professional = db.query(FieldShopProfessional).filter(
+            FieldShopProfessional.username == username
+        ).first()
+
+        if not professional:
+            continue
+
+        # Add to device M:N relationship
+        db_device.field_shop_professionals.append(professional)
+
+        # Also give download access to approved firmware for this device type
+        approved_firmware = db.query(FirmwareUpdate).filter(
+            FirmwareUpdate.device_type == device.device_type,
+            FirmwareUpdate.approved_by.isnot(None),
+        ).all()
+        
+        for fw in approved_firmware:
+            if fw not in professional.download_firmware:
+                professional.download_firmware.append(fw)
+
+    db.commit()
+
     return {"message": "Device added successfully"}
 
 

@@ -271,3 +271,10 @@ async def serve_react_app(full_path: str):
     if os.path.exists("static/index.html"):
         return FileResponse("static/index.html")
     return {"error": "Frontend not deployed"}
+
+@app.get("/field-shop-professionals")
+def get_field_shop_professionals(
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    return get_field_shop_professionals(db, authorization)
