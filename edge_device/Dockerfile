@@ -11,7 +11,9 @@ RUN apt-get update && apt-get install -y \
 	libssl-dev \
 	uuid-dev \
 	build-essential \
-	ca-certificates
+	ca-certificates \
+	gcc-4.9 \
+	libstdc++6
 
 WORKDIR /app
 
@@ -42,7 +44,9 @@ FROM ubuntu:22.04 AS runner
 RUN apt-get update && apt-get install -y \
 	libcurl4 \
 	openssl \
-	libuuid1
+	libuuid1 \
+	gcc-4.9 \
+	libstdc++6
 
 WORKDIR /app
 
