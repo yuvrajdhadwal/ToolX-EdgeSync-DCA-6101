@@ -3,9 +3,12 @@
 #include <chrono>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 std::string mostRecentURL;
 bool isNewFirmwareDownloaded = false;
+pid_t currentFirmwarePID = 0;
+pid_t incomingFirmwarePID = 0;
 
 // TODO: Handle default firmware/current/latest incoming one
 auto main() -> int {
@@ -72,6 +75,7 @@ auto main() -> int {
 
   // NOTE: Go to Stable State if Setup is successful
   while (isStable) {
+    // Handling Field Tech [y/N]
     int num_events{epoll_wait(epoll_fd, events.data(), 1, 0)};
     if (num_events > 0) {
       std::array<char, 1> buffer;
@@ -100,8 +104,34 @@ auto main() -> int {
 
       incomingDeployment = false;
     }
-    auto now{std::chrono::steady_clock::now()};
 
+    // Handling Firmware Installation
+    if (isNewFirmwareDownloaded) {
+      static int failureCount = 0;
+      isNewFirmwareDownloaded = false;
+      pid_t newFirmwarePID = fork();
+
+      if (newFirmwarePID < 0) {
+        // Fork failed
+        ++failureCount;
+        isNewFirmwareDownloaded = true;  // try again
+      } else if (newFirmwarePID == 0) {
+        // In Firmware Process (Fork Child)
+        chmod("/tmp/firmware", S_IXUSR | S_IXGRP | S_IXOTH);
+        execlp("/tmp/firmware", "firmware", nullptr);
+        // If we get here exec failed
+        std::cout << "whyd this fail rip";
+        std::cout << errno << '\n';
+        perror("exec failed :(");
+      } else {
+        // In Control Plane (Fork Parent)
+        incomingFirmwarePID = newFirmwarePID;
+      }
+    }
+
+
+    // Handling Heartbeats
+    auto now{std::chrono::steady_clock::now()};
     if (now - last_send_time >= interval) {
       stable(device_ll_handle);
       last_send_time += interval;

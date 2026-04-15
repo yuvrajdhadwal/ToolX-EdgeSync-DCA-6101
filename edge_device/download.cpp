@@ -4,7 +4,7 @@
 #include <thread>
 #include <chrono>
 
-const char *filename = "firmware";
+const char *filename = "/tmp/firmware";
 constexpr int RETRY_DELAY_MS = 3000;
 constexpr int RETRY_ATTEMPTS = 3;
 
