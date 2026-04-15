@@ -4,7 +4,7 @@
 #include <thread>
 #include <chrono>
 
-const char *filename = "/tmp/firmware";
+
 constexpr int RETRY_DELAY_MS = 3000;
 constexpr int RETRY_ATTEMPTS = 3;
 
@@ -26,9 +26,18 @@ static auto attemptDownloadFirmware(const char *url) -> bool {
   curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L); // set to 0L for progress bar
   curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, filewrite_callback);
+  std::string_view filename;
+  if (isPartitionA) {
+    filename = partitionBPath;
+  } else {
+    filename = partitionAPath;
+  }
 
-  FILE *pagefile = fopen(filename, "wb");
+  std::cout << filename.data() << '\n';
+  FILE *pagefile = fopen(filename.data(), "wb");
   if (!static_cast<bool>(pagefile)) {
+    std::cout << "this is the error rip \n";
+    perror("rip: ");
     return false;
   }
 
