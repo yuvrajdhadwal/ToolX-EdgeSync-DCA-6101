@@ -1,5 +1,8 @@
 from database.database import SessionLocal
-from database.models import Deploy
+from database.models import Deploy, Device
+from sqlalchemy.orm import Session
+from fastapi import HTTPException
+
 
 
 def update_acceptance_status(device_id: str, body: str):
@@ -35,3 +38,16 @@ def update_acceptance_status(device_id: str, body: str):
     finally:
         db.close()
 
+def get_acceptance_status(serial_number: str, db: Session):
+    device = db.query(Device).filter(Device.serial_number == serial_number).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    
+    latest_deploy = (
+        db.query(Deploy).filter(Deploy.device_serial == serial_number).order_by(Deploy.timestamp.desc()).first()
+    )
+
+    if not latest_deploy:
+        raise HTTPException(status_code=404, detail="No deployments found for this device")
+    
+    return {"isAccepted": latest_deploy.isAccepted}

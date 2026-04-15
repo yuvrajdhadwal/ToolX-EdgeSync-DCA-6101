@@ -9,6 +9,7 @@ from database.database_types import DeviceType, UserType
 from devices.deployment_history import get_deploy_history
 from devices.devices import (add_device, delete_devices,
                              get_deployable_devices, get_devices)
+from devices.acceptance_status import get_acceptance_status
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -212,6 +213,11 @@ def get_deploy_history_endpoint(
 @app.delete("/remove_device/{serial_number}")
 def delete_device_endpoint(serial_number: str, db: Session = Depends(get_db)):
     return delete_devices(serial_number, db)
+
+
+@app.get("/device/{serial_number}/acceptance-status")
+def get_acceptance_status_endpoint(serial_number: str, db: Session = Depends(get_db)):
+    return get_acceptance_status(serial_number, db)
 
 
 ################################################################################################################################
