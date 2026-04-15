@@ -3,6 +3,11 @@ from typing import Callable, Optional
 from azure.eventhub import EventHubConsumerClient
 from config import EVENTHUB_CONNECTION_STRING
 from map.active_devices import _record_device_activity
+from devices.acceptance_status import update_acceptance_status
+
+def callbacks(device_id: str, body: str):
+    _record_device_activity(device_id, body)
+    update_acceptance_status(device_id, body)
 
 
 def telemetry_activity_worker():
@@ -11,7 +16,7 @@ def telemetry_activity_worker():
 
     while True:
         try:
-            telemetry_listener(on_activity=_record_device_activity)
+            telemetry_listener(on_activity=callbacks)
         except Exception as ex:
             print(EVENTHUB_CONNECTION_STRING)
             print(f"Active-device telemetry listener error: {ex}")
