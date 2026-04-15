@@ -33,11 +33,9 @@ static auto attemptDownloadFirmware(const char *url) -> bool {
     filename = partitionAPath;
   }
 
-  std::cout << filename.data() << '\n';
   FILE *pagefile = fopen(filename.data(), "wb");
   if (!static_cast<bool>(pagefile)) {
-    std::cout << "this is the error rip \n";
-    perror("rip: ");
+    perror("Opening Firmware File Error");
     return false;
   }
 

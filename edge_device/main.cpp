@@ -88,7 +88,6 @@ auto main() -> int {
     if (isNewFirmwareDownloaded) {
       isNewFirmwareDownloaded = false;
       isNewFirmwareAlive = true;
-      std::cout << "handling new exec of firmware \n";
       pid_t newFirmwarePID = fork();
 
       if (newFirmwarePID < 0) {
@@ -137,12 +136,10 @@ auto main() -> int {
       if (isPartitionA) {
         if (partitionAFirmwarePID != 0) {
           kill(partitionAFirmwarePID, SIGTERM);
-          std::cout << "killed partitionA\n";
         }
       } else {
         if (partitionBFirmwarePID != 0) {
           kill(partitionBFirmwarePID, SIGTERM);
-          std::cout << "killed partitionB\n";
         }
       }
 
@@ -160,34 +157,25 @@ auto main() -> int {
       last_send_time += interval;
 
       if (isNewFirmwareAlive) {
-        std::cout << "new firmware is alive\n";
         if (!isPartitionA) {
-          std::cout << "we are currently running in paritionA\n";
           if (partitionAFirmwarePID == 0) {
             firmwareHeartbeats++;
-            std::cout << "partitionA pid is 0 \n";
           } else if (kill(partitionAFirmwarePID, 0) < 0) {
             failureCount++;
             firmwareHeartbeats = 0;
             isNewFirmwareDownloaded = true;
-            std::cout << "partitionA kill check failed\n";
           } else {
             firmwareHeartbeats++;
-            std::cout << "partitionA kill check passed\n";
           }
         } else {
-          std::cout << "we are currently running in paritionB\n";
           if (partitionBFirmwarePID == 0) {
-            std::cout << "partitionb pid is 0 \n";
             firmwareHeartbeats++;
           } else if (kill(partitionBFirmwarePID, 0) < 0) {
             failureCount++;
             firmwareHeartbeats = 0;
             isNewFirmwareDownloaded = true;
-            std::cout << "partitionb kill check failed\n";
           } else {
             firmwareHeartbeats++;
-            std::cout << "partitionb kill check passed\n";
           }
         }
       }
