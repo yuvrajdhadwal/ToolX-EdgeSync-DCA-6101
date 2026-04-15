@@ -29,6 +29,7 @@ const BizMngDevicesPage: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isAddButtonHovering, setIsAddButtonHovering] = useState(false)
   const [confirmDevice, setConfirmDevice] = useState<Device | null>(null)
 
   const tableHeaders = ['Device Type', 'Firmware Version', 'Last Updated', 'Region', 'Serial Number', 'Device Description', 'Remove']
@@ -81,17 +82,17 @@ const BizMngDevicesPage: React.FC = () => {
       minHeight: '100vh', 
       display: 'flex', 
       flexDirection: 'column', 
-      padding: '2rem',
-      gap: '2rem',
+      padding: 0,
+      gap: 0,
       backgroundColor: COLORS.backgroundPrimary,
     }}>
       {/* Header with SLB */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', minHeight: '4.5rem', width: '100%', padding: 0, backgroundColor: COLORS.accentPrimary, color: COLORS.white }}>
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
-            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+            style={{ padding: '0 0.85rem', backgroundColor: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
           >
             <img 
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
@@ -99,28 +100,36 @@ const BizMngDevicesPage: React.FC = () => {
               style={{ width: '100px', height: 'auto' }} 
             />
           </button>
-          <Profile />
         </div>
               
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0, marginLeft: 'auto' }}>
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.ADD_DEVICES)}
+            onMouseEnter={() => setIsAddButtonHovering(true)}
+            onMouseLeave={() => setIsAddButtonHovering(false)}
             style={{
-              padding: '0.5rem 1.5rem', fontSize: '1rem', cursor: 'pointer',
-              borderRadius: '6px', border: `1px solid ${COLORS.success}`,
-              backgroundColor: 'transparent', color: COLORS.success, fontWeight: 500,
+              padding: '0 1.5rem', fontSize: '1rem', cursor: 'pointer',
+              border: 'none',
+              borderLeft: `1px solid ${COLORS.white}`,
+              backgroundColor: isAddButtonHovering ? COLORS.brand900 : COLORS.accentPrimary,
+              color: COLORS.white, fontWeight: 500,
+              height: '100%',
+              transition: 'background-color 0.2s',
             }}
           >
             Add New Device
           </button>
+          <Profile />
           <Logout/>
         </div>
       </header>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '2rem' }}>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `3px solid ${COLORS.borderPrimary}` }}>
-        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLORS.white, marginBottom: '0.5rem' }}>
-          Dashboard
+        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLORS.textPrimary, marginBottom: '0.5rem' }}>
+          Devices
         </h1>
       </div>
 
@@ -169,8 +178,8 @@ const BizMngDevicesPage: React.FC = () => {
                           onClick={(e) => { e.stopPropagation(); setConfirmDevice(device) }}
                           style={{
                             padding: '0.25rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
-                            borderRadius: '4px', border: `1px solid ${COLORS.danger}`,
-                            backgroundColor: 'transparent', color: COLORS.dangerText, fontWeight: 500,
+                            borderRadius: '4px', border: `1px solid ${COLORS.white}`,
+                            backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
                           }}
                         >
                           X
@@ -183,6 +192,7 @@ const BizMngDevicesPage: React.FC = () => {
           </table>
         </div>
       </main>
+      </div>
 
       {/* Confirmation Modal */}
       {confirmDevice && (
@@ -221,8 +231,8 @@ const BizMngDevicesPage: React.FC = () => {
                 onClick={() => handleDelete(confirmDevice.serial_number)}
                 style={{
                   padding: '0.5rem 1.5rem', borderRadius: '6px', cursor: 'pointer',
-                  border: `1px solid ${COLORS.danger}`,
-                  backgroundColor: 'transparent', color: COLORS.dangerText, fontWeight: 500,
+                  border: `1px solid ${COLORS.white}`,
+                  backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
                 }}
               >
                 Remove
@@ -233,7 +243,7 @@ const BizMngDevicesPage: React.FC = () => {
                 style={{
                   padding: '0.5rem 1.5rem', borderRadius: '6px', cursor: 'pointer',
                   border: `1px solid ${COLORS.white}`,
-                  backgroundColor: 'transparent', color: COLORS.textPrimary, fontWeight: 500,
+                  backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
                 }}
               >
                 Cancel

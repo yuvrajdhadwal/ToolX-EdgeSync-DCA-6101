@@ -1,6 +1,25 @@
 #root {
-  margin: 0 auto;
-  text-align: center;
+  margin: 0;
+}
+
+.app-nav-shell {
+  width: 100%;
+  padding: 1rem 1.5rem 0;
+}
+
+.app-auth-shell {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+
+.app-auth-shell__nav {
+  width: fit-content;
 }
 
 

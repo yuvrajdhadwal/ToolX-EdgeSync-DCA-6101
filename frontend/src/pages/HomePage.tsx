@@ -81,6 +81,7 @@ const HomePage: React.FC = () => {
   const [uploads, setUploads] = useState<UploadItem[]>([])
   const [deviceTypes, setDeviceTypes] = useState<string[]>([])
   const [selectedDeviceType, setSelectedDeviceType] = useState('All Device Types')
+  const [isUploadHovering, setIsUploadHovering] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -159,21 +160,36 @@ const HomePage: React.FC = () => {
       minHeight: '100vh', 
       display: 'flex', 
       flexDirection: 'column', 
-      padding: '2rem',
-      gap: '2rem',
+      padding: 0,
+      gap: 0,
       backgroundColor: COLORS.backgroundPrimary,
     }}>
       {/* Header */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {/* Left side - Logo + Profile */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+      <header
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'stretch',
+          minHeight: '4.5rem',
+          width: '100%',
+          padding: 0,
+          backgroundColor: COLORS.accentPrimary,
+          color: COLORS.white,
+        }}
+      >
+        {/* Left side - Home logo */}
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <button 
             type="button" 
             onClick={() => navigate(getHomeRouteFromToken())}
             style = {{
-              padding: '0.5rem 1.5rem',
-              backgroundColor: COLORS.backgroundPrimary,
-              border: 'none'
+              padding: '0 0.85rem',
+              backgroundColor: COLORS.accentPrimary,
+              border: 'none',
+              borderRight: `1px solid ${COLORS.white}`,
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
             }}
 
           >
@@ -183,33 +199,45 @@ const HomePage: React.FC = () => {
               style={{ width: '100px', height: 'auto' }} 
             />
           </button>
-          <Profile />
         </div>
 
-        {/* Right side - Upload button (developer only) + Logout */}
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        {/* Right side - Role buttons, profile, logout */}
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0, marginLeft: 'auto' }}>
           {canUploadFirmware && (
             <button
               type="button"
               onClick={() => navigate(ROUTES.UPLOAD)}
+              onMouseEnter={() => setIsUploadHovering(true)}
+              onMouseLeave={() => setIsUploadHovering(false)}
               style={{
-                padding: '0.5rem 1.5rem',
+                padding: '0 1.5rem',
                 fontSize: '1rem',
                 cursor: 'pointer',
-                borderRadius: '6px',
-                border: `1px solid ${COLORS.success}`,
-                backgroundColor: 'transparent',
-                color: COLORS.success,
+                border: 'none',
+                borderLeft: `1px solid ${COLORS.white}`,
+                backgroundColor: isUploadHovering ? COLORS.brand900 : COLORS.accentPrimary,
+                color: COLORS.white,
                 fontWeight: 500,
                 transition: 'background-color 0.2s',
+                height: '100%',
               }}
             >
               Upload New Firmware
             </button>
           )}
+          <Profile />
           <Logout />
         </div>
       </header>
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2rem',
+          padding: '2rem',
+        }}
+      >
 
       {showFirmwareDashboard ? (
         <>
@@ -227,8 +255,8 @@ const HomePage: React.FC = () => {
                   border: `2px solid ${COLORS.borderPrimary}`,
                   borderBottom: 'none',
                   borderRadius: '8px 8px 0 0',
-                  backgroundColor: activeTab === index ? COLORS.backgroundSecondary : COLORS.backgroundTertiary,
-                  color: activeTab === index ? COLORS.accentPrimary : COLORS.textMuted,
+                  backgroundColor: activeTab === index ? COLORS.backgroundPrimary : COLORS.accentPrimary,
+                  color: activeTab === index ? COLORS.whiteMuted : COLORS.white,
                   fontWeight: activeTab === index ? 600 : 400,
                   position: 'relative',
                   top: activeTab === index ? '3px' : '0',
@@ -370,6 +398,7 @@ const HomePage: React.FC = () => {
           <p style={{ margin: 0, color: COLORS.textMuted }}>No firmware dashboard is available for your role.</p>
         </main>
       )}
+      </div>
     </div>
   )
 }

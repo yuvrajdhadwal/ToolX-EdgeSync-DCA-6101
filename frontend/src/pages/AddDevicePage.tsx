@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 import Profile from '../components/Profile'
+import Logout from '../components/Logout'
+import './styles/AddDevicePage.css'
 
 interface ItemInfo {
     device_type: string;
@@ -129,29 +131,25 @@ const AddDevicePage: React.FC = () => {
 }
     
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      padding: '2rem',
-      gap: '2rem',
-      backgroundColor: COLORS.backgroundPrimary,
-      width: '100%',
-      boxSizing: 'border-box',
-    }}>
+    <div className="add-device-page">
       {/* Header with SLB */}
       <header
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'stretch',
+          minHeight: '4.5rem',
+          width: '100%',
+          padding: 0,
+          backgroundColor: COLORS.accentPrimary,
+          color: COLORS.white,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center'}}>
+        <div style={{ display: 'flex', alignItems: 'stretch'}}>
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
-            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+            style={{ padding: '0 0.85rem', backgroundColor: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
           >
             <img 
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
@@ -159,146 +157,136 @@ const AddDevicePage: React.FC = () => {
               style={{ width: '100px', height: 'auto' }} 
             />
           </button>
-          <Profile></Profile>
+        </div>
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0, marginLeft: 'auto' }}>
+          <Profile />
+          <Logout />
         </div>
 
       </header>
-            <div style={{ 
-                minHeight: '100vh', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                padding: '2rem',
-                gap: '2rem',
-                backgroundColor: COLORS.backgroundSecondary,
-                borderRadius: '10px',
-                }}>
-          <h2 style={{ textAlign: 'left', marginBottom: '2.5rem', fontSize: '1.5rem', color: COLORS.textPrimary, paddingLeft: '5rem' }}>
-            Add New Device
-            
-          </h2>
-            <form style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr max-content 1fr', gap: '1.5rem', alignItems: 'center', paddingLeft: '5rem', paddingRight: '5rem' }}
-                onSubmit={handleSubmit}>
+      <div className="add-device-content">
+        <section className="add-device-card">
+          <h2 className="add-device-title">Add New Device</h2>
 
-                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
-                    Device Type:
-                </label>
-                <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
-                    type='text'
-                    name='device_type'
-                    value={formData.device_type}
-                    onChange={handleInputChange}
+          <form className="add-device-form" onSubmit={handleSubmit}>
+            <div className="add-device-row">
+              <label className="add-device-label" htmlFor="add-device-type">Device Type:</label>
+              <input
+                id="add-device-type"
+                className="add-device-input"
+                type='text'
+                name='device_type'
+                value={formData.device_type}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="add-device-row">
+              <label className="add-device-label" htmlFor="add-device-serial">Serial Number:</label>
+              <input
+                id="add-device-serial"
+                className="add-device-input"
+                type='text'
+                name='serial_number'
+                value={formData.serial_number}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="add-device-row">
+              <label className="add-device-label" htmlFor="add-device-location">Location:</label>
+              <input
+                id="add-device-location"
+                className="add-device-input"
+                type='text'
+                name='location'
+                value={formData.location}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="add-device-row">
+              <label className="add-device-label" htmlFor="add-device-manager">Developer Manager:</label>
+              <select
+                id="add-device-manager"
+                className="add-device-input"
+                value={formData.developer_manager}
+                onChange={(e) => setFormData({ ...formData, developer_manager: e.target.value })}
+              >
+                <option value="" disabled>Select a Developer Manager</option>
+                {developerManagers.map((mgr) => (
+                  <option key={mgr.id} value={mgr.id}>
+                    {mgr.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="add-device-row">
+              <label className="add-device-label" htmlFor="add-device-latitude">Latitude / Longitude:</label>
+              <div className="add-device-coordinates">
+                <input
+                  id="add-device-latitude"
+                  className="add-device-input"
+                  type='number'
+                  step='any'
+                  min={LATITUDE_MIN}
+                  max={LATITUDE_MAX}
+                  name='latitude'
+                  value={formData.latitude}
+                  onChange={handleInputChange}
+                  placeholder='Latitude (e.g. 29.7604, -90 to 90)'
                 />
-
-                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
-                    Serial Number:
-                </label>
-                <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
-                    type='text'
-                    name='serial_number'
-                    value={formData.serial_number}
-                    onChange={handleInputChange}
+                <input
+                  id="add-device-longitude"
+                  className="add-device-input"
+                  type='number'
+                  step='any'
+                  min={LONGITUDE_MIN}
+                  max={LONGITUDE_MAX}
+                  name='longitude'
+                  value={formData.longitude}
+                  onChange={handleInputChange}
+                  placeholder='Longitude (e.g. -95.3698, -180 to 180)'
                 />
-                
-                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
-                    Location:
-                </label>
-                <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
-                    type='text'
-                    name='location'
-                    value={formData.location}
-                    onChange={handleInputChange}
-                />
-                
-                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
-                    Developer Manager:
-                </label>
-                <select
-                  value={formData.developer_manager}
-                  onChange={(e) => setFormData({ ...formData, developer_manager: e.target.value })}
-                >
-                  <option value="" disabled>Select a Developer Manager</option>
-                  {developerManagers.map((mgr) => (
-                    <option key={mgr.id} value={mgr.id}>
-                      {mgr.username}
-                    </option>
-                  ))}
-                </select>
+              </div>
+            </div>
 
-                  <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
-                    Latitude / Longitude:
-                  </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
-                      type='number'
-                      step='any'
-                      min={LATITUDE_MIN}
-                      max={LATITUDE_MAX}
-                      name='latitude'
-                      value={formData.latitude}
-                      onChange={handleInputChange}
-                      placeholder='Latitude (e.g. 29.7604, -90 to 90)'
-                    />
-                    <input style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', boxSizing: 'border-box' }}
-                      type='number'
-                      step='any'
-                      min={LONGITUDE_MIN}
-                      max={LONGITUDE_MAX}
-                      name='longitude'
-                      value={formData.longitude}
-                      onChange={handleInputChange}
-                      placeholder='Longitude (e.g. -95.3698, -180 to 180)'
-                    />
-                  </div>
+            <div className="add-device-row">
+              <label className="add-device-label" htmlFor="add-device-description">Device Description:</label>
+              <textarea
+                id="add-device-description"
+                className="add-device-textarea"
+                name='description'
+                value={formData.description}
+                onChange={handleInputChange}
+              />
+            </div>
 
-                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right', gridColumnStart: 1, alignSelf: 'start' }}>
-                    Device Description:
-                </label>
-                <textarea style={{ padding: '0.5rem', borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`, backgroundColor: COLORS.backgroundPrimary, color: COLORS.textPrimary, width: '100%', gridColumn: '2/5', minHeight: '5rem', resize: 'vertical', boxSizing: 'border-box' }}
-                    name='description'
-                    value={formData.description}
-                    onChange={handleInputChange}
-                />
+            <div className="add-device-footer">
+              <button
+                className="add-device-submit"
+                disabled={loading}
+                type='submit'
+              >
+                {loading ? 'Adding New Device...' : 'Add New Device'}
+              </button>
+            </div>
 
-                <button style={{
-                    backgroundColor: COLORS.success,
-                    color: COLORS.white,
-                    justifySelf: 'end',
-                    gridColumn: '4',
-                    padding: '0.5rem 1.5rem',
-                    borderRadius: '6px',
-                    border: 'none',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    fontWeight: 500,
-                }}
-                    disabled={loading}
-                    type='submit'
-                >
-                    {loading ? 'Adding New Device...' : 'Add New Device'}
-                    
-                </button>
-                {success && (
-                    <p style={{
-                        color: COLORS.success,
-                        fontWeight: 500,
-                        textAlign: 'center',
-                        gridColumn: '1/5',
-                    }}>
-                        Device added successfully! Redirecting...
-                    </p>
-                )}
+            {success && (
+              <p className="add-device-success">
+                Device added successfully! Redirecting...
+              </p>
+            )}
 
-                {error && (
-                    <p style={{
-                        color: COLORS.dangerText,
-                        fontWeight: 500,
-                        textAlign: 'center',
-                        gridColumn: '1/5',
-                    }}>
-                        {error}
-                    </p>
-                )}
-            </form>
-          </div>
+            {error && (
+              <p className="add-device-error">
+                {error}
+              </p>
+            )}
+          </form>
+        </section>
+      </div>
     </div>
     
     

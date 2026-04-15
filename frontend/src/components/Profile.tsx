@@ -1,13 +1,16 @@
 import { useEffect, useState} from 'react'
 import { useLocation } from 'react-router-dom'
+import { COLORS } from '../constants/colors'
 
 interface Profiledata {
-    user: String;
-    role: String;
+    user: string;
+    role: string;
 }
 
 export default function Profile() {
     const [profile, setProfile] = useState<Profiledata | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
     const location = useLocation();
 
     useEffect(() => {
@@ -22,25 +25,58 @@ export default function Profile() {
             .catch(() => setProfile(null));
     }, [location]);
 
+    useEffect(() => {
+        setIsOpen(false);
+    }, [location]);
+
     if (!profile) {
         return null;
     }
 
     return (
-        <div style={{
-                    padding: '0.5rem 1.5rem',
+        <div style={{ position: 'relative', height: '100%', display: 'flex' }}>
+            <button
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
+                style={{
+                    padding: '0 1.25rem',
                     fontSize: '1rem',
-                    borderRadius: '6px',
-                    border: `1px solid`,
-                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderLeft: `1px solid ${COLORS.white}`,
+                    backgroundColor: isHovering ? COLORS.brand900 : COLORS.accentPrimary,
+                    color: COLORS.white,
                     fontWeight: 500,
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.1rem',
-                }}>
-            <span>Username: {profile.user}</span>
-            <span>Role: {profile.role}</span>
+                    cursor: 'pointer',
+                    height: '100%',
+                    transition: 'background-color 0.2s',
+                }}
+            >
+                Profile
+            </button>
+
+            {isOpen && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 0.5rem)',
+                        right: 0,
+                        padding: '0.65rem 0.85rem',
+                        border: `1px solid ${COLORS.borderPrimary}`,
+                        backgroundColor: COLORS.white,
+                        color: COLORS.accentPrimary,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.25rem',
+                        minWidth: '220px',
+                        zIndex: 20,
+                    }}
+                >
+                    <span>Username: {profile.user}</span>
+                    <span>Role: {profile.role}</span>
+                </div>
+            )}
         </div>
     )
 }

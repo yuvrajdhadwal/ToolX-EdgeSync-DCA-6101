@@ -1,30 +1,35 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { COLORS } from '../constants/colors'
 import { ROUTES } from '../constants/routes'
 
 const Logout = () => {
     const navigate = useNavigate()
+    const [isHovering, setIsHovering] = useState(false)
     const handleLogout = () => {
         localStorage.removeItem('token');
       }
   return (
-    <div>
+    <div style={{ height: '100%', display: 'flex' }}>
         <button
         type="button" 
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
         onClick={() => {
                     navigate(ROUTES.LOGIN, { replace:true }),
                     handleLogout();
                     }}
         style={{
-            padding: '0.5rem 1.5rem',
+            padding: '0 1.5rem',
             fontSize: '1rem',
             cursor: 'pointer',
-            borderRadius: '6px',
-            border: `1px solid ${COLORS.danger}`,
-            backgroundColor: 'transparent',
-            color: COLORS.dangerText,
+            border: 'none',
+            borderLeft: `1px solid ${COLORS.white}`,
+            backgroundColor: isHovering ? COLORS.brand900 : COLORS.accentPrimary,
+            color: COLORS.white,
             fontWeight: 500,
-            transition: 'all 0.2s',
+            transition: 'background-color 0.2s',
+            height: '100%',
         }}
         >
             Logout
