@@ -83,7 +83,7 @@ def add_device(device: DeviceType, db: Session):
     db.refresh(db_device)
 
     # Updated -> Assigns Field Shop Professionals to device
-    for username in device.field_shop_users:
+    for username in device.field_shop_professionals:
         professional = db.query(FieldShopProfessional).filter(
             FieldShopProfessional.username == username
         ).first()
@@ -99,7 +99,7 @@ def add_device(device: DeviceType, db: Session):
             FirmwareUpdate.device_type == device.device_type,
             FirmwareUpdate.approved_by.isnot(None),
         ).all()
-        
+
         for fw in approved_firmware:
             if fw not in professional.download_firmware:
                 professional.download_firmware.append(fw)

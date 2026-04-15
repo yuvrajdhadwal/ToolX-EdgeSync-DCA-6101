@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Optional, Set
 
 from database.database import Base, SessionLocal, engine
-from database.database_helpers import get_developer_manager, get_username_by_id
+from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals
 from database.database_types import DeviceType, UserType
 from devices.deployment_history import get_deploy_history
 from devices.devices import (add_device, delete_devices,
@@ -193,7 +193,7 @@ def approve_firmware_endpoint(
 
 @app.post("/add_device")
 def add_device_endpoint(device: DeviceType, db: Session = Depends(get_db)):
-    add_device(device, db)
+    return add_device(device, db)
 
 
 @app.get("/get_devices")
@@ -265,16 +265,15 @@ def get_username_by_id_endpoint(
 ):
     return get_username_by_id(user_id, db, authorization)
 
+@app.get("/field-shop-professionals")
+def get_field_shop_professionals_endpoint(
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    return get_field_shop_professionals(db, authorization)
 
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
     if os.path.exists("static/index.html"):
         return FileResponse("static/index.html")
     return {"error": "Frontend not deployed"}
-
-@app.get("/field-shop-professionals")
-def get_field_shop_professionals(
-    db: Session = Depends(get_db),
-    authorization: Optional[str] = Header(default=None),
-):
-    return get_field_shop_professionals(db, authorization)

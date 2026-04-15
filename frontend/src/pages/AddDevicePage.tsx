@@ -20,23 +20,62 @@ type devmngOption = {
   id: number;
 }
 
+type fieldshopuserOption = {
+  id: number;
+  username: string;
+}
+
 const LATITUDE_MIN = -90;
 const LATITUDE_MAX = 90;
 const LONGITUDE_MIN = -180;
 const LONGITUDE_MAX = 180;
-    
+
+const inputStyle = {
+  padding: '0.5rem',
+  borderRadius: '6px',
+  border: `1px solid ${COLORS.borderPrimary}`,
+  backgroundColor: COLORS.backgroundPrimary,
+  color: COLORS.textPrimary,
+  width: '100%',
+  boxSizing: 'border-box' as const,
+}
+
+const labelStyle = {
+  color: COLORS.textPrimary,
+  fontSize: '1rem',
+  fontWeight: 500,
+  textAlign: 'right' as const,
+}
+
 const AddDevicePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate()
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [developerManagers, setDeveloperManagers] = useState<devmngOption[]>([]);
+  const [fieldshopuser, setFieldShopUser] = useState<fieldshopuserOption[]>([]);
+  const [selectedFieldShopUsers, setSelectedFieldShopUsers] = useState<string[]>([]);
   
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    
     fetch('/devmng')
       .then((res) => res.json())
       .then((data: devmngOption[]) => setDeveloperManagers(data))
       .catch(() => setError('Failed to load developer managers'));
+
+    fetch('/field-shop-professionals', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setFieldShopUser(data);
+        } else {
+          console.error('Unexpected response from /field-shop-professionals:', data);
+        }
+      })
+      .catch(() => console.error('Failed to load field shop professionals'));
   }, []);
   
   const [formData, setFormData] = useState<ItemInfo>({
@@ -68,7 +107,8 @@ const AddDevicePage: React.FC = () => {
       !formData.serial_number.trim() ||
       !formData.location.trim() ||
       !formData.developer_manager.trim() ||
-      !formData.description.trim()
+      !formData.description.trim() ||
+      selectedFieldShopUsers.length == 0
     ) {
       setError('All fields are required. Please fill in every field before submitting.');
       setLoading(false);
@@ -102,6 +142,7 @@ const AddDevicePage: React.FC = () => {
                 location: formData.location,
                 latitude,
                 longitude,
+                field_shop_professionals: selectedFieldShopUsers,
             }),
         });
         setLoading(false);
@@ -208,23 +249,8 @@ const AddDevicePage: React.FC = () => {
                     value={formData.location}
                     onChange={handleInputChange}
                 />
-                
-                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
-                    Developer Manager:
-                </label>
-                <select
-                  value={formData.developer_manager}
-                  onChange={(e) => setFormData({ ...formData, developer_manager: e.target.value })}
-                >
-                  <option value="" disabled>Select a Developer Manager</option>
-                  {developerManagers.map((mgr) => (
-                    <option key={mgr.id} value={mgr.id}>
-                      {mgr.username}
-                    </option>
-                  ))}
-                </select>
 
-                  <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
+                <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
                     Latitude / Longitude:
                   </label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -249,6 +275,87 @@ const AddDevicePage: React.FC = () => {
                       placeholder='Longitude (e.g. -95.3698, -180 to 180)'
                     />
                   </div>
+
+                <label style={{
+                    ...labelStyle,
+                    alignSelf: 'start',
+                    paddingTop: selectedFieldShopUsers.length > 0
+                      ? '0.35rem'   // aligned with top of dropdown when chips present
+                      : '0.55rem'   // centered with dropdown when no chips
+                  }}>
+                    Field Shop Professionals:
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const username = e.target.value;
+                        if (username && !selectedFieldShopUsers.includes(username)) {
+                          setSelectedFieldShopUsers(prev => [...prev, username]);
+                        }
+                        e.target.value = '';
+                      }}
+                      style={inputStyle}
+                    >
+                      <option value="">Select a Field Shop Professional</option>
+                      {fieldshopuser
+                        .filter(p => !selectedFieldShopUsers.includes(p.username))
+                        .map(prof => (
+                          <option key={prof.id} value={prof.username}>
+                            {prof.username}
+                          </option>
+                        ))}
+                    </select>
+
+                    {/* Chips inside normal flow — grid row grows naturally, pushing description down */}
+                    {selectedFieldShopUsers.length > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.4rem',
+                      }}>
+                        {selectedFieldShopUsers.map(username => (
+                          <span
+                            key={username}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '0.35rem',
+                              padding: '0.25rem 0.6rem', borderRadius: '999px',
+                              backgroundColor: COLORS.backgroundTertiary,
+                              border: `1px solid ${COLORS.borderPrimary}`,
+                              color: COLORS.textPrimary, fontSize: '0.85rem',
+                            }}
+                          >
+                            {username}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedFieldShopUsers(prev => prev.filter(u => u !== username))}
+                              style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                color: COLORS.textMuted, fontSize: '0.85rem', padding: 0,
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
+                    Developer Manager:
+                    </label>
+                    <select
+                      value={formData.developer_manager}
+                      onChange={(e) => setFormData({ ...formData, developer_manager: e.target.value })}
+                    >
+                      <option value="" disabled>Select a Developer Manager</option>
+                      {developerManagers.map((mgr) => (
+                        <option key={mgr.id} value={mgr.id}>
+                          {mgr.username}
+                        </option>
+                      ))}
+                    </select>
 
                 <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right', gridColumnStart: 1, alignSelf: 'start' }}>
                     Device Description:
