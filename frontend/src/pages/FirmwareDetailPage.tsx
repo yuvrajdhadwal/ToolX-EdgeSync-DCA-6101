@@ -541,7 +541,7 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: 'transparent', color: COLORS.textPrimary,
+                        backgroundColor: 'transparent', color: COLORS.white,
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
                       }}
                     >
@@ -638,7 +638,7 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: 'transparent', color: COLORS.textPrimary,
+                        backgroundColor: 'transparent', color: COLORS.white,
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
                       }}
                     >
