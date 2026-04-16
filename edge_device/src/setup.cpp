@@ -14,9 +14,9 @@ connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
   (void)user_context;
   // This sample DOES NOT take into consideration network outages.
   if (result == IOTHUB_CLIENT_CONNECTION_AUTHENTICATED) {
-    std::cout << "CONTROL PLANE - The device client is connected to iothub\n";
+    std::cout << "CONTROL PLANE - The Device Client is Connected to IOTHub\n";
   } else {
-    std::cerr << "CONTROL PLANE - The device client has been disconnected\n";
+    std::cerr << "CONTROL PLANE - The Device Client has been Disconnected\n";
   }
 }
 
@@ -42,7 +42,7 @@ auto setup(const char *connectionString,
     return nullptr;
   }
 
-  bool traceOn = true; // NOTE: Set true if debugging IoT
+  bool traceOn = false; // NOTE: Set true if debugging IoT
   IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_LOG_TRACE, &traceOn);
 
   bool urlEncodeOn = true;

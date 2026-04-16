@@ -1,13 +1,13 @@
-from database.database import SessionLocal
-from database.models import Deploy, Device
-from sqlalchemy.orm import Session
-from fastapi import HTTPException
 from datetime import datetime, timezone
 
+from database.database import SessionLocal
+from database.models import Deploy, Device
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
 
 def update_acceptance_status(device_id: str, body: str):
-    if "Accepted" in body:
+    if "Success" in body:
         accepted = True
     elif "Rejected" in body:
         accepted = False
@@ -31,7 +31,7 @@ def update_acceptance_status(device_id: str, body: str):
             return
 
         deploy.isAccepted = accepted  # type: ignore
-        
+
         if accepted:
             previous = (
                 db.query(Deploy)
@@ -59,16 +59,23 @@ def update_acceptance_status(device_id: str, body: str):
     finally:
         db.close()
 
+
 def get_acceptance_status(serial_number: str, db: Session):
     device = db.query(Device).filter(Device.serial_number == serial_number).first()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    
+
     latest_deploy = (
-        db.query(Deploy).filter(Deploy.device_serial == serial_number).order_by(Deploy.timestamp.desc()).first()
+        db.query(Deploy)
+        .filter(Deploy.device_serial == serial_number)
+        .order_by(Deploy.timestamp.desc())
+        .first()
     )
 
     if not latest_deploy:
-        raise HTTPException(status_code=404, detail="No deployments found for this device")
-    
+        raise HTTPException(
+            status_code=404, detail="No deployments found for this device"
+        )
+
     return {"isAccepted": latest_deploy.isAccepted}
+

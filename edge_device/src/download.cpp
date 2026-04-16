@@ -19,8 +19,8 @@ static auto attemptDownloadFirmware(const char *url) -> bool {
     return false;
   }
 
-  curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);    // NOTE: 1L for debugging
-  curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L); // NOTE: 0L for progress bar
+  curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);    // NOTE: 1L for debugging
+  curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L); // NOTE: 0L for progress bar
   curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, filewrite_callback);
 
