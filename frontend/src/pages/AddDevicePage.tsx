@@ -276,12 +276,11 @@ const AddDevicePage: React.FC = () => {
                     />
                   </div>
 
-                <label style={{
+                  {/* Field Shop Professionals */}
+                  <label style={{
                     ...labelStyle,
                     alignSelf: 'start',
-                    paddingTop: selectedFieldShopUsers.length > 0
-                      ? '0.35rem'   // aligned with top of dropdown when chips present
-                      : '0.55rem'   // centered with dropdown when no chips
+                    paddingTop: '0.15rem',
                   }}>
                     Field Shop Professionals:
                   </label>
@@ -306,14 +305,8 @@ const AddDevicePage: React.FC = () => {
                           </option>
                         ))}
                     </select>
-
-                    {/* Chips inside normal flow — grid row grows naturally, pushing description down */}
                     {selectedFieldShopUsers.length > 0 && (
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '0.4rem',
-                      }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                         {selectedFieldShopUsers.map(username => (
                           <span
                             key={username}
@@ -342,20 +335,31 @@ const AddDevicePage: React.FC = () => {
                     )}
                   </div>
 
-                  <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right' }}>
-                    Developer Manager:
+                  {/* Developer Manager — anchored to top of row regardless of chip growth */}
+                  <div style={{
+                    gridColumn: '3 / 5',
+                    display: 'grid',
+                    gridTemplateColumns: 'max-content 1fr',
+                    gap: '1.5rem',
+                    alignItems: 'start',
+                    alignSelf: 'start',
+                  }}>
+                    <label style={{ ...labelStyle, paddingTop: '0.15rem' }}>
+                      Developer Manager:
                     </label>
                     <select
                       value={formData.developer_manager}
                       onChange={(e) => setFormData({ ...formData, developer_manager: e.target.value })}
+                      style={inputStyle}
                     >
-                      <option value="" disabled>Select a Developer Manager</option>
+                      <option value="">Select a Developer Manager</option>
                       {developerManagers.map((mgr) => (
                         <option key={mgr.id} value={mgr.id}>
                           {mgr.username}
                         </option>
                       ))}
                     </select>
+                  </div>
 
                 <label style={{ color: COLORS.textPrimary, fontSize: '1rem', fontWeight: 500, textAlign: 'right', gridColumnStart: 1, alignSelf: 'start' }}>
                     Device Description:
