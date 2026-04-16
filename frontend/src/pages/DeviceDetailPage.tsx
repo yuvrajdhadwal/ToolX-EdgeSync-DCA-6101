@@ -114,7 +114,7 @@ const DeviceDetailPage: React.FC = () => {
     },
     { label: 'Serial Number', value: device?.serial_number },
     { label: 'Description', value: device?.description },
-    { label: 'Acceptance Status',
+    { label: 'Recent Acceptance Status',
       value: (() => {
         if (hasNoDeployments) return 'No recent deployment'
         if (acceptanceStatus === true) return 'Accepted'
