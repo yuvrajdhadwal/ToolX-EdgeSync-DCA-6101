@@ -12,7 +12,7 @@ void shutdown() {
   killProcess(partitionAFirmwarePID);
   killProcess(partitionBFirmwarePID);
 
-  std::cout << "Press any key to continue\n";
+  std::cout << "CONTROL PLANE - Press any key to continue\n";
   (void)getchar();
 }
 
@@ -23,7 +23,7 @@ void shutdown(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
 
 auto killProcess(pid_t pid) -> int {
   if (pid < 0) {
-    std::cerr << "Can't Kill Process\n";
+    std::cerr << "CONTROL PLANE - Can't Kill Process\n";
     return -1;
   }
 
@@ -38,7 +38,7 @@ auto killProcess(pid_t pid) -> int {
       return 0;
     }
 
-    std::cerr << "Can't Kill Process\n";
+    std::cerr << "CONTROL PLANE - Can't Kill Process\n";
   }
 
   int status;

@@ -14,9 +14,9 @@ connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
   (void)user_context;
   // This sample DOES NOT take into consideration network outages.
   if (result == IOTHUB_CLIENT_CONNECTION_AUTHENTICATED) {
-    // std::cout << "The device client is connected to iothub\n";
+    std::cout << "CONTROL PLANE - The device client is connected to iothub\n";
   } else {
-    std::cout << "The device client has been disconnected\n";
+    std::cerr << "CONTROL PLANE - The device client has been disconnected\n";
   }
 }
 
@@ -26,7 +26,7 @@ auto setup(const char *connectionString,
   // CURL Init
   CURLcode result = curl_global_init(CURL_GLOBAL_ALL);
   if (result != CURLE_OK) {
-    std::cerr << "Could not initialize CURL\n";
+    std::cerr << "CONTROL PLANE - Could not initialize CURL\n";
     return nullptr;
   }
 
@@ -37,12 +37,12 @@ auto setup(const char *connectionString,
       IoTHubDeviceClient_LL_CreateFromConnectionString(connectionString,
                                                        protocol)};
   if (device_ll_handle == nullptr) {
-    std::cout << "Failure creating IotHub device. Hint: Check your connection "
+    std::cout << "CONTROL PLANE - Failure creating IotHub device. Hint: Check your connection "
                  "string.\n";
     return nullptr;
   }
 
-  bool traceOn = false; // NOTE: Set true if debugging IoT
+  bool traceOn = true; // NOTE: Set true if debugging IoT
   IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_LOG_TRACE, &traceOn);
 
   bool urlEncodeOn = true;
@@ -57,7 +57,7 @@ auto setup(const char *connectionString,
   if (IoTHubDeviceClient_LL_SetMessageCallback(
           device_ll_handle, receive_msg_callback, pIncomingDeployment) !=
       IOTHUB_CLIENT_OK) {
-    std::cout << "ERROR: IoTHubClient_LL_SetMessageCallback..........FAILED!\n";
+    std::cout << "CONTROL PLANE - ERROR: IoTHubClient_LL_SetMessageCallback..........FAILED!\n";
     return nullptr;
   }
 

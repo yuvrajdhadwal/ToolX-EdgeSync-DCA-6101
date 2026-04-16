@@ -15,7 +15,7 @@ void checkFirmwareInstallation() {
 
   if (newFirmwarePID < 0) {
     // Fork failed
-    perror("Fork Failed; Retrying");
+    perror("CONTROL PLANE - Fork Failed; Retrying");
 
     // NOTE: Going back to INSTALL since CONFIRMATION failed
     isNewFirmwareAlive = false;
@@ -36,7 +36,7 @@ void checkFirmwareInstallation() {
     execlp(path.data(), "firmware", nullptr);
 
     // exec failed if this runs
-    perror("Exec Firmware Failed; Retrying");
+    perror("CONTROL PLANE - Exec Firmware Failed; Retrying");
 
     // NOTE: Going back to INSTALL since CONFIRMATION failed
     isNewFirmwareAlive = false;
