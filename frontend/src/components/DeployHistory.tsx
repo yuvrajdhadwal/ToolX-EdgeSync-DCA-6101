@@ -52,9 +52,9 @@ const DeployHistory: React.FC<Props> = ({ serialNumber }) => {
         type="button"
         onClick={handleOpen}
         style={{
-          padding: '0.25rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
-          borderRadius: '4px', border: `1px solid ${COLORS.borderPrimary}`,
-          backgroundColor: 'transparent', color: COLORS.textPrimary, fontWeight: 500,
+          padding: '0.5rem 1rem', cursor: 'pointer',
+          borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`,
+          backgroundColor: 'transparent', color: COLORS.white
         }}
       >
         History
@@ -80,7 +80,7 @@ const DeployHistory: React.FC<Props> = ({ serialNumber }) => {
               style={{
                 padding: '0.5rem 1.5rem', borderRadius: '6px',
                 cursor: 'pointer', border: `1px solid ${COLORS.white}`,
-                backgroundColor: 'transparent', color: COLORS.textPrimary, fontWeight: 500,
+                backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
               }}
             >
               Close

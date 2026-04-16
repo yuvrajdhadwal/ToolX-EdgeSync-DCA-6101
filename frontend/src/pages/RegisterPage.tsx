@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { COLORS } from '../constants/colors';
+import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/routes';
+import './styles/AuthPages.css'
+import './styles/RegisterPage.css';
 
 type roleOption = {
   role: string;
@@ -104,85 +105,98 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
-      <h1>Register</h1>
-      {success && <p style={{ color: COLORS.successText }}>Registration successful! Redirecting to login...</p>}
-      <form onSubmit={handleSubmit}>
-      
-        <div>
-          <label>
-            Role:
-          </label>
-          <select 
-            value = {role}
-            onChange={(e) => setrole(e.target.value)}
-          >
-            <option value="" disabled>
-              Select your role
-            </option>
-            {options.map((option) => (
-              <option key={option.role} value={option.role}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+    <div className="register-page">
+      <div className="register-card">
+        <div className="register-brand auth-brand--ribbon">
+          <img
+            className="auth-brand__logo"
+            src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
+            alt="SLB Logo"
+          />
         </div>
-        {role === 'developer' && (
-          <div>
-            <label>
-              Developer Manager Username:
-            </label>
+
+        <h1 className="register-title">Register</h1>
+        <p className="register-subtitle">Create an account to get started</p>
+        {success && <p className="register-success">Registration successful! Redirecting to login...</p>}
+
+        <form className="register-form" onSubmit={handleSubmit}>
+          <div className="register-field">
+            <label className="register-label">Role:</label>
             <select
-              value={developerManagerID}
-              onChange={(e) => setDeveloperManagerID(e.target.value)}
+              className="register-input"
+              value={role}
+              onChange={(e) => setrole(e.target.value)}
             >
-              <option value="" disabled>Select a Developer Manager</option>
-              {developerManagers.map((mgr) => (
-                <option key={mgr.id} value={mgr.id}>
-                  {mgr.username}
+              <option value="" disabled>
+                Select your role
+              </option>
+              {options.map((option) => (
+                <option key={option.role} value={option.role}>
+                  {option.label}
                 </option>
               ))}
             </select>
           </div>
-        )}
-        <div>
-          <label>
-            Username:
-          </label>
-          <input 
-            type='text'
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </div>
-        <div>
-          <label>
-            Password:
-          </label>
-          <input 
-            type='password'
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <div>
-          <label>
-            Confirm Password:
-          </label>
-          <input 
-            type='password'
-            value={confirmPassword} 
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </div>
-        <button type='submit' disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
-        </button>
-        {error && <p style={{ color: COLORS.error }}>{error}</p>}
-      </form>
-        <p>
-          Already have an account? <button onClick={() => navigate(ROUTES.LOGIN)}>Login here</button>
-        </p>
+
+          {role === 'developer' && (
+            <div className="register-field">
+              <label className="register-label">Developer Manager Username:</label>
+              <select
+                className="register-input"
+                value={developerManagerID}
+                onChange={(e) => setDeveloperManagerID(e.target.value)}
+              >
+                <option value="" disabled>Select a Developer Manager</option>
+                {developerManagers.map((mgr) => (
+                  <option key={mgr.id} value={mgr.id}>
+                    {mgr.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="register-field">
+            <label className="register-label">Username:</label>
+            <input
+              className="register-input"
+              type='text'
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+
+          <div className="register-field">
+            <label className="register-label">Password:</label>
+            <input
+              className="register-input"
+              type='password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <div className="register-field">
+            <label className="register-label">Confirm Password:</label>
+            <input
+              className="register-input"
+              type='password'
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+
+          <button className="register-button" type='submit' disabled={loading}>
+            {loading ? 'Registering...' : 'Register'}
+          </button>
+
+          {error && <p className="register-error">{error}</p>}
+
+          <Link className="register-login" to={ROUTES.LOGIN}>
+            Already have an account? Login here
+          </Link>
+        </form>
+      </div>
     </div>
   )
 }

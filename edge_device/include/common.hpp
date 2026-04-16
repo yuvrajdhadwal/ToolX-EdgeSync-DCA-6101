@@ -7,9 +7,11 @@
 #include "iothub_client_options.h"
 #include "iothub_device_client_ll.h"
 #include "iothub_message.h"
+#include <sys/epoll.h>
 
 #include "iothubtransportmqtt.h"
 
+#include <array>
 #include <curl/curl.h>
 #include <iostream>
 #include <stdio.h>
@@ -42,7 +44,14 @@ inline auto getEnvVar(const std::string &key) -> std::string {
   return (val == nullptr) ? "" : std::string{val};
 }
 
+void handleFieldResponse(int epoll_fd, std::array<epoll_event, 1> &events,
+                         bool &incomingDeployment,
+                         IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 void publishMessage(const std::string &msg,
                     IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 extern std::string mostRecentURL;
 extern bool isNewFirmwareDownloaded;
+
+extern std::string_view partitionAPath;
+extern std::string_view partitionBPath;
+extern bool isPartitionA;

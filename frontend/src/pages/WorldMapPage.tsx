@@ -301,16 +301,16 @@ const WorldMapPage: React.FC = () => {
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      padding: '2rem',
-      gap: '2rem',
+      padding: 0,
+      gap: 0,
       backgroundColor: COLORS.backgroundPrimary,
     }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', minHeight: '4.5rem', width: '100%', padding: 0, backgroundColor: COLORS.accentPrimary, color: COLORS.white }}>
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <button
             type="button"
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
-            style={{ padding: '0.5rem 1.5rem', backgroundColor: COLORS.backgroundPrimary, border: 'none' }}
+            style={{ padding: '0 0.85rem', backgroundColor: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
           >
             <img
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
@@ -318,13 +318,17 @@ const WorldMapPage: React.FC = () => {
               style={{ width: '100px', height: 'auto' }}
             />
           </button>
-          <Profile />
         </div>
-        <Logout />
+        <div style={{ display: 'flex', gap: 0, alignItems: 'stretch', padding: 0, marginLeft: 'auto' }}>
+          <Profile />
+          <Logout />
+        </div>
       </header>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '2rem' }}>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `3px solid ${COLORS.borderPrimary}` }}>
-        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLORS.white, marginBottom: '0.5rem' }}>
+        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLORS.textPrimary, marginBottom: '0.5rem' }}>
           World Map
         </h1>
       </div>
@@ -339,8 +343,8 @@ const WorldMapPage: React.FC = () => {
         borderRadius: '8px',
         boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
             <select
               value={selectedDeviceType}
               onChange={(event) => setSelectedDeviceType(event.target.value)}
@@ -393,12 +397,17 @@ const WorldMapPage: React.FC = () => {
                 }
               }}
               style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '6px',
+                padding: '0.65rem 1.2rem',
+                borderRadius: '8px',
                 border: `1px solid ${COLORS.borderPrimary}`,
                 backgroundColor: isSelectionMode ? COLORS.backgroundTertiary : COLORS.backgroundPrimary,
-                color: COLORS.textPrimary,
+                color: COLORS.white,
                 cursor: 'pointer',
+                minHeight: '42px',
+                width: '150px',
+                flexShrink: 0,
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
               }}
             >
               {isSelectionMode ? 'Selection On' : 'Select Pins'}
@@ -411,13 +420,18 @@ const WorldMapPage: React.FC = () => {
               }}
               disabled={!isSelectionMode || selectedSerials.length === 0}
               style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '6px',
+                padding: '0.65rem 1.2rem',
+                borderRadius: '8px',
                 border: 'none',
                 backgroundColor: COLORS.success,
                 color: COLORS.white,
                 cursor: !isSelectionMode || selectedSerials.length === 0 ? 'not-allowed' : 'pointer',
                 opacity: !isSelectionMode || selectedSerials.length === 0 ? 0.6 : 1,
+                minHeight: '42px',
+                width: '210px',
+                flexShrink: 0,
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
               }}
             >
               Deploy Selected ({selectedSerials.length})
@@ -434,7 +448,7 @@ const WorldMapPage: React.FC = () => {
               borderRadius: '6px',
               border: `1px solid ${COLORS.accentPrimary}`,
               backgroundColor: 'transparent',
-              color: COLORS.textPrimary,
+              color: COLORS.white,
               fontWeight: 500,
             }}
           >
@@ -482,6 +496,7 @@ const WorldMapPage: React.FC = () => {
           </MapContainer>
         </div>
       </main>
+      </div>
 
       {showDeployPopup && (
         <div style={{

@@ -1,6 +1,6 @@
 // import { useState } from 'react'
 import './App.css'
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import WelcomePage from './pages/WelcomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -22,12 +22,7 @@ function AppLayout() {
   return (
     <>
       {showAuthNav ? (
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '2rem' }}>
-          <nav className="navbar-container"
-          style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <Link to={ROUTES.LOGIN}>Login</Link>
-            <Link to={ROUTES.REGISTER}>Register</Link>
-          </nav>
+        <div className="app-auth-shell">
           <Routes>
             <Route path={ROUTES.WELCOME} element={<WelcomePage></WelcomePage>}></Route>
             <Route path={ROUTES.LOGIN} element={<LoginPage></LoginPage>}></Route>
@@ -55,15 +50,10 @@ function AppLayout() {
 function App() {
 
   return (
-    <div>
-      
+    <div className="app-shell">
       <Router>
         <AppLayout />
       </Router>
-
-
-
-
     </div>
 
   )

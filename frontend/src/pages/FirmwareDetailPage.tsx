@@ -427,7 +427,7 @@ const FirmwareDetailPage: React.FC = () => {
                 onClick={handleDownload}
                 style={{
                   padding: '0.5rem 1rem', backgroundColor: COLORS.backgroundTertiary,
-                  border: `1px solid ${COLORS.borderPrimary}`, color: COLORS.textPrimary,
+                  border: `1px solid ${COLORS.borderPrimary}`, color: COLORS.white,
                   borderRadius: '6px', cursor: 'pointer', fontWeight: 500,
                 }}
               >
@@ -439,7 +439,7 @@ const FirmwareDetailPage: React.FC = () => {
               onClick={() => navigate(getReturnRoute(), { state: { activeTab: returnTab } })}
               style={{
                 padding: '0.5rem 1rem', backgroundColor: 'transparent',
-                border: `1px solid ${COLORS.borderPrimary}`, color: COLORS.textPrimary,
+                border: `1px solid ${COLORS.borderPrimary}`, color: COLORS.white,
                 borderRadius: '6px', cursor: 'pointer',
               }}
             >
@@ -541,7 +541,7 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: 'transparent', color: COLORS.textPrimary,
+                        backgroundColor: 'transparent', color: COLORS.white,
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
                       }}
                     >
@@ -638,7 +638,7 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: 'transparent', color: COLORS.textPrimary,
+                        backgroundColor: 'transparent', color: COLORS.white,
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
                       }}
                     >
