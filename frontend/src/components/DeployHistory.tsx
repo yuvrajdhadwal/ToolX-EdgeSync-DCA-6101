@@ -6,6 +6,7 @@ interface DeployRecord {
   firmware_version: string;
   timestamp: string;
   isActive: boolean;
+  isAccepted: boolean | null;
 }
 
 interface Props {
@@ -95,7 +96,7 @@ const DeployHistory: React.FC<Props> = ({ serialNumber }) => {
               <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                 <thead>
                   <tr>
-                    {['Deploy ID', 'Firmware Version', 'Timestamp', 'Status'].map(h => (
+                    {['Deploy ID', 'Firmware Version', 'Timestamp', 'Status', 'Acceptance Status'].map(h => (
                       <th key={h} style={{
                         border: `1px solid ${COLORS.borderPrimary}`, padding: '0.5rem',
                         backgroundColor: COLORS.backgroundTertiary, color: COLORS.textPrimary,
@@ -116,6 +117,16 @@ const DeployHistory: React.FC<Props> = ({ serialNumber }) => {
                           {record.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
+                      <td style={tdStyle}>
+                        <span style={{ color: record.isAccepted === null ? COLORS.textMuted : record.isAccepted ? COLORS.success : COLORS.danger }}>
+                          {record.isAccepted === null
+                            ? 'Pending'
+                            : record.isAccepted
+                            ? 'Accepted'
+                            : 'Rejected'}
+                        </span>
+                      </td>
+                      
                     </tr>
                   ))}
                 </tbody>
