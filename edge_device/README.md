@@ -19,10 +19,9 @@ field/shop person
 **Accepted:** Incoming firmware deployment is accepted and edge device starts to download firmware
 binary
 
-**Verification:** Firmware binary download is complete and is verified to ensure no packet loss 
-or corruption or security issues
+**Download:** Downloads the approved firmware from backend endpoint
 
-**Execution:** Forks and then Executes the new binary process
+**Installation:** Forks and then Executes the new binary process
 
 **Confirmation:** If new firmware binary execs without issue, delete old binary and send
 installation confirmation device to cloud message
