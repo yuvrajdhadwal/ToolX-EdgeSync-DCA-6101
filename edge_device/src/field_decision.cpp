@@ -9,7 +9,7 @@
 
 void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   std::string rejectionComment;
-  std::cout << "Enter a Rejection Comment:\n\t";
+  std::cout << "CONTROL PLANE - Enter a Rejection Comment:\n\t";
   std::cin >> rejectionComment;
 
   publishMessage("Firmware Deployment Rejection", device_ll_handle);
@@ -52,11 +52,11 @@ void handleFieldResponse(int epoll_fd, std::array<epoll_event, 1> &events,
     }
 
     if (response == 'y' || response == 'Y') {
-      std::cout << "Downloading Firmware from Cloud Now ...\n";
+      std::cout << "CONTROL PLANE - Downloading Firmware from Cloud Now ...\n";
       // NOTE: Going to DOWNLOAD State
       deploymentInstallation(device_ll_handle);
     } else {
-      std::cout << "Rejected Firmware Deployment from Cloud ... \n";
+      std::cout << "CONTROL PLANE - Rejected Firmware Deployment from Cloud ... \n";
       // NOTE: Going to REJECTED State
       deploymentRejection(device_ll_handle);
     }

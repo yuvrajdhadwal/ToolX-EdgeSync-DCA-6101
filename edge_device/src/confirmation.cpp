@@ -2,8 +2,8 @@
 
 #include "common.hpp"
 #include "field_decision.hpp"
-#include "stable.hpp"
 #include "shutdown.hpp"
+#include "stable.hpp"
 
 #include <iostream>
 
@@ -13,7 +13,8 @@ void checkConfirmationFailure(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   }
 
   isNewFirmwareDownloaded = false; // stop trying
-  std::cerr << "New Firmware Failed Installation ... sending rejection "
+  std::cerr << "CONTROL PLANE - New Firmware Failed Installation ... sending "
+               "rejection "
                "notificiation";
 
   deploymentRejection(device_ll_handle);
@@ -36,7 +37,7 @@ void checkConfirmationSuccess(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   isPartitionA = !isPartitionA;
   isNewFirmwareAlive = false;
   firmwareHeartbeats = 0;
-  std::cout << "Firmware Transition Complete: Moving to ParitionA? "
+  std::cout << "CONTROL PLANE - Firmware Transition Complete: Moving to ParitionA? "
             << isPartitionA << '\n';
 
   publishMessage("Firmware Deployment Successful", device_ll_handle);

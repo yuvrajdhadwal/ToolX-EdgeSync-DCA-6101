@@ -30,7 +30,7 @@ installation confirmation device to cloud message
 
 `docker build -t edge-device:v1 .` \
 
-test8:
+test7:
 ```
-docker run --rm -it -e IOTHUB_CONNECTION_STRING="HostName=ToolXEdgeSyncIoT.azure-devices.net;DeviceId=test8;SharedAccessKey=JKh6nzLBt7NxBnod6lXpLMetAyT7EqArKvffLkDoXWw=" -e EXTERNAL_API_URL_EDGE_DEVICE="http://host.docker.internal:8000" -e DEVICE_ID="test8" edge-device:v1
+docker run --rm -it -e IOTHUB_CONNECTION_STRING="HostName=ToolXEdgeSyncIoT.azure-devices.net;DeviceId=test7;SharedAccessKey=sRBHViIcpaTjc9Ld6FlV0q3KcEms0Obv+8hvL72ZZFY=" -e EXTERNAL_API_URL_EDGE_DEVICE="http://host.docker.internal:8000" -e DEVICE_ID="test7" -e HEARTBEAT_SECONDS="15" -e CONFIRMATION_HEARTBEATS="1" edge-device:v1
 ```

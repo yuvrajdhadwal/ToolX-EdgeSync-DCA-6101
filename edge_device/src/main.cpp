@@ -29,7 +29,7 @@ auto main() -> int {
 
   constexpr IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol{MQTT_Protocol};
   constexpr int controlLoopSleepDeltaMilliseconds{10};
-  constexpr std::chrono::seconds heartbeatDeltaSeconds{15};
+  std::chrono::seconds heartbeatDeltaSeconds{};
 
   std::string connectionString{getEnvVar("IOTHUB_CONNECTION_STRING")};
   if (connectionString == "") {
@@ -46,6 +46,20 @@ auto main() -> int {
     std::cerr << "DEVICE_ID Env Var not Passed In\n";
     return 1;
   }
+  std::string heartbeatSeconds{getEnvVar("HEARTBEAT_SECONDS")};
+  if (heartbeatSeconds == "") {
+    std::cerr << "HEARTBEAT_SECONDS Env Var not Passed In\n";
+    return 1;
+  }
+  std::string confirmationHeartbeats{getEnvVar("CONFIRMATION_HEARTBEATS")};
+  if (confirmationHeartbeats == "") {
+    std::cerr << "CONFIRMATION_HEARTBEATS Env Var not Passed In\n";
+    return 1;
+  }
+
+  CONFIRMATION_FIRMWARE_HEARTBEATS = std::stoi(confirmationHeartbeats);
+  heartbeatDeltaSeconds =
+      static_cast<std::chrono::seconds>(std::stoi(heartbeatSeconds));
 
   // CURL the most recent Firmware Deployed to Device
   mostRecentURL =
@@ -93,13 +107,6 @@ auto main() -> int {
       confirmFirmwarePulse();
 
       last_heartbeat += heartbeatDeltaSeconds;
-
-      // TODO: Temporary while stable, setup, and shutdown are only states
-      static int i = 0;
-      if (i == 10) {
-        isStable = false;
-      }
-      ++i;
     }
 
     IoTHubDeviceClient_LL_DoWork(
