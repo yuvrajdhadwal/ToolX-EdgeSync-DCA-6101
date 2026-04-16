@@ -2,6 +2,7 @@ from database.database import SessionLocal
 from database.models import Deploy, Device
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from datetime import datetime, timezone
 
 
 
@@ -19,9 +20,9 @@ def update_acceptance_status(device_id: str, body: str):
             db.query(Deploy)
             .filter(
                 Deploy.device_serial == device_id,
-                Deploy.isActive == True,
                 Deploy.isAccepted == None,
             )
+            .order_by(Deploy.timestamp.desc())
             .first()
         )
 
@@ -30,6 +31,26 @@ def update_acceptance_status(device_id: str, body: str):
             return
 
         deploy.isAccepted = accepted  # type: ignore
+        
+        if accepted:
+            previous = (
+                db.query(Deploy)
+                .filter(
+                    Deploy.device_serial == device_id,
+                    Deploy.isActive == True,
+                )
+                .first()
+            )
+            if previous:
+                previous.isActive = False
+
+            deploy.isActive = True
+
+            device = db.query(Device).filter(Device.serial_number == device_id).first()
+            if device:
+                device.firmware_id = deploy.target_firmware_id
+                device.last_update = datetime.now(timezone.utc)
+
         db.commit()
 
     except Exception as e:

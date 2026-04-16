@@ -69,6 +69,18 @@ def deploy_to_devices(
             results.append({"serial_number": serial, "status": "not found"})
             continue
 
+        pending_deploy = (
+            db.query(Deploy)
+            .filter(
+                Deploy.device_serial == serial,
+                Deploy.isAccepted == None,
+            )
+            .first()
+        )
+        if pending_deploy:
+            results.append({"serial_number": serial, "status": "pending deploy exists"})
+            continue
+
         iot_status = "not configured"
         if iot_hub:
             try:
@@ -78,27 +90,14 @@ def deploy_to_devices(
                 print(f"IoT error for {serial}: {e}")
                 iot_status = "failed"
 
-        existing_deploy = (
-            db.query(Deploy)
-            .filter(
-                Deploy.device_serial == serial,
-                Deploy.isActive == True,
-            )
-            .first()
-        )
-        if existing_deploy:
-            existing_deploy.isActive = False  # type: ignore
-
-        device.firmware_id = payload.firmware_id  # type: ignore
-        device.last_update = datetime.now(timezone.utc)  # type: ignore
-
         deploy = Deploy(
             manager_id=business_manager.id,
             target_firmware_id=payload.firmware_id,
             device_serial=serial,
             device_firmware_id=payload.firmware_id,
             timestamp=datetime.now(timezone.utc),
-            isActive=True,
+            isActive=False,
+            isAccepted=None,
             isEmergency=payload.isEmergency,
         )
         db.add(deploy)
@@ -111,11 +110,17 @@ def deploy_to_devices(
         )
 
     db.commit()
-    return {
-        "message": f"Deployed to {len([r for r in results if r['status'] == 'deployed'])} device(s)",
-        "results": results,
-    }
+    deployed = [r for r in results if r['status'] == 'deployed']
+    pending = [r for r in results if r['status'] == 'pending deploy exists']
 
+    message = f"Deployed to {len(deployed)} device(s)."
+    if pending:
+        message += f" Skipped {len(pending)} device(s) with pending deployments: {', '.join(r['serial_number'] for r in pending)}"
+
+    return {
+        "message": message,
+        "results": results,
+}
 
 def deploy_cloud_to_device(
     device_id: str, iot_hub: IoTHubRegistryManager, firmware: FirmwareOverview
