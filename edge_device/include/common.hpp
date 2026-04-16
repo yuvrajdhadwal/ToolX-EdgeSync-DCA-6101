@@ -13,6 +13,7 @@
 
 #include <array>
 #include <curl/curl.h>
+#include <atomic>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,13 +46,24 @@ inline auto getEnvVar(const std::string &key) -> std::string {
 }
 
 void handleFieldResponse(int epoll_fd, std::array<epoll_event, 1> &events,
-                         bool &incomingDeployment,
+                         std::atomic<bool> &incomingDeployment,
                          IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
 void publishMessage(const std::string &msg,
                     IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
+auto epollSetup() -> int;
+void checkFirmwareInstallation();
+void checkConfirmationFailure(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
+void checkConfirmationSuccess(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle);
+void confirmFirmwarePulse();
 extern std::string mostRecentURL;
-extern bool isNewFirmwareDownloaded;
+extern std::atomic<bool> isNewFirmwareDownloaded;
 
 extern std::string_view partitionAPath;
 extern std::string_view partitionBPath;
-extern bool isPartitionA;
+extern std::atomic<bool> isPartitionA;
+extern std::atomic<bool> isNewFirmwareAlive;
+extern std::atomic<int> failureCount;
+extern std::atomic<int> firmwareHeartbeats;
+extern std::atomic<pid_t> partitionAFirmwarePID;
+extern std::atomic<pid_t> partitionBFirmwarePID;
+extern int CONFIRMATION_FIRMWARE_HEARTBEATS;

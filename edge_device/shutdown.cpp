@@ -1,8 +1,16 @@
 #include "common.hpp"
+#include <csignal>
+
 void shutdown() {
   // Free all the sdk subsystem
   IoTHub_Deinit();
   curl_global_cleanup();
+  if (partitionAFirmwarePID != 0) {
+    kill(partitionAFirmwarePID, SIGTERM);
+  }
+  if (partitionBFirmwarePID != 0) {
+    kill(partitionBFirmwarePID, SIGTERM);
+  }
 
   printf("Press any key to continue\n");
   (void)getchar();

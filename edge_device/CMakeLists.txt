@@ -18,6 +18,8 @@ add_executable(main
     stable.cpp
     download.cpp
     field_decision.cpp
+    installation.cpp
+    confirmation.cpp
 )
 
 target_include_directories(main PRIVATE

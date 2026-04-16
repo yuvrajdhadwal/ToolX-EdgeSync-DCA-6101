@@ -1,184 +1,103 @@
 #include "common.hpp"
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <csignal>
 #include <sys/stat.h>
 #include <unistd.h>
 
 std::string mostRecentURL;
-bool isNewFirmwareDownloaded = false;
-bool isPartitionA = true;
-bool isNewFirmwareAlive = false;
-pid_t partitionAFirmwarePID = 0;
-pid_t partitionBFirmwarePID = 0;
+std::atomic<bool> isPartitionA = true;
+std::atomic<bool> isNewFirmwareAlive = false;
+
+// Flag for Control Agent Loop
+std::atomic<bool> isStable{true};
+
+// Triggers transition to DEPLOYED State
+std::atomic<bool> incomingDeployment{false};
+
+// Triggers transition to INSTALL State
+std::atomic<bool> isNewFirmwareDownloaded = false;
+
+std::atomic<pid_t> partitionAFirmwarePID = 0;
+std::atomic<pid_t> partitionBFirmwarePID = 0;
+
+std::atomic<int> failureCount = 0;
+std::atomic<int> firmwareHeartbeats = 0;
+
 std::string_view partitionAPath{"/tmp/firmwareA"};
 std::string_view partitionBPath{"/tmp/firmwareB"};
 
+int CONFIRMATION_FIRMWARE_HEARTBEATS = 1;
+
 // TODO: Handle default firmware/current/latest incoming one
 auto main() -> int {
+  constexpr IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol{MQTT_Protocol};
+  constexpr int controlLoopSleepDeltaMilliseconds{10};
+  constexpr std::chrono::seconds heartbeatDeltaSeconds{15};
+
   std::string connectionString{getEnvVar("IOTHUB_CONNECTION_STRING")};
   if (connectionString == "") {
-    std::cerr << "Please set env var for connection string - check readme\n";
+    std::cerr << "IOTHUB_CONNECTION_STRING Env Var not Passed In\n";
     return 1;
   }
   std::string externalAPIURL{getEnvVar("EXTERNAL_API_URL_EDGE_DEVICE")};
   if (externalAPIURL == "") {
-    std::cerr << "Please set env var for external api url\n";
+    std::cerr << "EXTERNAL_API_URL_EDGE_DEVICE Env Var not Passed In\n";
     return 1;
   }
   std::string deviceID{getEnvVar("DEVICE_ID")};
   if (deviceID == "") {
-    std::cerr << "Please set env var for external api url\n";
+    std::cerr << "DEVICE_ID Env Var not Passed In\n";
     return 1;
   }
 
+  // CURL the most recent Firmware Deployed to Device
   mostRecentURL =
       externalAPIURL + "/firmware/current_device_firmware/" + deviceID;
 
-  CURLcode result = curl_global_init(CURL_GLOBAL_ALL);
-  if (result != CURLE_OK) {
-    std::cerr << "Could not initialize CURL\n";
-    return static_cast<int>(result);
-  }
-
-  IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol{MQTT_Protocol};
-  bool isStable{true};
-  static constexpr int threadSleepTime{10};
-
   // NOTE: First State is Setup
-  bool incomingDeployment = false;
-
   IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle{
       setup(connectionString.data(), protocol, &incomingDeployment)};
 
   if (device_ll_handle == nullptr) {
-    // NOTE: Go to Shutdown State if Setup Fails
+    // NOTE: Transition to Shutdown if Setup Fails
     shutdown();
-    return 0;
+    return 1;
   }
 
-  int epoll_fd{epoll_create1(0)};
+  // Set up for EPOLL (Non-Blocking Read for Field Techs)
+  int epoll_fd{epollSetup()};
   if (epoll_fd == -1) {
     shutdown(device_ll_handle);
-    return 0;
-  }
-
-  epoll_event event;
-  event.events = EPOLLIN; // monitoring incoming data
-  event.data.fd = STDIN_FILENO;
-
-  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &event) == -1) {
-    close(epoll_fd);
-    shutdown(device_ll_handle);
-    return 0;
+    return 1;
   }
 
   std::array<epoll_event, 1> events;
+  // Subtracting so heartbeat happens at first iteration not after one delta
+  auto last_heartbeat{std::chrono::steady_clock::now() - heartbeatDeltaSeconds};
 
-  auto last_send_time{std::chrono::steady_clock::now()};
-  constexpr std::chrono::seconds interval{15}; // 15 seconds between heartbeats
-
-  int failureCount = 0;
-  int firmwareHeartbeats = 0;
-  // NOTE: Go to Stable State if Setup is successful
+  // NOTE: Transitioning to STABLE State
   while (isStable) {
+    // NOTE: Handles transitions out of DEPLOYED State
     handleFieldResponse(epoll_fd, events, incomingDeployment, device_ll_handle);
-    
-    // Handling Firmware Installation
-    if (isNewFirmwareDownloaded) {
-      isNewFirmwareDownloaded = false;
-      isNewFirmwareAlive = true;
-      pid_t newFirmwarePID = fork();
 
-      if (newFirmwarePID < 0) {
-        // Fork failed
-        ++failureCount;
-        perror("Fork Failed; Retrying");
-        isNewFirmwareDownloaded = true; // try again
-      } else if (newFirmwarePID == 0) {
-        // In Firmware Process (Fork Child)
-        std::string_view path;
-        // if curr firmware, is not partition A, new firmware is
-        if (!isPartitionA) {
-          path = partitionAPath;
-        } else {
-          path = partitionBPath;
-        }
+    // NOTE: Handles INSTALL State
+    checkFirmwareInstallation();
 
-        isNewFirmwareAlive = true;
-        isNewFirmwareDownloaded = false;
-        chmod(path.data(), S_IXUSR | S_IXGRP | S_IXOTH);
-        execlp(path.data(), "firmware", nullptr);
-        // If we get here exec failed
-        perror("Exec Firmware Failed; Retrying");
-        ++failureCount;
-        isNewFirmwareAlive = false;
-        isNewFirmwareDownloaded = true; // try again
-      } else {
-        // In Control Plane (Fork Parent)
-        if (isPartitionA) {
-          partitionBFirmwarePID = newFirmwarePID;
-        } else {
-          partitionAFirmwarePID = newFirmwarePID;
-        }
-      }
-    }
+    // NOTE: Handles CONFIRMATION State Failure Transition
+    checkConfirmationFailure(device_ll_handle);
 
-    if (failureCount >= 3) {
-      isNewFirmwareDownloaded = false; // stop trying
-      std::cerr << "New Firmware Failed Installation ... sending rejection "
-                   "notificiation";
-      deploymentRejection(device_ll_handle);
-    }
-
-    if (isNewFirmwareAlive && firmwareHeartbeats >= 1) {
-      // transition to curr firmware
-      if (isPartitionA) {
-        if (partitionAFirmwarePID != 0) {
-          kill(partitionAFirmwarePID, SIGTERM);
-        }
-      } else {
-        if (partitionBFirmwarePID != 0) {
-          kill(partitionBFirmwarePID, SIGTERM);
-        }
-      }
-
-      isPartitionA = !isPartitionA;
-      isNewFirmwareAlive = false;
-      firmwareHeartbeats = 0;
-      std::cout << "Firmware Transition Complete: Moving to ParitionA? "
-                << isPartitionA << '\n';
-    }
+    // NOTE: Handles CONFIRMATION State Success Transition
+    checkConfirmationSuccess(device_ll_handle);
 
     // Handling Heartbeats
     auto now{std::chrono::steady_clock::now()};
-    if (now - last_send_time >= interval) {
+    if (now - last_heartbeat >= heartbeatDeltaSeconds) {
       stable(device_ll_handle);
-      last_send_time += interval;
+      confirmFirmwarePulse();
 
-      if (isNewFirmwareAlive) {
-        if (!isPartitionA) {
-          if (partitionAFirmwarePID == 0) {
-            firmwareHeartbeats++;
-          } else if (kill(partitionAFirmwarePID, 0) < 0) {
-            failureCount++;
-            firmwareHeartbeats = 0;
-            isNewFirmwareDownloaded = true;
-          } else {
-            firmwareHeartbeats++;
-          }
-        } else {
-          if (partitionBFirmwarePID == 0) {
-            firmwareHeartbeats++;
-          } else if (kill(partitionBFirmwarePID, 0) < 0) {
-            failureCount++;
-            firmwareHeartbeats = 0;
-            isNewFirmwareDownloaded = true;
-          } else {
-            firmwareHeartbeats++;
-          }
-        }
-      }
+      last_heartbeat += heartbeatDeltaSeconds;
 
       // TODO: Temporary while stable, setup, and shutdown are only states
       static int i = 0;
@@ -190,19 +109,12 @@ auto main() -> int {
 
     IoTHubDeviceClient_LL_DoWork(
         device_ll_handle); // maintain network engine so connection stays alive
-    ThreadAPI_Sleep(threadSleepTime); // units in milliseconds, sleeping to not
-                                      // cause 100% cpu utilization
+    ThreadAPI_Sleep(
+        controlLoopSleepDeltaMilliseconds); // units in milliseconds, sleeping
+                                            // to not cause 100% cpu utilization
   }
 
   // NOTE: Go to Shutdown State when Stable State ends
-
-  // Clean up the iothub sdk handle
-  if (partitionAFirmwarePID != 0) {
-    kill(partitionAFirmwarePID, SIGTERM);
-  }
-  if (partitionBFirmwarePID != 0) {
-    kill(partitionBFirmwarePID, SIGTERM);
-  }
   close(epoll_fd);
   shutdown(device_ll_handle);
   return 0;

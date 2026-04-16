@@ -15,7 +15,7 @@ void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
   (void)user_context;
   // This sample DOES NOT take into consideration network outages.
   if (result == IOTHUB_CLIENT_CONNECTION_AUTHENTICATED) {
-    std::cout << "The device client is connected to iothub\n";
+    // std::cout << "The device client is connected to iothub\n";
   } else {
     std::cout << "The device client has been disconnected\n";
   }
