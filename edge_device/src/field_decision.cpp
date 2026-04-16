@@ -32,7 +32,6 @@ deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
 }
 
 void handleFieldResponse(int epoll_fd, std::array<epoll_event, 1> &events,
-                         std::atomic<bool> &incomingDeployment,
                          IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   int num_events{epoll_wait(epoll_fd, events.data(), 1, 0)};
 

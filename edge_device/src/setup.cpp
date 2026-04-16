@@ -21,7 +21,7 @@ connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
 }
 
 auto setup(const char *connectionString,
-           IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol, void *incomingDeployment)
+           IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol, void *pIncomingDeployment)
     -> IOTHUB_DEVICE_CLIENT_LL_HANDLE {
   // CURL Init
   CURLcode result = curl_global_init(CURL_GLOBAL_ALL);
@@ -55,7 +55,7 @@ auto setup(const char *connectionString,
       device_ll_handle, connection_status_callback, nullptr);
 
   if (IoTHubDeviceClient_LL_SetMessageCallback(
-          device_ll_handle, receive_msg_callback, incomingDeployment) !=
+          device_ll_handle, receive_msg_callback, pIncomingDeployment) !=
       IOTHUB_CLIENT_OK) {
     std::cout << "ERROR: IoTHubClient_LL_SetMessageCallback..........FAILED!\n";
     return nullptr;

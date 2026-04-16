@@ -20,6 +20,7 @@ add_executable(main
     src/field_decision.cpp
     src/installation.cpp
     src/confirmation.cpp
+    src/common.cpp
 )
 
 target_include_directories(main PRIVATE

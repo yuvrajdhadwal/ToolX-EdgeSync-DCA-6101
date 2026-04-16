@@ -9,14 +9,21 @@ inline auto getEnvVar(const std::string &key) -> std::string {
 }
 
 extern std::string mostRecentURL;
+
 extern std::atomic<bool> isNewFirmwareDownloaded;
+extern std::atomic<bool> incomingDeployment;
+extern std::atomic<bool> isNewFirmwareAlive;
+extern std::atomic<bool> isStable;
+
+extern std::atomic<bool> isPartitionA;
+
+extern std::atomic<int> failureCount;
+extern std::atomic<int> firmwareHeartbeats;
 
 extern std::string_view partitionAPath;
 extern std::string_view partitionBPath;
-extern std::atomic<bool> isPartitionA;
-extern std::atomic<bool> isNewFirmwareAlive;
-extern std::atomic<int> failureCount;
-extern std::atomic<int> firmwareHeartbeats;
+
 extern std::atomic<pid_t> partitionAFirmwarePID;
 extern std::atomic<pid_t> partitionBFirmwarePID;
+
 extern int CONFIRMATION_FIRMWARE_HEARTBEATS;

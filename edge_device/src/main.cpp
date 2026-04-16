@@ -11,39 +11,22 @@
 #include <iothubtransportmqtt.h>
 
 #include <array>
-#include <atomic>
 #include <chrono>
+#include <csignal>
 #include <iostream>
 
 #include <sys/stat.h>
 #include <unistd.h>
 
-std::string mostRecentURL;
-std::atomic<bool> isPartitionA = true;
-std::atomic<bool> isNewFirmwareAlive = false;
+void signal_handler(int signum) {
+  (void)signum;
+  isStable = false;
+}
 
-// Flag for Control Agent Loop
-std::atomic<bool> isStable{true};
-
-// Triggers transition to DEPLOYED State
-std::atomic<bool> incomingDeployment{false};
-
-// Triggers transition to INSTALL State
-std::atomic<bool> isNewFirmwareDownloaded = false;
-
-std::atomic<pid_t> partitionAFirmwarePID = 0;
-std::atomic<pid_t> partitionBFirmwarePID = 0;
-
-std::atomic<int> failureCount = 0;
-std::atomic<int> firmwareHeartbeats = 0;
-
-std::string_view partitionAPath{"/tmp/firmwareA"};
-std::string_view partitionBPath{"/tmp/firmwareB"};
-
-int CONFIRMATION_FIRMWARE_HEARTBEATS = 1;
-
-// TODO: Handle default firmware/current/latest incoming one
 auto main() -> int {
+  std::signal(SIGTERM, signal_handler);
+  std::signal(SIGINT, signal_handler);
+
   constexpr IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol{MQTT_Protocol};
   constexpr int controlLoopSleepDeltaMilliseconds{10};
   constexpr std::chrono::seconds heartbeatDeltaSeconds{15};
@@ -92,7 +75,7 @@ auto main() -> int {
   // NOTE: Transitioning to STABLE State
   while (isStable) {
     // NOTE: Handles transitions out of DEPLOYED State
-    handleFieldResponse(epoll_fd, events, incomingDeployment, device_ll_handle);
+    handleFieldResponse(epoll_fd, events, device_ll_handle);
 
     // NOTE: Handles INSTALL State
     checkFirmwareInstallation();

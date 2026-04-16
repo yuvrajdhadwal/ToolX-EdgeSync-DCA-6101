@@ -3,8 +3,8 @@
 #include "common.hpp"
 #include "field_decision.hpp"
 #include "stable.hpp"
+#include "shutdown.hpp"
 
-#include <csignal>
 #include <iostream>
 
 void checkConfirmationFailure(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
@@ -27,13 +27,9 @@ void checkConfirmationSuccess(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
 
   // kill old firmware to complete deployment cycle
   if (isPartitionA) {
-    if (partitionAFirmwarePID != 0) {
-      kill(partitionAFirmwarePID, SIGTERM);
-    }
+    killProcess(partitionAFirmwarePID);
   } else {
-    if (partitionBFirmwarePID != 0) {
-      kill(partitionBFirmwarePID, SIGTERM);
-    }
+    killProcess(partitionBFirmwarePID);
   }
 
   // NOTE: Transition to STABLE State
