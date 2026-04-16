@@ -1,7 +1,11 @@
+#include "field_decision.hpp"
+
 #include "common.hpp"
-#include <array>
+#include "download.hpp"
+#include "stable.hpp"
+
+#include <iostream>
 #include <thread>
-#include <unistd.h>
 
 void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   std::string rejectionComment;
@@ -12,7 +16,8 @@ void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   publishMessage(rejectionComment, device_ll_handle);
 }
 
-void deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
+static void
+deploymentInstallation(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   std::thread downloadThread([device_ll_handle]() -> void {
     // NOTE: Triggers INSTALL State
     isNewFirmwareDownloaded = downloadFirmware();
@@ -34,7 +39,7 @@ void handleFieldResponse(int epoll_fd, std::array<epoll_event, 1> &events,
   if (num_events > 0) {
     std::array<char, 1> buffer;
 
-    long bytesRead{read(STDIN_FILENO, buffer.data(), 1)};
+    read(STDIN_FILENO, buffer.data(), 1);
     char response{buffer[0]};
 
     if (response != 'y' && response != 'Y' && response != 'n' &&

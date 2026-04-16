@@ -1,6 +1,24 @@
+#include "setup.hpp"
+
 #include "common.hpp"
-#include <thread>
-#include <unistd.h>
+#include "download.hpp"
+#include "stable.hpp"
+
+#include <iostream>
+
+static void
+connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result,
+                           IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
+                           void *user_context) {
+  (void)reason;
+  (void)user_context;
+  // This sample DOES NOT take into consideration network outages.
+  if (result == IOTHUB_CLIENT_CONNECTION_AUTHENTICATED) {
+    // std::cout << "The device client is connected to iothub\n";
+  } else {
+    std::cout << "The device client has been disconnected\n";
+  }
+}
 
 auto setup(const char *connectionString,
            IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol, void *incomingDeployment)
@@ -43,14 +61,9 @@ auto setup(const char *connectionString,
     return nullptr;
   }
 
-  // NOTE: Spawns async thread that goes into DOWNLOAD State
-  // Spawn a Download Thread to Install Current Deployed Firmware onto Device
-  std::thread downloadThread([device_ll_handle]() -> void {
-    // NOTE: If true, control plane transitions to INSTALL State
-    isNewFirmwareDownloaded = downloadFirmware();
-  });
-
-  downloadThread.detach();
+  // NOTE: Goes to Download State for Current Firmware
+  // Blocking so that we don't start running without firmware
+  isNewFirmwareDownloaded = downloadFirmware();
 
   return device_ll_handle;
 }

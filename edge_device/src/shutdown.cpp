@@ -1,5 +1,9 @@
+#include "shutdown.hpp"
+
 #include "common.hpp"
+
 #include <csignal>
+#include <iostream>
 
 void shutdown() {
   // Free all the sdk subsystem
@@ -12,7 +16,7 @@ void shutdown() {
     kill(partitionBFirmwarePID, SIGTERM);
   }
 
-  printf("Press any key to continue\n");
+  std::cout << "Press any key to continue\n";
   (void)getchar();
 }
 

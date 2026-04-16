@@ -1,11 +1,13 @@
+#include "download.hpp"
+
 #include "common.hpp"
+
 #include <chrono>
-#include <cstdio>
-#include <cstdlib>
+#include <iostream>
 #include <thread>
 
-auto filewrite_callback(char *ptr, std::size_t size, std::size_t nmemb,
-                        void *stream) -> std::size_t {
+static auto filewrite_callback(char *ptr, std::size_t size, std::size_t nmemb,
+                               void *stream) -> std::size_t {
   std::size_t written = fwrite(ptr, size, nmemb, static_cast<FILE *>(stream));
   return written;
 }

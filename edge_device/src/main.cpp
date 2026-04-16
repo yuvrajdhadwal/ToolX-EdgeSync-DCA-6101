@@ -1,8 +1,20 @@
 #include "common.hpp"
+#include "confirmation.hpp"
+#include "field_decision.hpp"
+#include "installation.hpp"
+#include "setup.hpp"
+#include "shutdown.hpp"
+#include "stable.hpp"
+
+#include <azure_c_shared_utility/threadapi.h>
+#include <iothub_device_client_ll.h>
+#include <iothubtransportmqtt.h>
+
 #include <array>
 #include <atomic>
 #include <chrono>
-#include <csignal>
+#include <iostream>
+
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -94,7 +106,7 @@ auto main() -> int {
     // Handling Heartbeats
     auto now{std::chrono::steady_clock::now()};
     if (now - last_heartbeat >= heartbeatDeltaSeconds) {
-      stable(device_ll_handle);
+      controlLoopHeartbeat(device_ll_handle);
       confirmFirmwarePulse();
 
       last_heartbeat += heartbeatDeltaSeconds;
@@ -109,9 +121,8 @@ auto main() -> int {
 
     IoTHubDeviceClient_LL_DoWork(
         device_ll_handle); // maintain network engine so connection stays alive
-    ThreadAPI_Sleep(
-        controlLoopSleepDeltaMilliseconds); // units in milliseconds, sleeping
-                                            // to not cause 100% cpu utilization
+    ThreadAPI_Sleep(controlLoopSleepDeltaMilliseconds); // sleeping to not cause
+                                                        // 100% cpu utilization
   }
 
   // NOTE: Go to Shutdown State when Stable State ends

@@ -1,5 +1,11 @@
+#include "confirmation.hpp"
+
 #include "common.hpp"
+#include "field_decision.hpp"
+#include "stable.hpp"
+
 #include <csignal>
+#include <iostream>
 
 void checkConfirmationFailure(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   if (!isNewFirmwareAlive || failureCount < 3) {
@@ -19,7 +25,7 @@ void checkConfirmationSuccess(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
     return;
   }
 
-  // transition to curr firmware
+  // kill old firmware to complete deployment cycle
   if (isPartitionA) {
     if (partitionAFirmwarePID != 0) {
       kill(partitionAFirmwarePID, SIGTERM);
@@ -30,7 +36,7 @@ void checkConfirmationSuccess(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
     }
   }
 
-  // NOTE: Transition back to STABLE State
+  // NOTE: Transition to STABLE State
   isPartitionA = !isPartitionA;
   isNewFirmwareAlive = false;
   firmwareHeartbeats = 0;
@@ -45,25 +51,20 @@ void confirmFirmwarePulse() {
     return;
   }
 
-  if (!isPartitionA) {
-    if (partitionAFirmwarePID == 0) {
-      firmwareHeartbeats++;
-    } else if (kill(partitionAFirmwarePID, 0) < 0) {
-      failureCount++;
-      firmwareHeartbeats = 0;
-      isNewFirmwareDownloaded = true;
-    } else {
-      firmwareHeartbeats++;
-    }
-  } else {
-    if (partitionBFirmwarePID == 0) {
-      firmwareHeartbeats++;
-    } else if (kill(partitionBFirmwarePID, 0) < 0) {
-      failureCount++;
-      firmwareHeartbeats = 0;
-      isNewFirmwareDownloaded = true;
-    } else {
-      firmwareHeartbeats++;
-    }
+  // check new firmware pulse
+  if ((!isPartitionA && partitionAFirmwarePID != 0 &&
+       kill(partitionAFirmwarePID, 0) < 0) ||
+      (isPartitionA && partitionBFirmwarePID != 0 &&
+       kill(partitionBFirmwarePID, 0) < 0)) {
+
+    failureCount++;
+    firmwareHeartbeats = 0;
+
+    // NOTE: Transition back to INSTALL State
+    isNewFirmwareDownloaded = true;
+    isNewFirmwareAlive = false;
+    return;
   }
+
+  firmwareHeartbeats++;
 }

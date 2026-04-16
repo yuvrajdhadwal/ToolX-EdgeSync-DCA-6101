@@ -1,6 +1,6 @@
+#include "installation.hpp"
+
 #include "common.hpp"
-#include <sys/stat.h>
-#include <unistd.h>
 
 void checkFirmwareInstallation() {
   if (!isNewFirmwareDownloaded) {
