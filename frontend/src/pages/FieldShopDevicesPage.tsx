@@ -69,7 +69,7 @@ const FieldShopDevicesPage: React.FC = () => {
 
   const handleOpenDevice = (device: Device) => {
     navigate(ROUTES.DEVICE_DETAIL.replace(':serialNumber', encodeURIComponent(device.serial_number)), {
-      state: { device },
+      state: { device, fromeRoute: ROUTES.FIELD_SHOP_DEVICES },
     })
   }
 
