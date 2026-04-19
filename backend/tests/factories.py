@@ -16,6 +16,7 @@ from backend.database.models import (
     FirmwareUpdate,
     Install,
     Rejection,
+    Shop,
 )
 
 
@@ -105,17 +106,36 @@ class ModelFactory:
         self.session.flush()
         return firmware
 
+    def shop(self, **overrides: Any) -> Shop:
+        shop = Shop(
+            id=overrides.pop("id", next(self._sequence)),
+            location=overrides.pop("location", self._next_value("shop_location")),
+            latitude=overrides.pop("latitude", 0.0),
+            longitude=overrides.pop("longitude", 0.0),
+            **overrides,
+        )
+        self.session.add(shop)
+        self.session.flush()
+        return shop
+
     def device(self, firmware: FirmwareUpdate | None = None, **overrides: Any) -> Device:
         if firmware is None and "firmware_id" not in overrides:
             firmware = self.firmware()
+
+        shop = overrides.pop("shop", None)
+        if shop is None:
+            shop = self.shop(location=overrides.pop("location", "Test Lab"))
 
         device = Device(
             serial_number=overrides.pop("serial_number", self._next_value("SN")),
             firmware_id=overrides.pop("firmware_id", firmware.id if firmware else None),
             device_type=overrides.pop("device_type", firmware.device_type if firmware else "edge-device"),
-            location=overrides.pop("location", "Test Lab"),
+            shop_id=overrides.pop("shop_id", shop.id),
+            location=overrides.pop("device_location", shop.location),
             developer_manager=overrides.pop("developer_manager", "unassigned"),
             description=overrides.pop("description", "Test device"),
+            latitude=overrides.pop("latitude", shop.latitude),
+            longitude=overrides.pop("longitude", shop.longitude),
             **overrides,
         )
         self.session.add(device)

@@ -24,6 +24,14 @@ downloads_table = Table(
     Column("firmware_id", Integer, ForeignKey("firmware_updates.id"), primary_key=True),
 )
 
+# Shop Access Relationship N:M
+shop_access_table = Table(
+    "shop_access",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("shop_id", Integer, ForeignKey("shops.id", ondelete="CASCADE"), primary_key=True),
+)
+
 # ======================
 #       User Tables
 # ======================
@@ -44,6 +52,9 @@ class User(Base):
 
     # View Firmware Relationship M:N Table
     viewable_firmware = relationship("FirmwareUpdate", secondary=views_table)
+
+    # Shop Access Relationship M:N Table
+    accessible_shops = relationship("Shop", secondary=shop_access_table, back_populates="access_users")
 
 
 class Developer(User):
@@ -110,11 +121,24 @@ class FirmwareUpdate(Base):
         UniqueConstraint('version_number', 'device_type'),
     )
 
+
+class Shop(Base):
+    __tablename__ = "shops"
+
+    id = Column(Integer, primary_key=True)
+    location = Column(String(255), nullable=False, unique=True)
+    latitude = Column(Float)
+    longitude = Column(Float)
+
+    devices = relationship("Device", back_populates="shop")
+    access_users = relationship("User", secondary=shop_access_table, back_populates="accessible_shops")
+
 class Device(Base):
     __tablename__ = "devices"
 
     serial_number = Column(String(100), primary_key=True)
     firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="SET NULL"), nullable=True, default=None)
+    shop_id = Column(Integer, ForeignKey("shops.id", ondelete="RESTRICT"), nullable=False)
 
     device_type = Column(String(50))
     location = Column(String(255))
@@ -129,6 +153,7 @@ class Device(Base):
         "FirmwareUpdate",
         backref=backref("installed_devices", passive_deletes=True)
     )
+    shop = relationship("Shop", back_populates="devices")
 
 # ===================================
 #         Complex Relationships

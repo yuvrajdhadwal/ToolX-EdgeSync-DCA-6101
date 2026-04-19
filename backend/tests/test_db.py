@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError, SAWarning
 # Ensure Developer, DeveloperManager, etc., inherit from User.
 from backend.database.models import (
     Base, User, Developer, DeveloperManager, BusinessManager, 
-    FieldShopProfessional, FirmwareUpdate, Device, Deploy, Install, Rejection
+    FieldShopProfessional, FirmwareUpdate, Device, Deploy, Install, Rejection, Shop
 )
 
 # ==============================================================================
@@ -57,7 +57,11 @@ def test_duplicate_username_fails(db_session):
 
 def test_weak_entity_device_requires_firmware(db_session):
     """Edge Case: Device is a weak entity and MUST have a firmware_id."""
-    device = Device(serial_number="SN-NO-FIRMWARE", description="Orphan Device")
+    shop = Shop(id=1, location="Test Lab", latitude=0.0, longitude=0.0)
+    db_session.add(shop)
+    db_session.commit()
+
+    device = Device(serial_number="SN-NO-FIRMWARE", description="Orphan Device", shop_id=shop.id, location=shop.location)
     db_session.add(device)
     
     with pytest.warns(SAWarning):
@@ -74,10 +78,11 @@ def test_install_composite_foreign_key_mismatch(db_session):
     # Setup dependencies
     pro = FieldShopProfessional(username="pro_installer", hashed_password="pwd")
     fw = FirmwareUpdate(objectBinary=b"firmware", version_number="v1.0", device_type="Router")
-    db_session.add_all([pro, fw])
+    shop = Shop(id=2, location="Install Lab", latitude=0.0, longitude=0.0)
+    db_session.add_all([pro, fw, shop])
     db_session.commit()
     
-    device = Device(serial_number="SN-111", firmware_id=fw.id)
+    device = Device(serial_number="SN-111", firmware_id=fw.id, shop_id=shop.id, location=shop.location)
     db_session.add(device)
     db_session.commit()
 
@@ -135,10 +140,11 @@ def test_set_null_on_manager_delete(db_session):
 def test_restrict_on_firmware_delete(db_session):
     """Test 'RESTRICT': Cannot delete a firmware if a Device is currently installed on it."""
     fw = FirmwareUpdate(objectBinary=b"firmware", version_number="vCritical", device_type="Server")
-    db_session.add(fw)
+    shop = Shop(id=3, location="Secure Lab", latitude=0.0, longitude=0.0)
+    db_session.add_all([fw, shop])
     db_session.commit()
 
-    device = Device(serial_number="SN-SECURE", firmware_id=fw.id)
+    device = Device(serial_number="SN-SECURE", firmware_id=fw.id, shop_id=shop.id, location=shop.location)
     db_session.add(device)
     db_session.commit()
 

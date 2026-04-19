@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from database.database_types import DeviceType, UserRole
-from database.models import DeveloperManager, Device, FirmwareUpdate
+from database.models import DeveloperManager, Device, FirmwareUpdate, Shop
 from fastapi import Header, HTTPException
 from login.authentication import get_authenticated_user
 from map.active_devices import get_region_from_coordinates
@@ -48,9 +48,12 @@ def get_deployable_devices(
             {
                 "serial_number": d.serial_number,
                 "device_type": d.device_type,
-                "location": d.location,
+                "location": d.shop.location if d.shop else d.location,
                 "current_version": d.firmware.version_number if d.firmware else None,
-                "region": get_region_from_coordinates(d.latitude, d.longitude),  # type: ignore
+                "region": get_region_from_coordinates(
+                    d.shop.latitude if d.shop else d.latitude,
+                    d.shop.longitude if d.shop else d.longitude,
+                ),
             }
             for d in compatible
         ],
@@ -67,15 +70,23 @@ def add_device(device: DeviceType, db: Session):
             status_code=400, detail="Device with this serial number already exists"
         )
 
+    shop = db.query(Shop).filter(Shop.location == device.location.strip()).first()
+    if not shop:
+        raise HTTPException(
+            status_code=404,
+            detail="Shop not found for this location",
+        )
+
     db_device = Device(
         serial_number=device.serial_number,
         firmware_id=None,
         device_type=device.device_type,
-        location=device.location,
+        shop_id=shop.id,
+        location=shop.location,
         developer_manager=device.developer_manager,
         description=device.description,
-        latitude=device.latitude,
-        longitude=device.longitude,
+        latitude=shop.latitude,
+        longitude=shop.longitude,
         last_update=datetime.now(timezone.utc),
     )
     db.add(db_device)
@@ -107,14 +118,15 @@ def get_devices(db: Session):
             "last_update": (
                 d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"  # type: ignore
             ),
-            "location": d.location,
+            "location": d.shop.location if d.shop else d.location,
             "serial_number": d.serial_number,
             "description": d.description,
             "developer_manager": resolve_manager_name(d.developer_manager),  # type: ignore
-            "latitude": d.latitude,
-            "longitude": d.longitude,
+            "latitude": d.shop.latitude if d.shop else d.latitude,
+            "longitude": d.shop.longitude if d.shop else d.longitude,
             "region": get_region_from_coordinates(
-                d.latitude, d.longitude  # type: ignore
+                d.shop.latitude if d.shop else d.latitude,
+                d.shop.longitude if d.shop else d.longitude,
             ),
         }
         for d in devices
