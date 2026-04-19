@@ -155,6 +155,13 @@ class Device(Base):
     )
     shop = relationship("Shop", back_populates="devices")
 
+    # M:N relationship w/ Field Shop Professional
+    field_shop_professionals = relationship(
+        "FieldShopProfessional",
+        secondary=field2device_table,
+        backref="assigned_devices",
+    )
+
 # ===================================
 #         Complex Relationships
 # ===================================

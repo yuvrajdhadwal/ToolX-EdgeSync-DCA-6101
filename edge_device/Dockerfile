@@ -11,7 +11,9 @@ RUN apt-get update && apt-get install -y \
 	libssl-dev \
 	uuid-dev \
 	build-essential \
-	ca-certificates
+	ca-certificates \
+	gcc-4.9 \
+	libstdc++6
 
 WORKDIR /app
 
@@ -24,14 +26,7 @@ RUN git clone -b lts_03_2025 https://github.com/Azure/azure-iot-sdk-c.git && \
 	cmake --install . && \
 	cd ../..
 
-COPY CMakeLists.txt .
-COPY include/common.hpp .
-COPY main.cpp .
-COPY setup.cpp .
-COPY shutdown.cpp .
-COPY stable.cpp .
-COPY download.cpp .
-COPY field_decision.cpp .
+COPY . .
 
 RUN cmake -S . -B build -DCMAKE_PREFIX_PATH=/usr/local && \
     cmake --build build --config Release
@@ -42,7 +37,9 @@ FROM ubuntu:22.04 AS runner
 RUN apt-get update && apt-get install -y \
 	libcurl4 \
 	openssl \
-	libuuid1
+	libuuid1 \
+	gcc-4.9 \
+	libstdc++6
 
 WORKDIR /app
 

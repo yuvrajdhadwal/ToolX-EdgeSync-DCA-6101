@@ -45,7 +45,7 @@ export default function Profile() {
                     fontSize: '1rem',
                     border: 'none',
                     borderLeft: `1px solid ${COLORS.white}`,
-                    backgroundColor: isHovering ? COLORS.brand900 : COLORS.accentPrimary,
+                    backgroundColor: isHovering ? COLORS.accentHover : COLORS.accentPrimary,
                     color: COLORS.white,
                     fontWeight: 500,
                     cursor: 'pointer',

@@ -21,6 +21,7 @@ export default defineConfig({
       '/device': 'http://localhost:8000',
       '/deploy-to-many-devices': 'http://localhost:8000',
       '/deploy-to-one': 'http://localhost:8000',
+      '/field-shop-professionals': 'http://localhost:8000',
     }
   }
 })

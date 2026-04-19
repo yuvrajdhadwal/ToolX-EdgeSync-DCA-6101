@@ -19,10 +19,9 @@ field/shop person
 **Accepted:** Incoming firmware deployment is accepted and edge device starts to download firmware
 binary
 
-**Verification:** Firmware binary download is complete and is verified to ensure no packet loss 
-or corruption or security issues
+**Download:** Downloads the approved firmware from backend endpoint
 
-**Execution:** Forks and then Executes the new binary process
+**Installation:** Forks and then Executes the new binary process
 
 **Confirmation:** If new firmware binary execs without issue, delete old binary and send
 installation confirmation device to cloud message
@@ -31,7 +30,7 @@ installation confirmation device to cloud message
 
 `docker build -t edge-device:v1 .` \
 
-test8:
+test7:
 ```
-docker run --rm -it -e IOTHUB_CONNECTION_STRING="HostName=ToolXEdgeSyncIoT.azure-devices.net;DeviceId=test8;SharedAccessKey=JKh6nzLBt7NxBnod6lXpLMetAyT7EqArKvffLkDoXWw=" -e EXTERNAL_API_URL_EDGE_DEVICE="http://host.docker.internal:8000" -e DEVICE_ID="test8" edge-device:v1
+docker run --rm -it -e IOTHUB_CONNECTION_STRING="HostName=ToolXEdgeSyncIoT.azure-devices.net;DeviceId=test7;SharedAccessKey=sRBHViIcpaTjc9Ld6FlV0q3KcEms0Obv+8hvL72ZZFY=" -e EXTERNAL_API_URL_EDGE_DEVICE="http://host.docker.internal:8000" -e DEVICE_ID="test7" -e HEARTBEAT_SECONDS="15" -e CONFIRMATION_HEARTBEATS="1" edge-device:v1
 ```

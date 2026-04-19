@@ -1,6 +1,6 @@
 
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, field_validator
 
 class UserRole(str, Enum):
@@ -35,6 +35,7 @@ class DeviceType(BaseModel):
     developer_manager: str
     longitude: Optional[float] = None
     latitude: Optional[float] = None
+    field_shop_professionals: List[str] = []
 
     @field_validator(
         "device_type",

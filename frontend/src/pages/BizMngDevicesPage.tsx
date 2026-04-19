@@ -112,7 +112,7 @@ const BizMngDevicesPage: React.FC = () => {
               padding: '0 1.5rem', fontSize: '1rem', cursor: 'pointer',
               border: 'none',
               borderLeft: `1px solid ${COLORS.white}`,
-              backgroundColor: isAddButtonHovering ? COLORS.brand900 : COLORS.accentPrimary,
+              backgroundColor: isAddButtonHovering ? COLORS.accentHover : COLORS.accentPrimary,
               color: COLORS.white, fontWeight: 500,
               height: '100%',
               transition: 'background-color 0.2s',
