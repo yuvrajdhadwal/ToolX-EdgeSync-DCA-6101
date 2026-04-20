@@ -18,6 +18,7 @@ async def upload_firmware(
     description: str,
     authorization: Optional[str],
     db: Session,
+    previous_firmware_id: Optional[int] = None
 ):
     if not authorization:
         raise HTTPException(
@@ -66,6 +67,7 @@ async def upload_firmware(
         description=description,
         uploaded_by=developer_user.id,
         isEmergency=isEmergency,
+        previous_firmware_id = previous_firmware_id,
     )
 
     manager_user.viewable_firmware.append(firmware)

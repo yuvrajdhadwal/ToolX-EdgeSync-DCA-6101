@@ -17,6 +17,16 @@ type UploadItem = {
   declined_by: number | null;
   declined_comment: string | null;
   status: UploadStatus;
+  previous_firmware_id: number | null;
+  rejection_history: RejectionHistoryEntry[];
+};
+
+type RejectionHistoryEntry = {
+  firmware_id: number;
+  version_number: string;
+  declined_by: number | null;
+  declined_comment: string | null;
+  uploaded_timestamp: string | null;
 };
 
 type RejectFirmwarePayload = {
@@ -243,7 +253,7 @@ const FirmwareDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!firmware) return;
-    const userIds = [firmware.uploaded_by, firmware.approved_by, firmware.declined_by]
+    const userIds = [firmware.uploaded_by, firmware.approved_by, firmware.declined_by, ...firmware.rejection_history.map(e => e.declined_by),]
       .filter((id): id is number => typeof id === 'number');
     const missingIds = Array.from(new Set(userIds)).filter((id) => !resolvedUsernames[id]);
     if (missingIds.length === 0) return;
@@ -467,6 +477,30 @@ const FirmwareDetailPage: React.FC = () => {
                 </div>
               ))}
             </div>
+
+            {/* Prior Rejection History */}
+            {firmware.rejection_history.length > 0 && (
+              <div style={{ border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ padding: '0.75rem 1rem', backgroundColor: COLORS.backgroundTertiary, fontWeight: 600 }}>
+                  Prior Rejection History
+                </div>
+                {firmware.rejection_history.map((entry) => (
+                  <div key={entry.firmware_id} style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${COLORS.borderPrimary}`,
+                    display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <span style={{ fontWeight: 500 }}>
+                      v{entry.version_number} (ID #{entry.firmware_id})
+                      {entry.uploaded_timestamp ? ` — ${new Date(entry.uploaded_timestamp).toLocaleDateString()}` : ''}
+                    </span>
+                    <span style={{ color: COLORS.textMuted, fontSize: '0.9rem' }}>
+                      Rejected by: {getDisplayNameById(entry.declined_by)}
+                    </span>
+                    <span style={{ color: COLORS.dangerText, fontSize: '0.9rem' }}>
+                      Reason: {entry.declined_comment ?? '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Approve/Reject Buttons */}
             {canModerateFirmware && (
