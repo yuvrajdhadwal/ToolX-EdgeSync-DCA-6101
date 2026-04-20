@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AddDevicePage from './pages/AddDevicePage';
 import DeviceDetailPage from './pages/DeviceDetailPage';
 import WorldMapPage from './pages/WorldMapPage';
+import FieldShopDevicesPage from './pages/FieldShopDevicesPage';
 
 function AppLayout() {
   const location = useLocation();
@@ -39,6 +40,7 @@ function AppLayout() {
           <Route path={ROUTES.DEVICES_BIZMNG} element={<ProtectedRoute><BizMngDevicesPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.DEVICE_DETAIL} element={<ProtectedRoute><DeviceDetailPage /></ProtectedRoute>}></Route>
           <Route path={ROUTES.ADD_DEVICES} element={<ProtectedRoute><AddDevicePage /></ProtectedRoute>}></Route>
+          <Route path={ROUTES.FIELD_SHOP_DEVICES} element={<ProtectedRoute><FieldShopDevicesPage /></ProtectedRoute>}></Route>
 
         </Routes>
       )}
