@@ -4,12 +4,13 @@ from datetime import datetime
 from typing import List, Optional, Set
 
 from database.database import Base, SessionLocal, engine
-from database.database_helpers import get_developer_manager, get_username_by_id
+from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals
 from database.database_types import DeviceType, UserType
 from database.init_db import init_db
 from devices.deployment_history import get_deploy_history
 from devices.devices import (add_device, delete_devices,
                              get_deployable_devices, get_devices)
+from devices.acceptance_status import get_acceptance_status
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -194,7 +195,7 @@ def approve_firmware_endpoint(
 
 @app.post("/add_device")
 def add_device_endpoint(device: DeviceType, db: Session = Depends(get_db)):
-    add_device(device, db)
+    return add_device(device, db)
 
 
 @app.get("/get_devices")
@@ -213,6 +214,11 @@ def get_deploy_history_endpoint(
 @app.delete("/remove_device/{serial_number}")
 def delete_device_endpoint(serial_number: str, db: Session = Depends(get_db)):
     return delete_devices(serial_number, db)
+
+
+@app.get("/device/{serial_number}/acceptance-status")
+def get_acceptance_status_endpoint(serial_number: str, db: Session = Depends(get_db)):
+    return get_acceptance_status(serial_number, db)
 
 
 ################################################################################################################################
@@ -266,6 +272,12 @@ def get_username_by_id_endpoint(
 ):
     return get_username_by_id(user_id, db, authorization)
 
+@app.get("/field-shop-professionals")
+def get_field_shop_professionals_endpoint(
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    return get_field_shop_professionals(db, authorization)
 
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):

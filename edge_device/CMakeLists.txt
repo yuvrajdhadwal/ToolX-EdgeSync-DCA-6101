@@ -12,12 +12,15 @@ include_directories(/usr/local/include/azureiot)
 link_directories(/usr/local/lib)
 
 add_executable(main
-    main.cpp
-    setup.cpp
-    shutdown.cpp
-    stable.cpp
-    download.cpp
-    field_decision.cpp
+    src/main.cpp
+    src/setup.cpp
+    src/shutdown.cpp
+    src/stable.cpp
+    src/download.cpp
+    src/field_decision.cpp
+    src/installation.cpp
+    src/confirmation.cpp
+    src/common.cpp
 )
 
 target_include_directories(main PRIVATE
@@ -40,4 +43,9 @@ target_link_libraries(main PRIVATE
     uuid
     pthread
     m
+)
+
+target_compile_options(main PRIVATE
+    -Wall -Wextra -Wpedantic -Werror
+    -Wshadow -Wconversion -Wsign-conversion
 )
