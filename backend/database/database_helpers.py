@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import Header, HTTPException
-from database.models import DeveloperManager, User, FieldShopProfessional
+from database.models import DeveloperManager, User, FieldShopProfessional, Shop
 from sqlalchemy.orm import Session
 from login.authentication import get_authenticated_user
 
@@ -19,6 +19,23 @@ def get_field_shop_professionals(
     get_authenticated_user(authorization, db)
     professionals = db.query(FieldShopProfessional).all()
     return [{"id": p.id, "username": p.username} for p in professionals]
+
+
+def get_shops(
+    db: Session,
+    authorization: Optional[str] = Header(default=None),
+):
+    get_authenticated_user(authorization, db)
+    shops = db.query(Shop).order_by(Shop.location.asc()).all()
+    return [
+        {
+            "id": shop.id,
+            "location": shop.location,
+            "latitude": shop.latitude,
+            "longitude": shop.longitude,
+        }
+        for shop in shops
+    ]
 
 def get_username_by_id(user_id: int,
     db: Session,
