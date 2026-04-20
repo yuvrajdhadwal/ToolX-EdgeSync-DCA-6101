@@ -81,7 +81,6 @@ def add_device(device: DeviceType, db: Session):
         serial_number=device.serial_number,
         firmware_id=None,
         device_type=device.device_type,
-        shop_id=shop.id,
         location=shop.location,
         developer_manager=device.developer_manager,
         description=device.description,
@@ -90,6 +89,8 @@ def add_device(device: DeviceType, db: Session):
         last_update=datetime.now(timezone.utc),
     )
     db.add(db_device)
+    db.flush()
+    db_device.shop = shop
     db.commit()
     db.refresh(db_device)
     return {"message": "Device added successfully"}

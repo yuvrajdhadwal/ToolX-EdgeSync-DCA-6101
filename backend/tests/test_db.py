@@ -55,19 +55,20 @@ def test_duplicate_username_fails(db_session):
         db_session.commit()
     db_session.rollback() # Always rollback after a caught error so the session isn't poisoned
 
-def test_weak_entity_device_requires_firmware(db_session):
-    """Edge Case: Device is a weak entity and MUST have a firmware_id."""
+def test_device_can_exist_without_firmware(db_session):
+    """Device can be registered without a firmware and linked later."""
     shop = Shop(id=1, location="Test Lab", latitude=0.0, longitude=0.0)
     db_session.add(shop)
     db_session.commit()
 
-    device = Device(serial_number="SN-NO-FIRMWARE", description="Orphan Device", shop_id=shop.id, location=shop.location)
+    device = Device(serial_number="SN-NO-FIRMWARE", description="Orphan Device", location=shop.location)
     db_session.add(device)
-    
-    with pytest.warns(SAWarning):
-        with pytest.raises(IntegrityError):
-            db_session.commit()
-    db_session.rollback()
+    device.shop = shop
+
+    db_session.commit()
+    created = db_session.query(Device).filter_by(serial_number="SN-NO-FIRMWARE").first()
+    assert created is not None
+    assert created.firmware_id is None
 
 # ==============================================================================
 # EDGE CASE: COMPLEX TERNARY ASSOCIATIONS (Deploy/Install/Reject)
@@ -82,8 +83,9 @@ def test_install_composite_foreign_key_mismatch(db_session):
     db_session.add_all([pro, fw, shop])
     db_session.commit()
     
-    device = Device(serial_number="SN-111", firmware_id=fw.id, shop_id=shop.id, location=shop.location)
+    device = Device(serial_number="SN-111", firmware_id=fw.id, location=shop.location)
     db_session.add(device)
+    device.shop = shop
     db_session.commit()
 
     # Create an invalid install: The device exists, but we are assigning a fake device_firmware_id
@@ -138,21 +140,24 @@ def test_set_null_on_manager_delete(db_session):
     assert survivor.manager_id is None
 
 def test_restrict_on_firmware_delete(db_session):
-    """Test 'RESTRICT': Cannot delete a firmware if a Device is currently installed on it."""
+    """Test 'SET NULL': Deleting firmware clears device firmware_id."""
     fw = FirmwareUpdate(objectBinary=b"firmware", version_number="vCritical", device_type="Server")
     shop = Shop(id=3, location="Secure Lab", latitude=0.0, longitude=0.0)
     db_session.add_all([fw, shop])
     db_session.commit()
 
-    device = Device(serial_number="SN-SECURE", firmware_id=fw.id, shop_id=shop.id, location=shop.location)
+    device = Device(serial_number="SN-SECURE", firmware_id=fw.id, location=shop.location)
     db_session.add(device)
+    device.shop = shop
     db_session.commit()
 
-    # Attempt to delete the firmware. The RESTRICT constraint should block this.
+    # Deleting firmware should succeed and nullify the device firmware reference.
     db_session.delete(fw)
-    with pytest.raises(IntegrityError):
-        db_session.commit()
-    db_session.rollback()
+    db_session.commit()
+
+    updated_device = db_session.query(Device).filter_by(serial_number="SN-SECURE").first()
+    assert updated_device is not None
+    assert updated_device.firmware_id is None
 
 # ==============================================================================
 # POLYMORPHIC ROUTING & M:N RELATIONSHIPS

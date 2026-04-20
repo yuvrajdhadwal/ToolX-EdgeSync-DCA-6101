@@ -6,7 +6,7 @@ from typing import List, Optional, Set
 from database.database import Base, SessionLocal, engine
 from database.database_helpers import get_developer_manager, get_username_by_id
 from database.database_types import DeviceType, UserType
-from database.init_db import seed_default_shops
+from database.init_db import init_db
 from devices.deployment_history import get_deploy_history
 from devices.devices import (add_device, delete_devices,
                              get_deployable_devices, get_devices)
@@ -43,8 +43,7 @@ def get_db():
 
 
 app = FastAPI()
-Base.metadata.create_all(bind=engine)
-seed_default_shops()
+init_db()
 load_dotenv()
 
 origins = [

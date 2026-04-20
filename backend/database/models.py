@@ -32,6 +32,14 @@ shop_access_table = Table(
     Column("shop_id", Integer, ForeignKey("shops.id", ondelete="CASCADE"), primary_key=True),
 )
 
+# Shop Devices Relationship 1:N through association table
+shop_devices_table = Table(
+    "shop_devices",
+    Base.metadata,
+    Column("device_serial", String(100), ForeignKey("devices.serial_number", ondelete="CASCADE"), primary_key=True),
+    Column("shop_id", Integer, ForeignKey("shops.id", ondelete="CASCADE"), nullable=False),
+)
+
 # ======================
 #       User Tables
 # ======================
@@ -130,15 +138,17 @@ class Shop(Base):
     latitude = Column(Float)
     longitude = Column(Float)
 
-    devices = relationship("Device", back_populates="shop")
+    devices = relationship("Device", secondary=shop_devices_table, back_populates="shop")
     access_users = relationship("User", secondary=shop_access_table, back_populates="accessible_shops")
 
 class Device(Base):
     __tablename__ = "devices"
+    __table_args__ = (
+        UniqueConstraint("serial_number", "firmware_id"),
+    )
 
     serial_number = Column(String(100), primary_key=True)
     firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="SET NULL"), nullable=True, default=None)
-    shop_id = Column(Integer, ForeignKey("shops.id", ondelete="RESTRICT"), nullable=False)
 
     device_type = Column(String(50))
     location = Column(String(255))
@@ -153,7 +163,7 @@ class Device(Base):
         "FirmwareUpdate",
         backref=backref("installed_devices", passive_deletes=True)
     )
-    shop = relationship("Shop", back_populates="devices")
+    shop = relationship("Shop", secondary=shop_devices_table, uselist=False, back_populates="devices")
 
 # ===================================
 #         Complex Relationships

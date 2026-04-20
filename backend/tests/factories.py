@@ -130,7 +130,6 @@ class ModelFactory:
             serial_number=overrides.pop("serial_number", self._next_value("SN")),
             firmware_id=overrides.pop("firmware_id", firmware.id if firmware else None),
             device_type=overrides.pop("device_type", firmware.device_type if firmware else "edge-device"),
-            shop_id=overrides.pop("shop_id", shop.id),
             location=overrides.pop("device_location", shop.location),
             developer_manager=overrides.pop("developer_manager", "unassigned"),
             description=overrides.pop("description", "Test device"),
@@ -139,6 +138,7 @@ class ModelFactory:
             **overrides,
         )
         self.session.add(device)
+        device.shop = shop
         self.session.flush()
         return device
 

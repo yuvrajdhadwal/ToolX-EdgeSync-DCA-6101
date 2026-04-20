@@ -1,5 +1,5 @@
 from database.database import Base, SessionLocal, engine
-from database.models import Shop
+from database.models import Device, Shop
 
 DEFAULT_SHOPS = [
     {"id": 1, "location": "Houston, USA", "latitude": 29.7604, "longitude": -95.3698},
@@ -36,7 +36,29 @@ def seed_default_shops() -> None:
     finally:
         db.close()
 
+
+def sync_devices_to_shops() -> None:
+    db = SessionLocal()
+    try:
+        shops_by_location = {shop.location: shop for shop in db.query(Shop).all()}
+        devices = db.query(Device).all()
+
+        for device in devices:
+            if device.shop is not None:
+                continue
+
+            shop = shops_by_location.get((device.location or "").strip())
+            if shop is None:
+                continue
+
+            device.shop = shop
+
+        db.commit()
+    finally:
+        db.close()
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     seed_default_shops()
+    sync_devices_to_shops()
     print("DB initialized")
