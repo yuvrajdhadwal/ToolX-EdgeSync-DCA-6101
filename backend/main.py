@@ -32,7 +32,7 @@ from IoT.iot_types import DeployManyRequest
 from login.authentication import login_with_token, verify_token, get_authenticated_user
 from login.isolation import get_firmware_device_types
 from login.registration import register_user
-from map.active_devices import get_active_devices
+from map.active_devices import get_active_devices, get_shop_activity
 from sqlalchemy.orm import Session
 
 
@@ -260,6 +260,11 @@ def get_compatible_devices(
 @app.get("/get_online_devices")
 def get_online_devices(db: Session = Depends(get_db)):
     return get_active_devices(db)
+
+
+@app.get("/shop-activity-map")
+def get_shop_activity_map(db: Session = Depends(get_db)):
+    return get_shop_activity(db)
 
 
 ################################################################################################################################

@@ -3,7 +3,7 @@ from typing import Optional
 
 from config import ACTIVE_DEVICE_ONLINE_MESSAGE, ONLINE_DEVICE_TTL_SECONDS
 from database.database import SessionLocal
-from database.models import DeveloperManager, Device
+from database.models import DeveloperManager, Device, Shop
 from sqlalchemy.orm import Session
 
 
@@ -102,4 +102,46 @@ def get_active_devices(db: Session):
         }
         for d in devices
     ]
+
+
+def _get_shop_pin_color(active_device_count: int) -> str:
+    if active_device_count <= 5:
+        return "black"
+    if active_device_count <= 25:
+        return "blue"
+    return "green"
+
+
+def get_shop_activity(db: Session):
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
+    shops = db.query(Shop).all()
+
+    results = []
+    for shop in shops:
+        active_device_count = sum(
+            1
+            for device in shop.devices
+            if device.last_online is not None and device.last_online >= cutoff
+        )
+        results.append(
+            {
+                "id": shop.id,
+                "location": shop.location,
+                "latitude": shop.latitude,
+                "longitude": shop.longitude,
+                "region": get_region_from_coordinates(shop.latitude, shop.longitude),
+                "device_types": sorted(
+                    {
+                        device.device_type
+                        for device in shop.devices
+                        if device.device_type is not None and device.device_type.strip()
+                    }
+                ),
+                "active_device_count": active_device_count,
+                "total_device_count": len(shop.devices),
+                "pin_color": _get_shop_pin_color(active_device_count),
+            }
+        )
+
+    return results
 
