@@ -35,6 +35,9 @@ def get_shops(
             "longitude": shop.longitude,
         }
         for shop in shops
+    ]
+
+
 def get_assigned_devices(
     db: Session,
     authorization: Optional[str] = None,
