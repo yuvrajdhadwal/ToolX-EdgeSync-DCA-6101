@@ -77,9 +77,9 @@ def deploy_to_devices(
             )
             .first()
         )
-        if pending_deploy:
-            results.append({"serial_number": serial, "status": "pending deploy exists"})
-            continue
+        #if pending_deploy:
+        #    results.append({"serial_number": serial, "status": "pending deploy exists"})
+        #   continue
 
         iot_status = "not configured"
         if iot_hub:

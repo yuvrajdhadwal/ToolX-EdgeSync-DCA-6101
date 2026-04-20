@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 import os
 from time import sleep
 from threading import Thread
+from firmware.firmware_types import FirmwareOverview
+from IoT.deployment import deploy_cloud_to_device
 
 from azure.iot.hub import IoTHubRegistryManager
 from database.database import SessionLocal
