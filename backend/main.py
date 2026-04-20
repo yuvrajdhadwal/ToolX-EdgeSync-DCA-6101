@@ -121,9 +121,10 @@ async def upload_firmware_endpoint(
     description: str = Form(...),
     authorization: Optional[str] = Header(default=None),
     db: Session = Depends(get_db),
+    previous_firmware_id: Optional[int] = Form(default=None),
 ):
     return await upload_firmware(
-        file, device_type, version_number, isEmergency, description, authorization, db
+        file, device_type, version_number, isEmergency, description, authorization, db, previous_firmware_id
     )
 
 
