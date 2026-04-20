@@ -341,17 +341,23 @@ const WorldMapPage: React.FC = () => {
                 </button>
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                <select value={devicePanelType} onChange={e => setDevicePanelType(e.target.value)} style={{ flex: 1 }}>
-                  <option value="all">All types</option>
-                  {devicePanelTypes.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <select value={devicePanelActivity} onChange={e => setDevicePanelActivity(e.target.value)} style={{ flex: 1 }}>
-                  <option value="all">All</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
+                <label style={{ display: 'flex', flexDirection: 'column', flex: 1, fontWeight: 500, fontSize: 13 }}>
+                  Types
+                  <select value={devicePanelType} onChange={e => setDevicePanelType(e.target.value)} style={{ width: '100%' }}>
+                    <option value="all">All types</option>
+                    {devicePanelTypes.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', flex: 1, fontWeight: 500, fontSize: 13 }}>
+                  Status
+                  <select value={devicePanelActivity} onChange={e => setDevicePanelActivity(e.target.value)} style={{ width: '100%' }}>
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </label>
               </div>
               {devicePanelLoading ? <div>Loading devices...</div> : null}
               {devicePanelError ? <div style={{ color: COLORS.dangerText }}>{devicePanelError}</div> : null}
@@ -384,26 +390,6 @@ const WorldMapPage: React.FC = () => {
           <div style={{ flex: 1, marginLeft: selectedShop ? 350 : 0, transition: 'margin-left 0.2s' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-                <select
-                  value={selectedDeviceType}
-                  onChange={(event) => setSelectedDeviceType(event.target.value)}
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '6px',
-                    border: `1px solid ${COLORS.borderPrimary}`,
-                    backgroundColor: COLORS.backgroundPrimary,
-                    color: COLORS.textPrimary,
-                    minWidth: '200px',
-                  }}
-                >
-                  <option value="all">All device types</option>
-                  {availableDeviceTypes.map((deviceType) => (
-                    <option key={deviceType} value={deviceType}>
-                      {deviceType}
-                    </option>
-                  ))}
-                </select>
-
                 <select
                   value={selectedRegion}
                   onChange={(event) => setSelectedRegion(event.target.value)}
