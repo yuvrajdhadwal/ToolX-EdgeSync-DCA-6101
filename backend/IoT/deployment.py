@@ -130,7 +130,6 @@ def deploy_cloud_to_device(
     """
     success = False
     try:
-        print(EXTERNAL_API_URL)
         iot_hub.send_c2d_message(
             device_id,
             "New Firmware Update Deployed",
