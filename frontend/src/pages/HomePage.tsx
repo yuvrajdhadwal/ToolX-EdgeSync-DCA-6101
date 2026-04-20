@@ -299,7 +299,7 @@ const HomePage: React.FC = () => {
                   gap: '0.75rem',
                 }}
               >
-                <label htmlFor="device-type-filter" style={{ color: COLORS.textPrimary, fontWeight: 500 }}>
+                <label htmlFor="device-type-filter" style={{ color: COLORS.textPrimary, fontWeight: 500, whiteSpace: 'nowrap' }}>
                   Device Type:
                 </label>
                 <select

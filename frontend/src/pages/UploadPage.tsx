@@ -26,7 +26,9 @@ const UploadPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [canUpload, setCanUpload] = useState(false);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [rejectedFirmwares, setRejectedFirmwares] = useState<{id: number, version_number: string, device_type: string}[]>([]);
+  const [previousFirmwareId, setPreviousFirmwareId] = useState<number | null>(null);
   
 
   const [formData, setFormData] = useState<ItemInfo>({
@@ -63,6 +65,21 @@ const UploadPage: React.FC = () => {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch('/firmware/status/rejected', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to fetch rejected firmwares');
+        return r.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setRejectedFirmwares(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, type } = event.target;
     let value: any;
@@ -73,6 +90,9 @@ const UploadPage: React.FC = () => {
       value = (event.target as HTMLInputElement).checked;
     } else {
       value = event.target.value;
+    }
+    if (name === 'device_type') {
+      setPreviousFirmwareId(null);
     }
     setFormData({
         ...formData,
@@ -100,6 +120,10 @@ const UploadPage: React.FC = () => {
 
     if (formData.file) {
     data.append('file', formData.file); 
+    }
+
+    if (previousFirmwareId !== null) {
+      data.append('previous_firmware_id', String(previousFirmwareId));
     }
 
     data.append('device_type', formData.device_type);
@@ -223,6 +247,25 @@ const UploadPage: React.FC = () => {
                 value={formData.description}
                 onChange={handleInputChange}
               />
+            </div>
+
+            <div className="upload-row">
+              <label className="upload-label" htmlFor="upload-replaces">Replaces (optional):</label>
+              <select
+                id="upload-replaces"
+                className="upload-input"
+                value={previousFirmwareId ?? ''}
+                onChange={e => setPreviousFirmwareId(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">— New upload (no prior rejection) —</option>
+                {rejectedFirmwares
+                  .filter(f => f.device_type === formData.device_type)
+                  .map(f => (
+                  <option key={f.id} value={f.id}>
+                    v{f.version_number} ({f.device_type}) [ID #{f.id}]
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="upload-footer">

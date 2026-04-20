@@ -114,6 +114,15 @@ class FirmwareUpdate(Base):
     declined_by = Column(Integer, ForeignKey("developer_managers.id", ondelete="SET NULL"))
     declined_comment = Column(String(255))
 
+    previous_firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="SET NULL"), nullable=True, default=None)
+    previous_firmware = relationship(
+        "FirmwareUpdate",
+        remote_side="FirmwareUpdate.id",
+        foreign_keys=[previous_firmware_id],
+        backref="successor_firmware",
+    )
+
+
     __table_args__ = (
         UniqueConstraint('version_number', 'device_type'),
     )
