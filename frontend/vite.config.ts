@@ -23,6 +23,7 @@ export default defineConfig({
       '/deploy-to-one': 'http://localhost:8000',
       '/field-shop-professionals': 'http://localhost:8000',
       '/shops': 'http://localhost:8000',
+      '/my-assigned-devices': 'http://localhost:8000',
     }
   }
 })

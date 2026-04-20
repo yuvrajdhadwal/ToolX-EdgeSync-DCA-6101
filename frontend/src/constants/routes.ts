@@ -9,7 +9,8 @@ export const ROUTES = {
   WORLD_MAP: '/world_map',
   DEVICES_BIZMNG: '/view_devices',
   DEVICE_DETAIL: '/view_devices/:serialNumber',
-  ADD_DEVICES: '/add_device'
+  ADD_DEVICES: '/add_device',
+  FIELD_SHOP_DEVICES: '/field_shop_devices',
 
 } as const;
 
@@ -18,7 +19,13 @@ export const AUTH_ROUTES = [ROUTES.WELCOME, ROUTES.LOGIN, ROUTES.REGISTER] as co
 type UserRole = 'developer' | 'developer_manager' | 'business_manager' | 'field_shop_professional' | null;
 
 export const getHomeRouteForRole = (role: UserRole): string => {
-  return role === 'business_manager' ? ROUTES.BIZMNGPAGE : ROUTES.HOME;
+  if (role === 'business_manager') {
+    return ROUTES.BIZMNGPAGE;
+  } else if (role === 'field_shop_professional') {
+    return ROUTES.FIELD_SHOP_DEVICES;
+  } else {
+    return ROUTES.HOME;
+  }
 };
 
 export const getHomeRouteFromToken = (): string => {

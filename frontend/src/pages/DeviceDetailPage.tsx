@@ -38,12 +38,29 @@ const DeviceDetailPage: React.FC = () => {
   const [hasNoDeployments, setHasNoDeployments] = useState(false)
 
   const decodedSerial = useMemo(() => (serialNumber ? decodeURIComponent(serialNumber) : ''), [serialNumber])
+  
+  const getRoleFromToken = (): string | null => {
+    const token = localStorage.getItem('token')
+    if (!token) return null
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string }
+      return payload.role ?? null
+    } catch {
+      return null
+    }
+  }
+
+  // Inside the component
+  const role = getRoleFromToken()
+  const canRemoveDevice = role === 'business_manager'
+  
   const backRoute = useMemo(() => {
     if (navigationState?.fromRoute) {
       return navigationState.fromRoute
     }
-    return ROUTES.DEVICES_BIZMNG
-  }, [navigationState?.fromRoute])
+      // fallback based on role
+    return role === 'field_shop_professional' ? ROUTES.FIELD_SHOP_DEVICES : ROUTES.DEVICES_BIZMNG
+  }, [navigationState?.fromRoute, role])
 
   useEffect(() => {
     if (device || !decodedSerial) {
@@ -99,7 +116,7 @@ const DeviceDetailPage: React.FC = () => {
         setAcceptanceStatus(null)
       })
   }, [decodedSerial])
-
+  
   const detailRows: Array<{ label: string; value: string | null | undefined }> = [
     { label: 'Device Type', value: device?.device_type },
     { label: 'Firmware Version', value: device?.version_number },
@@ -198,23 +215,26 @@ const DeviceDetailPage: React.FC = () => {
             {device ? (
               <>
               <DeployHistory serialNumber={device.serial_number} />
-              <button
-                type="button"
-                onClick={() => setShowRemoveConfirm(true)}
-                disabled={isRemoving}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: `1px solid ${COLORS.accentPrimary}`,
-                  backgroundColor: 'transparent',
-                  color: COLORS.white,
-                  cursor: isRemoving ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {isRemoving ? 'Removing...' : 'Remove'}
-              </button>
+              {/* Only business managers can remove devices */}
+              {canRemoveDevice && (
+                <button
+                  type="button"
+                  onClick={() => setShowRemoveConfirm(true)}
+                  disabled={isRemoving}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.accentPrimary}`,
+                    backgroundColor: 'transparent',
+                    color: COLORS.white,
+                    cursor: isRemoving ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {isRemoving ? 'Removing...' : 'Remove'}
+                </button>
+              )}
             </>
-            ) : null}
+          ) : null}
             <button
               type="button"
               onClick={() => navigate(backRoute)}

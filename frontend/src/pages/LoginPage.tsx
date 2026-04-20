@@ -53,6 +53,8 @@ const LoginPage: React.FC = () => {
           navigate(ROUTES.HOME);
         } else if (payload.role == 'business_manager') {
           navigate(ROUTES.BIZMNGPAGE);
+        } else if (payload.role == 'field_shop_professional') {
+          navigate(ROUTES.FIELD_SHOP_DEVICES);
         } else {
           navigate(ROUTES.HOME);
         }
