@@ -142,7 +142,7 @@ const WorldMapPage: React.FC = () => {
     void loadOnlineDevices()
     const timer = window.setInterval(() => {
       void loadOnlineDevices()
-    }, 10000)
+    }, 30 * 1000)  // 30 seconds, units in milliseconds
 
     return () => {
       mounted = false

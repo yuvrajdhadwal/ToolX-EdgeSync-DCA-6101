@@ -17,14 +17,36 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
+
+from database.database import Base, SessionLocal, engine
+from database.database_helpers import (
+    get_developer_manager,
+    get_field_shop_professionals,
+    get_username_by_id,
+)
+from database.database_types import DeviceType, UserType
+from devices.acceptance_status import get_acceptance_status
+from devices.deployment_history import get_deploy_history
+from devices.devices import (
+    add_device,
+    delete_devices,
+    get_deployable_devices,
+    get_devices,
+)
 from firmware.firmware import get_firmware_by_id, get_firmware_by_status
-from firmware.firmware_types import (ApproveFirmwareRequest, FirmwareResponse,
-                                     RejectFirmwareRequest)
+from firmware.firmware_types import (
+    ApproveFirmwareRequest,
+    FirmwareResponse,
+    RejectFirmwareRequest,
+)
 from firmware.manager_approval import approve_firmware, reject_firmware
-from firmware.upload_and_download import (download_current_firmware_for_device,
-                                          download_firmware,
-                                          download_firmware_from_device,
-                                          upload_firmware)
+from firmware.upload_and_download import (
+    download_current_firmware_for_device,
+    download_firmware,
+    download_firmware_from_device,
+    upload_firmware,
+)
 from IoT.deployment import deploy_to_devices
 from IoT.device_to_cloud import telemetry_activity_worker
 from IoT.iot_types import DeployManyRequest
@@ -32,7 +54,6 @@ from login.authentication import login_with_token, verify_token, get_authenticat
 from login.isolation import get_firmware_device_types
 from login.registration import register_user
 from map.active_devices import get_active_devices
-from sqlalchemy.orm import Session
 
 
 def get_db():
@@ -280,6 +301,7 @@ def get_username_by_id_endpoint(
 ):
     return get_username_by_id(user_id, db, authorization)
 
+
 @app.get("/field-shop-professionals")
 def get_field_shop_professionals_endpoint(
     db: Session = Depends(get_db),
@@ -287,8 +309,10 @@ def get_field_shop_professionals_endpoint(
 ):
     return get_field_shop_professionals(db, authorization)
 
+
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
     if os.path.exists("static/index.html"):
         return FileResponse("static/index.html")
     return {"error": "Frontend not deployed"}
+
