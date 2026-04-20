@@ -70,6 +70,7 @@ const getRoleFromToken = (): string | null => {
   }
 }
 
+
 const WorldMapPage: React.FC = () => {
   const navigate = useNavigate()
   const role = getRoleFromToken()
@@ -79,6 +80,14 @@ const WorldMapPage: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = React.useState('all')
   const [isLoading, setIsLoading] = React.useState(true)
   const [loadError, setLoadError] = React.useState('')
+
+  // Device panel state
+  const [selectedShop, setSelectedShop] = React.useState<ShopActivity | null>(null)
+  const [shopDevices, setShopDevices] = React.useState<any[]>([])
+  const [devicePanelLoading, setDevicePanelLoading] = React.useState(false)
+  const [devicePanelError, setDevicePanelError] = React.useState('')
+  const [devicePanelType, setDevicePanelType] = React.useState('all')
+  const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
 
   const blackPinIcon = React.useMemo(() => createPinIcon('#111111'), [])
   const bluePinIcon = React.useMemo(() => createPinIcon('#2f81f7'), [])
@@ -127,6 +136,26 @@ const WorldMapPage: React.FC = () => {
     }
   }, [])
 
+  // Fetch devices for selected shop
+  React.useEffect(() => {
+    if (!selectedShop) return
+    setDevicePanelLoading(true)
+    setDevicePanelError('')
+    setShopDevices([])
+    fetch('/get_devices')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load devices')
+        return res.json()
+      })
+      .then((allDevices) => {
+        // Filter devices by shop id
+        const filtered = allDevices.filter((d: any) => d.shop_id === selectedShop.id)
+        setShopDevices(filtered)
+      })
+      .catch(() => setDevicePanelError('Failed to load devices for this shop.'))
+      .finally(() => setDevicePanelLoading(false))
+  }, [selectedShop])
+
   const shopsWithCoordinates = React.useMemo(
     () =>
       shops.filter(
@@ -153,6 +182,7 @@ const WorldMapPage: React.FC = () => {
     [shopsWithCoordinates],
   )
 
+
   const filteredShops = React.useMemo(() => {
     return shopsWithCoordinates.filter((shop) => {
       const matchesType =
@@ -166,6 +196,23 @@ const WorldMapPage: React.FC = () => {
       return matchesType && matchesRegion
     })
   }, [shopsWithCoordinates, selectedDeviceType, selectedRegion])
+
+  // Device panel filtering
+  const devicePanelTypes = React.useMemo(() => {
+    return Array.from(new Set(shopDevices.map((d) => d.device_type).filter(Boolean))).sort()
+  }, [shopDevices])
+  const devicePanelActivities = ['all', 'active', 'inactive']
+  const filteredShopDevices = React.useMemo(() => {
+    return shopDevices.filter((d) => {
+      const matchesType = devicePanelType === 'all' || d.device_type === devicePanelType
+      const isActive = d.last_online !== null && d.last_online !== undefined
+      const matchesActivity =
+        devicePanelActivity === 'all' ||
+        (devicePanelActivity === 'active' && isActive) ||
+        (devicePanelActivity === 'inactive' && !isActive)
+      return matchesType && matchesActivity
+    })
+  }, [shopDevices, devicePanelType, devicePanelActivity])
 
   if (role !== 'business_manager') {
     return null
@@ -248,120 +295,203 @@ const WorldMapPage: React.FC = () => {
             flex: 1,
             padding: '1rem',
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
             gap: '1rem',
             backgroundColor: COLORS.backgroundSecondary,
             borderRadius: '8px',
             boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
+            position: 'relative',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-              <select
-                value={selectedDeviceType}
-                onChange={(event) => setSelectedDeviceType(event.target.value)}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '6px',
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  backgroundColor: COLORS.backgroundPrimary,
-                  color: COLORS.textPrimary,
-                  minWidth: '200px',
-                }}
-              >
-                <option value="all">All device types</option>
-                {availableDeviceTypes.map((deviceType) => (
-                  <option key={deviceType} value={deviceType}>
-                    {deviceType}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={selectedRegion}
-                onChange={(event) => setSelectedRegion(event.target.value)}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '6px',
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  backgroundColor: COLORS.backgroundPrimary,
-                  color: COLORS.textPrimary,
-                  minWidth: '220px',
-                }}
-              >
-                <option value="all">All regions</option>
-                {CONTINENTS.map((continent) => (
-                  <option key={continent} value={continent}>
-                    {continent}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: COLORS.textPrimary }}>
-              <span>Legend:</span>
-              <span>● Black (0-5 active)</span>
-              <span>● Blue (6-25 active)</span>
-              <span>● Green ({'>'}25 active)</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setResetSignal((previous) => previous + 1)}
+          {/* Device panel */}
+          {selectedShop && (
+            <div
               style={{
-                padding: '0.5rem 1.5rem',
-                fontSize: '1rem',
-                cursor: 'pointer',
-                borderRadius: '6px',
-                border: `1px solid ${COLORS.accentPrimary}`,
-                backgroundColor: 'transparent',
-                color: COLORS.white,
-                fontWeight: 500,
+                width: 350,
+                minWidth: 300,
+                maxWidth: 400,
+                background: COLORS.backgroundPrimary,
+                borderRight: `2px solid ${COLORS.borderPrimary}`,
+                padding: '1rem',
+                boxShadow: '2px 0 8px rgba(0,0,0,0.07)',
+                zIndex: 10,
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              Reset
-            </button>
-          </div>
-
-          {isLoading ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading shop pins...</p> : null}
-          {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
-          {!isLoading && !loadError && filteredShops.length === 0 ? (
-            <p style={{ margin: 0, color: COLORS.textMuted }}>No shops with coordinates available.</p>
-          ) : null}
-
-          <div
-            style={{
-              width: '77%',
-              margin: '0 auto',
-              minHeight: '600px',
-              border: `1px solid ${COLORS.borderPrimary}`,
-              borderRadius: '8px',
-              overflow: 'hidden',
-            }}
-          >
-            <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} style={{ height: '600px', width: '100%' }} zoomControl>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {filteredShops.map((shop) => (
-                <Marker
-                  key={shop.id}
-                  position={[shop.latitude as number, shop.longitude as number]}
-                  icon={
-                    shop.pin_color === 'green'
-                      ? greenPinIcon
-                      : shop.pin_color === 'blue'
-                        ? bluePinIcon
-                        : blackPinIcon
-                  }
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div>
+                  <strong>{selectedShop.location}</strong>
+                  <div style={{ fontSize: 13, color: COLORS.textMuted }}>
+                    {selectedShop.region} | {selectedShop.active_device_count} active / {selectedShop.total_device_count} total
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedShop(null)}
+                  style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: COLORS.dangerText }}
+                  title="Close"
                 >
-                  <Tooltip direction="top" offset={[0, -10]}>
-                    {shop.location} — {shop.active_device_count} active / {shop.total_device_count} total
-                  </Tooltip>
-                </Marker>
-              ))}
-              <ResetMapControl center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} resetSignal={resetSignal} />
-            </MapContainer>
+                  ×
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <select value={devicePanelType} onChange={e => setDevicePanelType(e.target.value)} style={{ flex: 1 }}>
+                  <option value="all">All types</option>
+                  {devicePanelTypes.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <select value={devicePanelActivity} onChange={e => setDevicePanelActivity(e.target.value)} style={{ flex: 1 }}>
+                  <option value="all">All</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              {devicePanelLoading ? <div>Loading devices...</div> : null}
+              {devicePanelError ? <div style={{ color: COLORS.dangerText }}>{devicePanelError}</div> : null}
+              {!devicePanelLoading && !devicePanelError && filteredShopDevices.length === 0 ? <div>No devices found.</div> : null}
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: COLORS.backgroundSecondary }}>
+                      <th style={{ textAlign: 'left', padding: 4 }}>Type</th>
+                      <th style={{ textAlign: 'left', padding: 4 }}>Serial</th>
+                      <th style={{ textAlign: 'left', padding: 4 }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredShopDevices.map((d, idx) => (
+                      <tr key={d.serial_number || idx} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: 4 }}>{d.device_type}</td>
+                        <td style={{ padding: 4 }}>{d.serial_number}</td>
+                        <td style={{ padding: 4 }}>
+                          {d.last_online ? <span style={{ color: COLORS.successText }}>Active</span> : <span style={{ color: COLORS.textMuted }}>Inactive</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {/* Map and controls */}
+          <div style={{ flex: 1, marginLeft: selectedShop ? 350 : 0, transition: 'margin-left 0.2s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+                <select
+                  value={selectedDeviceType}
+                  onChange={(event) => setSelectedDeviceType(event.target.value)}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.borderPrimary}`,
+                    backgroundColor: COLORS.backgroundPrimary,
+                    color: COLORS.textPrimary,
+                    minWidth: '200px',
+                  }}
+                >
+                  <option value="all">All device types</option>
+                  {availableDeviceTypes.map((deviceType) => (
+                    <option key={deviceType} value={deviceType}>
+                      {deviceType}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={selectedRegion}
+                  onChange={(event) => setSelectedRegion(event.target.value)}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.borderPrimary}`,
+                    backgroundColor: COLORS.backgroundPrimary,
+                    color: COLORS.textPrimary,
+                    minWidth: '220px',
+                  }}
+                >
+                  <option value="all">All regions</option>
+                  {CONTINENTS.map((continent) => (
+                    <option key={continent} value={continent}>
+                      {continent}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: COLORS.textPrimary }}>
+                <span>Legend:</span>
+                <span>● Black (0-5 active)</span>
+                <span>● Blue (6-25 active)</span>
+                <span>● Green ({'>'}25 active)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetSignal((previous) => previous + 1)}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  borderRadius: '6px',
+                  border: `1px solid ${COLORS.accentPrimary}`,
+                  backgroundColor: 'transparent',
+                  color: COLORS.white,
+                  fontWeight: 500,
+                }}
+              >
+                Reset
+              </button>
+            </div>
+
+            {isLoading ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading shop pins...</p> : null}
+            {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
+            {!isLoading && !loadError && filteredShops.length === 0 ? (
+              <p style={{ margin: 0, color: COLORS.textMuted }}>No shops with coordinates available.</p>
+            ) : null}
+
+            <div
+              style={{
+                width: '100%',
+                minHeight: '600px',
+                border: `1px solid ${COLORS.borderPrimary}`,
+                borderRadius: '8px',
+                overflow: 'hidden',
+              }}
+            >
+              <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} style={{ height: '600px', width: '100%' }} zoomControl>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {filteredShops.map((shop) => (
+                  <Marker
+                    key={shop.id}
+                    position={[shop.latitude as number, shop.longitude as number]}
+                    icon={
+                      shop.pin_color === 'green'
+                        ? greenPinIcon
+                        : shop.pin_color === 'blue'
+                          ? bluePinIcon
+                          : blackPinIcon
+                    }
+                    eventHandlers={{
+                      click: () => setSelectedShop(shop),
+                    }}
+                  >
+                    <Tooltip direction="top" offset={[0, -10]}>
+                      {shop.location} — {shop.active_device_count} active / {shop.total_device_count} total
+                    </Tooltip>
+                  </Marker>
+                ))}
+                <ResetMapControl center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} resetSignal={resetSignal} />
+              </MapContainer>
+            </div>
           </div>
         </main>
       </div>
