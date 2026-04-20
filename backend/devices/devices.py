@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from database.database_types import DeviceType, UserRole
-from database.models import DeveloperManager, Device, FirmwareUpdate, Shop
+from database.models import DeveloperManager, Device, FieldShopProfessional, FirmwareUpdate, Shop
 from fastapi import Header, HTTPException
 from login.authentication import get_authenticated_user
 from map.active_devices import get_region_from_coordinates

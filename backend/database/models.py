@@ -24,6 +24,14 @@ downloads_table = Table(
     Column("firmware_id", Integer, ForeignKey("firmware_updates.id"), primary_key=True),
 )
 
+# Field Shop Professional <-> Device Relationship M:N
+field2device_table = Table(
+    "field2device",
+    Base.metadata,
+    Column("professional_id", Integer, ForeignKey("field_shop_professionals.id", ondelete="CASCADE"), primary_key=True),
+    Column("device_serial", String(100), ForeignKey("devices.serial_number", ondelete="CASCADE"), primary_key=True),
+)
+
 # Shop Access Relationship N:M
 shop_access_table = Table(
     "shop_access",
