@@ -5,14 +5,15 @@ from typing import Optional
 
 import msrest
 from azure.iot.hub import IoTHubRegistryManager
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+
 from config import EXTERNAL_API_URL
 from database.database_types import UserRole
 from database.models import BusinessManager, Deploy, Device, FirmwareUpdate
-from fastapi import HTTPException
 from firmware.firmware_types import FirmwareOverview
 from IoT.iot_types import DeployManyRequest
 from login.authentication import get_authenticated_user
-from sqlalchemy.orm import Session
 
 
 def deploy_to_devices(
@@ -69,18 +70,6 @@ def deploy_to_devices(
             results.append({"serial_number": serial, "status": "not found"})
             continue
 
-        pending_deploy = (
-            db.query(Deploy)
-            .filter(
-                Deploy.device_serial == serial,
-                Deploy.isAccepted == None,
-            )
-            .first()
-        )
-        if pending_deploy:
-            results.append({"serial_number": serial, "status": "pending deploy exists"})
-            continue
-
         iot_status = "not configured"
         if iot_hub:
             try:
@@ -110,8 +99,8 @@ def deploy_to_devices(
         )
 
     db.commit()
-    deployed = [r for r in results if r['status'] == 'deployed']
-    pending = [r for r in results if r['status'] == 'pending deploy exists']
+    deployed = [r for r in results if r["status"] == "deployed"]
+    pending = [r for r in results if r["status"] == "pending deploy exists"]
 
     message = f"Deployed to {len(deployed)} device(s)."
     if pending:
@@ -120,7 +109,8 @@ def deploy_to_devices(
     return {
         "message": message,
         "results": results,
-}
+    }
+
 
 def deploy_cloud_to_device(
     device_id: str, iot_hub: IoTHubRegistryManager, firmware: FirmwareOverview
@@ -130,7 +120,6 @@ def deploy_cloud_to_device(
     """
     success = False
     try:
-        print(EXTERNAL_API_URL)
         iot_hub.send_c2d_message(
             device_id,
             "New Firmware Update Deployed",

@@ -1,9 +1,16 @@
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from azure.iot.hub import IoTHubRegistryManager
+from sqlalchemy import desc, or_
+from sqlalchemy.orm import Session
+
 from config import ACTIVE_DEVICE_ONLINE_MESSAGE, ONLINE_DEVICE_TTL_SECONDS
 from database.database import SessionLocal
-from database.models import DeveloperManager, Device, Shop
+from database.models import Deploy, DeveloperManager, Device, FirmwareUpdate, Shop
+from firmware.firmware_types import FirmwareOverview
+from IoT.deployment import deploy_cloud_to_device
 from sqlalchemy.orm import Session
 
 
@@ -57,6 +64,69 @@ def _record_device_activity(device_id: str, body: str):
         db.close()
 
 
+def check_pending_deployments(device_id: str):
+    db = SessionLocal()
+    try:
+        pending_deploy = (
+            db.query(Deploy)
+            .filter(
+                or_(Deploy.isAccepted.is_(None), Deploy.isAccepted == False),
+                Deploy.device_serial == device_id,
+            )
+            .order_by(desc(Deploy.timestamp))
+            .first()
+        )
+
+        ever_accepted_firmware = (
+            db.query(Deploy)
+            .filter(
+                Deploy.isAccepted == True,
+                Deploy.device_serial == device_id,
+            )
+            .first()
+        )
+
+        if ever_accepted_firmware and pending_deploy:
+            return pending_deploy
+        return None
+    finally:
+        db.close()
+
+
+def _redeploy_firmware(db: Session):
+    all_devices = db.query(Device).all()
+
+    connection_str = os.getenv("IOT_CONNECTION")
+    iot_hub = IoTHubRegistryManager.from_connection_string(connection_str)
+
+    for device in all_devices:
+        pending_deploy = check_pending_deployments(device.serial_number)
+
+        if not pending_deploy:
+            continue
+
+        firmware = (
+            db.query(FirmwareUpdate)
+            .filter(FirmwareUpdate.id == pending_deploy.target_firmware_id)
+            .first()
+        )
+
+        firmware_overview = FirmwareOverview(
+            id=str(firmware.id),
+            device_type=firmware.device_type,
+            developer=str(firmware.uploaded_by or ""),
+            version_number=firmware.version_number,
+            isEmergency=(
+                "1"
+                if (bool(firmware.isEmergency) or pending_deploy.isEmergency)
+                else "0"
+            ),
+            description=firmware.description or "",
+        )
+
+        deploy_cloud_to_device(device.serial_number, iot_hub, firmware_overview)
+
+
 def get_active_devices(db: Session):
     cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
 
@@ -79,6 +149,8 @@ def get_active_devices(db: Session):
         .filter(Device.last_online.is_not(None), Device.last_online >= cutoff)
         .all()
     )
+
+    _redeploy_firmware(db)
 
     return [
         {

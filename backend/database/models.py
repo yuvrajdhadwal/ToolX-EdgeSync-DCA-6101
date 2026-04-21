@@ -32,13 +32,6 @@ field2device_table = Table(
     Column("device_serial", String(100), ForeignKey("devices.serial_number", ondelete="CASCADE"), primary_key=True),
 )
 
-# Shop Access Relationship N:M
-shop_access_table = Table(
-    "shop_access",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    Column("shop_id", Integer, ForeignKey("shops.id", ondelete="CASCADE"), primary_key=True),
-)
 
 # Shop Devices Relationship 1:N through association table
 shop_devices_table = Table(
@@ -68,9 +61,6 @@ class User(Base):
 
     # View Firmware Relationship M:N Table
     viewable_firmware = relationship("FirmwareUpdate", secondary=views_table)
-
-    # Shop Access Relationship M:N Table
-    accessible_shops = relationship("Shop", secondary=shop_access_table, back_populates="access_users")
 
 
 class Developer(User):
@@ -133,6 +123,15 @@ class FirmwareUpdate(Base):
     declined_by = Column(Integer, ForeignKey("developer_managers.id", ondelete="SET NULL"))
     declined_comment = Column(String(255))
 
+    previous_firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="SET NULL"), nullable=True, default=None)
+    previous_firmware = relationship(
+        "FirmwareUpdate",
+        remote_side="FirmwareUpdate.id",
+        foreign_keys=[previous_firmware_id],
+        backref="successor_firmware",
+    )
+
+
     __table_args__ = (
         UniqueConstraint('version_number', 'device_type'),
     )
@@ -147,7 +146,6 @@ class Shop(Base):
     longitude = Column(Float)
 
     devices = relationship("Device", secondary=shop_devices_table, back_populates="shop")
-    access_users = relationship("User", secondary=shop_access_table, back_populates="accessible_shops")
 
 class Device(Base):
     __tablename__ = "devices"
