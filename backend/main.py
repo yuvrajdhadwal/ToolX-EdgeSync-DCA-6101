@@ -4,8 +4,9 @@ from datetime import datetime
 from typing import List, Optional, Set
 
 from database.database import Base, SessionLocal, engine
-from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals, get_assigned_devices
+from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals, get_shops, get_assigned_devices
 from database.database_types import DeviceType, UserType
+from database.init_db import init_db
 from database.models import FieldShopProfessional, Device
 from devices.deployment_history import get_deploy_history
 from devices.devices import (add_device, delete_devices,
@@ -65,7 +66,7 @@ def get_db():
 
 
 app = FastAPI()
-Base.metadata.create_all(bind=engine)
+init_db()
 load_dotenv()
 
 origins = [
@@ -309,6 +310,13 @@ def get_field_shop_professionals_endpoint(
 ):
     return get_field_shop_professionals(db, authorization)
 
+
+@app.get("/shops")
+def get_shops_endpoint(
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    return get_shops(db, authorization)
 
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):

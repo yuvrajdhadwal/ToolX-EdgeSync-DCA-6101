@@ -13,8 +13,6 @@ interface ItemInfo {
   description: string;
   location: string;
   developer_manager: string;
-  latitude: string;
-  longitude: string;
 }
 
 type devmngOption = {
@@ -27,10 +25,12 @@ type fieldshopuserOption = {
   username: string;
 }
 
-const LATITUDE_MIN = -90;
-const LATITUDE_MAX = 90;
-const LONGITUDE_MIN = -180;
-const LONGITUDE_MAX = 180;
+type shopOption = {
+  id: number;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+}
 
 const AddDevicePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -39,6 +39,7 @@ const AddDevicePage: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [developerManagers, setDeveloperManagers] = useState<devmngOption[]>([]);
   const [fieldshopuser, setFieldShopUser] = useState<fieldshopuserOption[]>([]);
+  const [shops, setShops] = useState<shopOption[]>([]);
   const [selectedFieldShopUsers, setSelectedFieldShopUsers] = useState<string[]>([]);
 
   useEffect(() => {
@@ -61,6 +62,19 @@ const AddDevicePage: React.FC = () => {
         }
       })
       .catch(() => console.error('Failed to load field shop professionals'));
+
+    fetch('/shops', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setShops(data);
+        } else {
+          console.error('Unexpected response from /shops:', data);
+        }
+      })
+      .catch(() => setError('Failed to load shops'));
   }, []);
 
   const [formData, setFormData] = useState<ItemInfo>({
@@ -69,8 +83,6 @@ const AddDevicePage: React.FC = () => {
     developer_manager: '',
     location: '',
     description: '',
-    latitude: '',
-    longitude: '',
   });
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -96,33 +108,20 @@ const AddDevicePage: React.FC = () => {
       return;
     }
 
-    const latitude = formData.latitude.trim() ? Number(formData.latitude) : null;
-    const longitude = formData.longitude.trim() ? Number(formData.longitude) : null;
-
-    if (latitude !== null && (Number.isNaN(latitude) || latitude < LATITUDE_MIN || latitude > LATITUDE_MAX)) {
-      setError(`Latitude must be between ${LATITUDE_MIN} and ${LATITUDE_MAX}.`);
-      setLoading(false);
-      return;
-    }
-
-    if (longitude !== null && (Number.isNaN(longitude) || longitude < LONGITUDE_MIN || longitude > LONGITUDE_MAX)) {
-      setError(`Longitude must be between ${LONGITUDE_MIN} and ${LONGITUDE_MAX}.`);
-      setLoading(false);
-      return;
-    }
-
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('/add_device', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           device_type: formData.device_type,
           serial_number: formData.serial_number,
           description: formData.description,
           developer_manager: formData.developer_manager,
           location: formData.location,
-          latitude,
-          longitude,
           field_shop_professionals: selectedFieldShopUsers,
         }),
       });
@@ -215,45 +214,21 @@ const AddDevicePage: React.FC = () => {
             </div>
 
             <div className="add-device-row">
-              <label className="add-device-label" htmlFor="add-device-location">Location:</label>
-              <input
+              <label className="add-device-label" htmlFor="add-device-location">Shop:</label>
+              <select
                 id="add-device-location"
                 className="add-device-input"
-                type='text'
                 name='location'
                 value={formData.location}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="add-device-row">
-              <label className="add-device-label" htmlFor="add-device-latitude">Latitude / Longitude:</label>
-              <div className="add-device-coordinates">
-                <input
-                  id="add-device-latitude"
-                  className="add-device-input"
-                  type='number'
-                  step='any'
-                  min={LATITUDE_MIN}
-                  max={LATITUDE_MAX}
-                  name='latitude'
-                  value={formData.latitude}
-                  onChange={handleInputChange}
-                  placeholder='Latitude (e.g. 29.7604, -90 to 90)'
-                />
-                <input
-                  id="add-device-longitude"
-                  className="add-device-input"
-                  type='number'
-                  step='any'
-                  min={LONGITUDE_MIN}
-                  max={LONGITUDE_MAX}
-                  name='longitude'
-                  value={formData.longitude}
-                  onChange={handleInputChange}
-                  placeholder='Longitude (e.g. -95.3698, -180 to 180)'
-                />
-              </div>
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              >
+                <option value="">Select a Shop</option>
+                {shops.map((shop) => (
+                  <option key={shop.id} value={shop.location}>
+                    {shop.location}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="add-device-row">

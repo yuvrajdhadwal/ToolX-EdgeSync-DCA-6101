@@ -24,12 +24,21 @@ downloads_table = Table(
     Column("firmware_id", Integer, ForeignKey("firmware_updates.id"), primary_key=True),
 )
 
-# Field Professional -> Device Relationship M:N
+# Field Shop Professional <-> Device Relationship M:N
 field2device_table = Table(
     "field2device",
     Base.metadata,
-    Column("device_serial", String(100), ForeignKey("devices.serial_number"), primary_key=True),
-    Column("professional_id", Integer, ForeignKey("field_shop_professionals.id"), primary_key=True),
+    Column("professional_id", Integer, ForeignKey("field_shop_professionals.id", ondelete="CASCADE"), primary_key=True),
+    Column("device_serial", String(100), ForeignKey("devices.serial_number", ondelete="CASCADE"), primary_key=True),
+)
+
+
+# Shop Devices Relationship 1:N through association table
+shop_devices_table = Table(
+    "shop_devices",
+    Base.metadata,
+    Column("device_serial", String(100), ForeignKey("devices.serial_number", ondelete="CASCADE"), primary_key=True),
+    Column("shop_id", Integer, ForeignKey("shops.id", ondelete="CASCADE"), nullable=False),
 )
 
 # ======================
@@ -127,8 +136,22 @@ class FirmwareUpdate(Base):
         UniqueConstraint('version_number', 'device_type'),
     )
 
+
+class Shop(Base):
+    __tablename__ = "shops"
+
+    id = Column(Integer, primary_key=True)
+    location = Column(String(255), nullable=False, unique=True)
+    latitude = Column(Float)
+    longitude = Column(Float)
+
+    devices = relationship("Device", secondary=shop_devices_table, back_populates="shop")
+
 class Device(Base):
     __tablename__ = "devices"
+    __table_args__ = (
+        UniqueConstraint("serial_number", "firmware_id"),
+    )
 
     serial_number = Column(String(100), primary_key=True)
     firmware_id = Column(Integer, ForeignKey("firmware_updates.id", ondelete="SET NULL"), nullable=True, default=None)
@@ -146,6 +169,7 @@ class Device(Base):
         "FirmwareUpdate",
         backref=backref("installed_devices", passive_deletes=True)
     )
+    shop = relationship("Shop", secondary=shop_devices_table, uselist=False, back_populates="devices")
 
     # M:N relationship w/ Field Shop Professional
     field_shop_professionals = relationship(

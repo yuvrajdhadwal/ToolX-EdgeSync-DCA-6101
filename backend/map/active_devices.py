@@ -158,13 +158,18 @@ def get_active_devices(db: Session):
             "last_update": (
                 d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"  # type: ignore
             ),
-            "location": d.location,
+            "shop_id": d.shop.id if d.shop else None,
+            "shop_location": d.shop.location if d.shop else d.location,
+            "location": d.shop.location if d.shop else d.location,
             "serial_number": d.serial_number,
             "description": d.description,
             "developer_manager": resolve_manager_name(d.developer_manager),  # type: ignore
-            "latitude": d.latitude,
-            "longitude": d.longitude,
-            "region": get_region_from_coordinates(d.latitude, d.longitude),  # type: ignore
+            "latitude": d.shop.latitude if d.shop else d.latitude,
+            "longitude": d.shop.longitude if d.shop else d.longitude,
+            "region": get_region_from_coordinates(
+                d.shop.latitude if d.shop else d.latitude,
+                d.shop.longitude if d.shop else d.longitude,
+            ),
         }
         for d in devices
     ]
