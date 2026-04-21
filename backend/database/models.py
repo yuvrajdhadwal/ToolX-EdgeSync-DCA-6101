@@ -62,9 +62,6 @@ class User(Base):
     # View Firmware Relationship M:N Table
     viewable_firmware = relationship("FirmwareUpdate", secondary=views_table)
 
-    # Shop Access Relationship M:N Table
-    accessible_shops = relationship("Shop", secondary=shop_access_table, back_populates="access_users")
-
 
 class Developer(User):
     __tablename__ = "developers"
