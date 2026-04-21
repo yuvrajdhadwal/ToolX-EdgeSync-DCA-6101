@@ -32,13 +32,6 @@ field2device_table = Table(
     Column("device_serial", String(100), ForeignKey("devices.serial_number", ondelete="CASCADE"), primary_key=True),
 )
 
-# Shop Access Relationship N:M
-shop_access_table = Table(
-    "shop_access",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    Column("shop_id", Integer, ForeignKey("shops.id", ondelete="CASCADE"), primary_key=True),
-)
 
 # Shop Devices Relationship 1:N through association table
 shop_devices_table = Table(
