@@ -146,7 +146,6 @@ class Shop(Base):
     longitude = Column(Float)
 
     devices = relationship("Device", secondary=shop_devices_table, back_populates="shop")
-    access_users = relationship("User", secondary=shop_access_table, back_populates="accessible_shops")
 
 class Device(Base):
     __tablename__ = "devices"
