@@ -9,6 +9,8 @@ type Device = {
   version_number: string
   last_update: string
   location: string
+  shop_id: number | null
+  shop_location: string | null
   developer_manager: string
   serial_number: string
   description: string
@@ -119,16 +121,12 @@ const DeviceDetailPage: React.FC = () => {
     { label: 'Device Type', value: device?.device_type },
     { label: 'Firmware Version', value: device?.version_number },
     { label: 'Last Updated', value: device?.last_update },
-    { label: 'Region', value: device?.location },
+    {
+      label: 'Shop ID',
+      value: device?.shop_id === null || device?.shop_id === undefined ? '-' : String(device.shop_id),
+    },
+    { label: 'Shop Location', value: device?.shop_location ?? device?.location },
     { label: 'Developer Manager', value: device?.developer_manager },
-    {
-      label: 'Latitude',
-      value: device?.latitude === null || device?.latitude === undefined ? '-' : String(device.latitude),
-    },
-    {
-      label: 'Longitude',
-      value: device?.longitude === null || device?.longitude === undefined ? '-' : String(device.longitude),
-    },
     { label: 'Serial Number', value: device?.serial_number },
     { label: 'Description', value: device?.description },
     { label: 'Recent Acceptance Status',
