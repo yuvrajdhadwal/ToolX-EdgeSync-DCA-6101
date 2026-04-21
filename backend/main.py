@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Optional, Set
 
 from database.database import Base, SessionLocal, engine
-from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals, get_shops
+from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals, get_shops, get_assigned_devices
 from database.database_types import DeviceType, UserType
 from database.init_db import init_db
 from database.models import FieldShopProfessional, Device
