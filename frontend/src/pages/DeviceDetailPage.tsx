@@ -170,7 +170,6 @@ const DeviceDetailPage: React.FC = () => {
     }
   }
 
-  // Add this function near the top of the file, alongside other helpers
   const downloadCurrentFirmware = async (serialNumber: string) => {
     try {
       const response = await fetch(`/firmware/current_device_firmware/${encodeURIComponent(serialNumber)}`, {
