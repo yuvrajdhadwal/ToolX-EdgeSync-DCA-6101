@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 
-from database.database import SessionLocal
-from database.models import Deploy, Device
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
+from database.database import SessionLocal
+from database.models import Deploy, Device
 
 
 def update_acceptance_status(device_id: str, body: str):
@@ -76,6 +77,4 @@ def get_acceptance_status(serial_number: str, db: Session):
         raise HTTPException(
             status_code=404, detail="No deployments found for this device"
         )
-
     return {"isAccepted": latest_deploy.isAccepted}
-
