@@ -144,6 +144,8 @@ def get_devices(db: Session):
             "last_update": (
                 d.last_update.strftime("%Y-%m-%d %H:%M") if d.last_update else "N/A"  # type: ignore
             ),
+            "shop_id": d.shop.id if d.shop else None,
+            "shop_location": d.shop.location if d.shop else d.location,
             "location": d.shop.location if d.shop else d.location,
             "serial_number": d.serial_number,
             "description": d.description,
