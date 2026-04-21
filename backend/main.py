@@ -3,8 +3,6 @@ import threading
 from datetime import datetime
 from typing import List, Optional, Set
 
-from database.database import Base, SessionLocal, engine
-from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals, get_assigned_devices
 from database.database_types import DeviceType, UserType
 from database.models import FieldShopProfessional, Device
 from devices.deployment_history import get_deploy_history
@@ -23,6 +21,7 @@ from database.database import Base, SessionLocal, engine
 from database.database_helpers import (
     get_developer_manager,
     get_field_shop_professionals,
+    get_assigned_devices,
     get_username_by_id,
 )
 from database.database_types import DeviceType, UserType
