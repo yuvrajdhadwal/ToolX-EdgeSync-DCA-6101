@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import List, Optional, Set
 
 from database.database_types import DeviceType, UserType
-from database.models import FieldShopProfessional, Device
 from devices.deployment_history import get_deploy_history
 from devices.devices import (add_device, delete_devices,
                              get_deployable_devices, get_devices)
