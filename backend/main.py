@@ -24,6 +24,8 @@ from database.database import Base, SessionLocal, engine
 from database.database_helpers import (
     get_developer_manager,
     get_field_shop_professionals,
+    get_assigned_devices,
+    get_shops,
     get_username_by_id,
 )
 from database.database_types import DeviceType, UserType

@@ -170,6 +170,26 @@ const DeviceDetailPage: React.FC = () => {
     }
   }
 
+  const downloadCurrentFirmware = async (serialNumber: string) => {
+    try {
+      const response = await fetch(`/firmware/current_device_firmware/${encodeURIComponent(serialNumber)}`, {
+        method: 'GET',
+      });
+      if (!response.ok) throw new Error('Failed to download firmware');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `firmware_${serialNumber}`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('Failed to download firmware for this device.')
+    }
+  }
+
   return (
     <div
       style={{
@@ -215,6 +235,23 @@ const DeviceDetailPage: React.FC = () => {
             {device ? (
               <>
               <DeployHistory serialNumber={device.serial_number} />
+              {/* Download firmware button — field shop professionals only */}
+              {role === 'field_shop_professional' && device.version_number !== 'N/A' && (
+                <button
+                  type="button"
+                  onClick={() => downloadCurrentFirmware(device.serial_number)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.accentPrimary}`,
+                    backgroundColor: 'transparent',
+                    color: COLORS.white,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Download Firmware
+                </button>
+              )}
               {/* Only business managers can remove devices */}
               {canRemoveDevice && (
                 <button
