@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import List, Optional, Set
 
 from database.database_types import DeviceType, UserType
-from database.models import DeveloperManager, User, FieldShopProfessional, Shop
 from database.init_db import init_db
 from devices.deployment_history import get_deploy_history
 from devices.devices import (add_device, delete_devices,
@@ -23,6 +22,7 @@ from database.database_helpers import (
     get_developer_manager,
     get_field_shop_professionals,
     get_assigned_devices,
+    get_shops,
     get_username_by_id,
 )
 from database.database_types import DeviceType, UserType
