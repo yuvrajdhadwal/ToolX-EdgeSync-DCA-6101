@@ -8,7 +8,7 @@ from database.models import Deploy, Device
 
 
 def update_acceptance_status(device_id: str, body: str):
-    if "Success" in body:
+    if "Accepted" in body:
         accepted = True
     elif "Rejected" in body:
         accepted = False
