@@ -20,35 +20,16 @@ const CONTINENTS = [
   'South America',
 ]
 
-type Device = {
-  device_type: string
-  version_number: string
-  last_update: string
+type ShopActivity = {
+  id: number
   location: string
-  region?: string
-  serial_number: string
-  description: string
   latitude: number | null
   longitude: number | null
-}
-
-type FirmwareOption = {
-  id: number
-  version_number: string
-  device_type: string
-  isEmergency: boolean
-}
-
-const getRoleFromToken = (): string | null => {
-  const token = localStorage.getItem('token')
-  if (!token) return null
-
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string }
-    return payload.role ?? null
-  } catch {
-    return null
-  }
+  region?: string
+  device_types: string[]
+  active_device_count: number
+  total_device_count: number
+  pin_color: 'black' | 'blue' | 'green'
 }
 
 type ResetMapControlProps = {
@@ -67,82 +48,87 @@ const ResetMapControl: React.FC<ResetMapControlProps> = ({ center, zoom, resetSi
   return null
 }
 
+const createPinIcon = (color: string) =>
+  L.divIcon({
+    className: '',
+    html: `<div style="width:15px;height:15px;border-radius:9999px;background:${color};border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>`,
+    iconSize: [15, 15],
+    iconAnchor: [8, 8],
+  })
+
+const getRoleFromToken = (): string | null => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    return null
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string }
+    return payload.role ?? null
+  } catch {
+    return null
+  }
+}
+
+
 const WorldMapPage: React.FC = () => {
   const navigate = useNavigate()
   const role = getRoleFromToken()
   const [resetSignal, setResetSignal] = React.useState(0)
-  const [devices, setDevices] = React.useState<Device[]>([])
+  const [shops, setShops] = React.useState<ShopActivity[]>([])
   const [selectedDeviceType, setSelectedDeviceType] = React.useState('all')
   const [selectedRegion, setSelectedRegion] = React.useState('all')
-  const [isSelectionMode, setIsSelectionMode] = React.useState(false)
-  const [selectedSerials, setSelectedSerials] = React.useState<string[]>([])
-  const [selectedDeployType, setSelectedDeployType] = React.useState<string | null>(null)
-  const [showDeployPopup, setShowDeployPopup] = React.useState(false)
-  const [firmwareOptions, setFirmwareOptions] = React.useState<FirmwareOption[]>([])
-  const [selectedFirmwareId, setSelectedFirmwareId] = React.useState<number | ''>('')
-  const [isLoadingFirmware, setIsLoadingFirmware] = React.useState(false)
-  const [isDeploying, setIsDeploying] = React.useState(false)
-  const [deployError, setDeployError] = React.useState('')
-  const [deploySuccess, setDeploySuccess] = React.useState('')
-  const [isLoadingDevices, setIsLoadingDevices] = React.useState(true)
+  const [isLoading, setIsLoading] = React.useState(true)
   const [loadError, setLoadError] = React.useState('')
 
-  const pinIcon = React.useMemo(
-    () =>
-      L.divIcon({
-        className: '',
-        html: '<div style="width:14px;height:14px;border-radius:9999px;background:#f85149;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
-      }),
-    [],
-  )
+  // Device panel state
+  const [selectedShop, setSelectedShop] = React.useState<ShopActivity | null>(null)
+  const [shopDevices, setShopDevices] = React.useState<any[]>([])
+  const [devicePanelLoading, setDevicePanelLoading] = React.useState(false)
+  const [devicePanelError, setDevicePanelError] = React.useState('')
+  const [devicePanelType, setDevicePanelType] = React.useState('all')
+  const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
 
-  const selectedPinIcon = React.useMemo(
-    () =>
-      L.divIcon({
-        className: '',
-        html: '<div style="width:16px;height:16px;border-radius:9999px;background:#2ea043;border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      }),
-    [],
-  )
+  const blackPinIcon = React.useMemo(() => createPinIcon('#111111'), [])
+  const bluePinIcon = React.useMemo(() => createPinIcon('#2f81f7'), [])
+  const greenPinIcon = React.useMemo(() => createPinIcon('#2ea043'), [])
 
   React.useEffect(() => {
     let mounted = true
 
-    const loadOnlineDevices = async () => {
-      if (mounted && devices.length === 0) {
-        setIsLoadingDevices(true)
+    const loadShopActivity = async () => {
+      if (mounted) {
+        setIsLoading(true)
       }
       setLoadError('')
 
       try {
-        const res = await fetch('/get_online_devices')
-        if (!res.ok) {
-          throw new Error('Failed to load active devices')
+        const response = await fetch('/shop-activity-map')
+        if (!response.ok) {
+          throw new Error('Failed to load shop activity')
         }
-        const payload = await res.json()
-        const data = Array.isArray(payload) ? (payload as Device[]) : []
+
+        const payload = await response.json()
+        const data = Array.isArray(payload) ? (payload as ShopActivity[]) : []
         if (mounted) {
-          setDevices(data)
+          setShops(data)
         }
       } catch {
         if (mounted) {
-          setLoadError('Failed to load active device pins.')
+          setLoadError('Failed to load shop pins.')
         }
       } finally {
         if (mounted) {
-          setIsLoadingDevices(false)
+          setIsLoading(false)
         }
       }
     }
 
-    void loadOnlineDevices()
+    void loadShopActivity()
+
     const timer = window.setInterval(() => {
-      void loadOnlineDevices()
-    }, 30 * 1000)  // 30 seconds, units in milliseconds
+      void loadShopActivity()
+    }, 10000)
 
     return () => {
       mounted = false
@@ -150,167 +136,124 @@ const WorldMapPage: React.FC = () => {
     }
   }, [])
 
-  const devicesWithCoordinates = React.useMemo(
+  // Fetch devices for selected shop
+  React.useEffect(() => {
+    if (!selectedShop) return
+    setDevicePanelLoading(true)
+    setDevicePanelError('')
+    setShopDevices([])
+    fetch('/get_devices')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load devices')
+        return res.json()
+      })
+      .then((allDevices) => {
+        // Filter devices by shop id
+        const filtered = allDevices.filter((d: any) => d.shop_id === selectedShop.id)
+        setShopDevices(filtered)
+      })
+      .catch(() => setDevicePanelError('Failed to load devices for this shop.'))
+      .finally(() => setDevicePanelLoading(false))
+  }, [selectedShop])
+
+  const shopsWithCoordinates = React.useMemo(
     () =>
-      devices.filter(
-        (device) =>
-          typeof device.latitude === 'number' &&
-          typeof device.longitude === 'number' &&
-          !Number.isNaN(device.latitude) &&
-          !Number.isNaN(device.longitude),
+      shops.filter(
+        (shop) =>
+          typeof shop.latitude === 'number' &&
+          typeof shop.longitude === 'number' &&
+          !Number.isNaN(shop.latitude) &&
+          !Number.isNaN(shop.longitude),
       ),
-    [devices],
+    [shops],
   )
 
   const availableDeviceTypes = React.useMemo(
     () =>
       Array.from(
         new Set(
-          devicesWithCoordinates
-            .map((device) => device.device_type)
-            .filter((deviceType) => Boolean(deviceType?.trim())),
+          shopsWithCoordinates.flatMap((shop) =>
+            Array.isArray(shop.device_types)
+              ? shop.device_types.filter((deviceType) => Boolean(deviceType?.trim()))
+              : [],
+          ),
         ),
       ).sort((first, second) => first.localeCompare(second)),
-    [devicesWithCoordinates],
+    [shopsWithCoordinates],
   )
 
-  const filteredDevices = React.useMemo(() => {
-    return devicesWithCoordinates.filter((device) => {
-      const matchesType = selectedDeviceType === 'all' || device.device_type === selectedDeviceType
-      const normalizedRegion = (device.region ?? '').toLowerCase()
+
+  const filteredShops = React.useMemo(() => {
+    return shopsWithCoordinates.filter((shop) => {
+      const matchesType =
+        selectedDeviceType === 'all' ||
+        (Array.isArray(shop.device_types) && shop.device_types.includes(selectedDeviceType))
+
+      const normalizedRegion = (shop.region ?? '').toLowerCase()
       const matchesRegion =
         selectedRegion === 'all' || normalizedRegion === selectedRegion.toLowerCase()
 
-      if (!matchesType || !matchesRegion) {
-        return false
-      }
-
-      return true
+      return matchesType && matchesRegion
     })
-  }, [devicesWithCoordinates, selectedDeviceType, selectedRegion])
+  }, [shopsWithCoordinates, selectedDeviceType, selectedRegion])
 
-  const selectedDevices = React.useMemo(
-    () => filteredDevices.filter((device) => selectedSerials.includes(device.serial_number)),
-    [filteredDevices, selectedSerials],
-  )
-
-  const loadCurrentFirmwareOptions = React.useCallback(async (deviceType: string) => {
-    setIsLoadingFirmware(true)
-    setDeployError('')
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/firmware/status/current', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-      if (!response.ok) {
-        throw new Error('Failed to load current firmware options')
-      }
-      const payload = await response.json()
-      const options = (Array.isArray(payload) ? payload : []) as FirmwareOption[]
-      const filteredOptions = options.filter((firmware) => firmware.device_type === deviceType)
-      setFirmwareOptions(filteredOptions)
-      setSelectedFirmwareId(filteredOptions.length > 0 ? filteredOptions[0].id : '')
-    } catch (error) {
-      setFirmwareOptions([])
-      setSelectedFirmwareId('')
-      setDeployError(error instanceof Error ? error.message : 'Failed to load firmware options')
-    } finally {
-      setIsLoadingFirmware(false)
-    }
-  }, [])
-
-  const handleMarkerClick = (device: Device) => {
-    if (!isSelectionMode) {
-      navigate(ROUTES.DEVICE_DETAIL.replace(':serialNumber', encodeURIComponent(device.serial_number)), {
-        state: {
-          device,
-          fromRoute: ROUTES.WORLD_MAP,
-        },
-      })
-      return
-    }
-
-    if (selectedSerials.includes(device.serial_number)) {
-      const nextSelected = selectedSerials.filter((serial) => serial !== device.serial_number)
-      setSelectedSerials(nextSelected)
-      if (nextSelected.length === 0) {
-        setSelectedDeployType(null)
-      }
-      return
-    }
-
-    if (selectedDeployType && selectedDeployType !== device.device_type) {
-      setDeployError('You can only select devices of the same type for mass deploy.')
-      return
-    }
-
-    setDeployError('')
-    setSelectedDeployType(device.device_type)
-    setSelectedSerials((previous) => [...previous, device.serial_number])
-  }
-
-  const handleDeploySelected = async () => {
-    if (!selectedDeployType || selectedSerials.length === 0) return
-    setShowDeployPopup(true)
-    setDeploySuccess('')
-    await loadCurrentFirmwareOptions(selectedDeployType)
-  }
-
-  const handleConfirmDeploy = async () => {
-    if (!selectedFirmwareId || selectedSerials.length === 0) return
-    setIsDeploying(true)
-    setDeployError('')
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/deploy-to-many-devices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          serial_numbers: selectedSerials,
-          firmware_id: selectedFirmwareId,
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.detail ?? 'Failed to deploy firmware to selected devices')
-      }
-
-      const data = await response.json()
-      setDeploySuccess(data.message ?? 'Deploy submitted successfully.')
-      setShowDeployPopup(false)
-      setSelectedSerials([])
-      setSelectedDeployType(null)
-      setIsSelectionMode(false)
-    } catch (error) {
-      setDeployError(error instanceof Error ? error.message : 'Failed to deploy firmware')
-    } finally {
-      setIsDeploying(false)
-    }
-  }
+  // Device panel filtering
+  const devicePanelTypes = React.useMemo(() => {
+    return Array.from(new Set(shopDevices.map((d) => d.device_type).filter(Boolean))).sort()
+  }, [shopDevices])
+  const devicePanelActivities = ['all', 'active', 'inactive']
+  const filteredShopDevices = React.useMemo(() => {
+    return shopDevices.filter((d) => {
+      const matchesType = devicePanelType === 'all' || d.device_type === devicePanelType
+      const isActive = d.last_online !== null && d.last_online !== undefined
+      const matchesActivity =
+        devicePanelActivity === 'all' ||
+        (devicePanelActivity === 'active' && isActive) ||
+        (devicePanelActivity === 'inactive' && !isActive)
+      return matchesType && matchesActivity
+    })
+  }, [shopDevices, devicePanelType, devicePanelActivity])
 
   if (role !== 'business_manager') {
     return null
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: 0,
-      gap: 0,
-      backgroundColor: COLORS.backgroundPrimary,
-    }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', minHeight: '4.5rem', width: '100%', padding: 0, backgroundColor: COLORS.accentPrimary, color: COLORS.white }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: 0,
+        gap: 0,
+        backgroundColor: COLORS.backgroundPrimary,
+      }}
+    >
+      <header
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'stretch',
+          minHeight: '4.5rem',
+          width: '100%',
+          padding: 0,
+          backgroundColor: COLORS.accentPrimary,
+          color: COLORS.white,
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
           <button
             type="button"
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
-            style={{ padding: '0 0.85rem', backgroundColor: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
+            style={{
+              padding: '0 0.85rem',
+              backgroundColor: COLORS.accentPrimary,
+              border: 'none',
+              borderRight: `1px solid ${COLORS.white}`,
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+            }}
           >
             <img
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
@@ -326,269 +269,218 @@ const WorldMapPage: React.FC = () => {
       </header>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '2rem' }}>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `3px solid ${COLORS.borderPrimary}` }}>
-        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: COLORS.textPrimary, marginBottom: '0.5rem' }}>
-          World Map
-        </h1>
-      </div>
-
-      <main style={{
-        flex: 1,
-        padding: '1rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem',
-        backgroundColor: COLORS.backgroundSecondary,
-        borderRadius: '8px',
-        boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-            <select
-              value={selectedDeviceType}
-              onChange={(event) => setSelectedDeviceType(event.target.value)}
-              style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '6px',
-                border: `1px solid ${COLORS.borderPrimary}`,
-                backgroundColor: COLORS.backgroundPrimary,
-                color: COLORS.textPrimary,
-                minWidth: '200px',
-              }}
-            >
-              <option value="all">All device types</option>
-              {availableDeviceTypes.map((deviceType) => (
-                <option key={deviceType} value={deviceType}>
-                  {deviceType}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedRegion}
-              onChange={(event) => setSelectedRegion(event.target.value)}
-              style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '6px',
-                border: `1px solid ${COLORS.borderPrimary}`,
-                backgroundColor: COLORS.backgroundPrimary,
-                color: COLORS.textPrimary,
-                minWidth: '220px',
-              }}
-            >
-              <option value="all">All regions</option>
-              {CONTINENTS.map((continent) => (
-                <option key={continent} value={continent}>
-                  {continent}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsSelectionMode((previous) => !previous)
-                setDeployError('')
-                setDeploySuccess('')
-                if (isSelectionMode) {
-                  setSelectedSerials([])
-                  setSelectedDeployType(null)
-                }
-              }}
-              style={{
-                padding: '0.65rem 1.2rem',
-                borderRadius: '8px',
-                border: `1px solid ${COLORS.borderPrimary}`,
-                backgroundColor: isSelectionMode ? COLORS.backgroundTertiary : COLORS.backgroundPrimary,
-                color: COLORS.white,
-                cursor: 'pointer',
-                minHeight: '42px',
-                width: '150px',
-                flexShrink: 0,
-                fontWeight: 500,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {isSelectionMode ? 'Selection On' : 'Select Pins'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                void handleDeploySelected()
-              }}
-              disabled={!isSelectionMode || selectedSerials.length === 0}
-              style={{
-                padding: '0.65rem 1.2rem',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: COLORS.success,
-                color: COLORS.white,
-                cursor: !isSelectionMode || selectedSerials.length === 0 ? 'not-allowed' : 'pointer',
-                opacity: !isSelectionMode || selectedSerials.length === 0 ? 0.6 : 1,
-                minHeight: '42px',
-                width: '210px',
-                flexShrink: 0,
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Deploy Selected ({selectedSerials.length})
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setResetSignal(prev => prev + 1)}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            borderBottom: `3px solid ${COLORS.borderPrimary}`,
+          }}
+        >
+          <h1
             style={{
-              padding: '0.5rem 1.5rem',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              borderRadius: '6px',
-              border: `1px solid ${COLORS.accentPrimary}`,
-              backgroundColor: 'transparent',
-              color: COLORS.white,
-              fontWeight: 500,
+              margin: 0,
+              fontSize: '2rem',
+              fontWeight: 700,
+              color: COLORS.textPrimary,
+              marginBottom: '0.5rem',
             }}
           >
-            Reset
-          </button>
+            World Map
+          </h1>
         </div>
-        {isLoadingDevices ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading device pins...</p> : null}
-        {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
-        {deployError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{deployError}</p> : null}
-        {deploySuccess ? <p style={{ margin: 0, color: COLORS.success }}>{deploySuccess}</p> : null}
-        {isSelectionMode && selectedDeployType ? (
-          <p style={{ margin: 0, color: COLORS.textMuted }}>
-            Selection mode active: {selectedSerials.length} selected ({selectedDeployType})
-          </p>
-        ) : null}
-        {!isLoadingDevices && !loadError && filteredDevices.length === 0 ? (
-          <p style={{ margin: 0, color: COLORS.textMuted }}>No active devices match the selected filters.</p>
-        ) : null}
-        <div style={{ width: '77%', margin: '0 auto', minHeight: '600px', border: `1px solid ${COLORS.borderPrimary}`, borderRadius: '8px', overflow: 'hidden' }}>
-          <MapContainer
-            center={DEFAULT_CENTER}
-            zoom={DEFAULT_ZOOM}
-            style={{ height: '600px', width: '100%' }}
-            zoomControl={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {filteredDevices.map((device) => (
-              <Marker
-                key={device.serial_number}
-                position={[device.latitude as number, device.longitude as number]}
-                icon={selectedSerials.includes(device.serial_number) ? selectedPinIcon : pinIcon}
-                eventHandlers={{
-                  click: () => handleMarkerClick(device),
-                }}
-              >
-                <Tooltip direction="top" offset={[0, -10]}>
-                  {device.device_type}
-                </Tooltip>
-              </Marker>
-            ))}
-            <ResetMapControl center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} resetSignal={resetSignal} />
-          </MapContainer>
-        </div>
-      </main>
-      </div>
 
-      {showDeployPopup && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.65)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '540px',
-            backgroundColor: COLORS.backgroundSecondary,
-            border: `1px solid ${COLORS.borderPrimary}`,
-            borderRadius: '8px',
-            padding: '1rem 1.25rem',
+        <main
+          style={{
+            flex: 1,
+            padding: '1rem',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '0.9rem',
-          }}>
-            <h3 style={{ margin: 0, color: COLORS.textPrimary }}>Deploy from Map</h3>
-            <p style={{ margin: 0, color: COLORS.textMuted }}>
-              Deploy to {selectedDevices.length} selected device(s) of type {selectedDeployType ?? '-'}. 
-            </p>
-
-            {isLoadingFirmware ? (
-              <p style={{ margin: 0, color: COLORS.textMuted }}>Loading firmware options...</p>
-            ) : (
-              <select
-                value={selectedFirmwareId}
-                onChange={(event) => setSelectedFirmwareId(Number(event.target.value))}
-                style={{
-                  padding: '0.6rem 0.75rem',
-                  borderRadius: '6px',
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  backgroundColor: COLORS.backgroundPrimary,
-                  color: COLORS.textPrimary,
-                }}
-              >
-                {firmwareOptions.length === 0 ? (
-                  <option value="">No current firmware options</option>
-                ) : (
-                  firmwareOptions.map((firmware) => (
-                    <option key={firmware.id} value={firmware.id}>
-                      v{firmware.version_number}{firmware.isEmergency ? ' (Emergency)' : ''}
+            flexDirection: 'row',
+            gap: '1rem',
+            backgroundColor: COLORS.backgroundSecondary,
+            borderRadius: '8px',
+            boxShadow: `0 2px 8px ${COLORS.shadowStrong}`,
+            position: 'relative',
+          }}
+        >
+          {/* Device panel */}
+          {selectedShop && (
+            <div
+              style={{
+                width: 350,
+                minWidth: 300,
+                maxWidth: 400,
+                background: COLORS.backgroundPrimary,
+                borderRight: `2px solid ${COLORS.borderPrimary}`,
+                padding: '1rem',
+                boxShadow: '2px 0 8px rgba(0,0,0,0.07)',
+                zIndex: 10,
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div>
+                  <strong>{selectedShop.location}</strong>
+                  <div style={{ fontSize: 13, color: COLORS.textMuted }}>
+                    {selectedShop.region} | {selectedShop.active_device_count} active / {selectedShop.total_device_count} total
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedShop(null)}
+                  style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: COLORS.dangerText }}
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', flex: 1, fontWeight: 500, fontSize: 13 }}>
+                  Types
+                  <select value={devicePanelType} onChange={e => setDevicePanelType(e.target.value)} style={{ width: '100%' }}>
+                    <option value="all">All types</option>
+                    {devicePanelTypes.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', flex: 1, fontWeight: 500, fontSize: 13 }}>
+                  Status
+                  <select value={devicePanelActivity} onChange={e => setDevicePanelActivity(e.target.value)} style={{ width: '100%' }}>
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </label>
+              </div>
+              {devicePanelLoading ? <div>Loading devices...</div> : null}
+              {devicePanelError ? <div style={{ color: COLORS.dangerText }}>{devicePanelError}</div> : null}
+              {!devicePanelLoading && !devicePanelError && filteredShopDevices.length === 0 ? <div>No devices found.</div> : null}
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: COLORS.backgroundSecondary }}>
+                      <th style={{ textAlign: 'left', padding: 4 }}>Type</th>
+                      <th style={{ textAlign: 'left', padding: 4 }}>Serial</th>
+                      <th style={{ textAlign: 'left', padding: 4 }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredShopDevices.map((d, idx) => (
+                      <tr key={d.serial_number || idx} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: 4 }}>{d.device_type}</td>
+                        <td style={{ padding: 4 }}>{d.serial_number}</td>
+                        <td style={{ padding: 4 }}>
+                          {d.last_online ? <span style={{ color: COLORS.successText }}>Active</span> : <span style={{ color: COLORS.textMuted }}>Inactive</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {/* Map and controls */}
+          <div style={{ flex: 1, marginLeft: selectedShop ? 350 : 0, transition: 'margin-left 0.2s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+                <select
+                  value={selectedRegion}
+                  onChange={(event) => setSelectedRegion(event.target.value)}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.borderPrimary}`,
+                    backgroundColor: COLORS.backgroundPrimary,
+                    color: COLORS.textPrimary,
+                    minWidth: '220px',
+                  }}
+                >
+                  <option value="all">All regions</option>
+                  {CONTINENTS.map((continent) => (
+                    <option key={continent} value={continent}>
+                      {continent}
                     </option>
-                  ))
-                )}
-              </select>
-            )}
+                  ))}
+                </select>
+              </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: COLORS.textPrimary }}>
+                <span>Legend:</span>
+                <span>● Black (0-5 active)</span>
+                <span>● Blue (6-25 active)</span>
+                <span>● Green ({'>'}25 active)</span>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowDeployPopup(false)}
+                onClick={() => setResetSignal((previous) => previous + 1)}
                 style={{
-                  padding: '0.55rem 1rem',
-                  borderRadius: '6px',
-                  border: `1px solid ${COLORS.borderPrimary}`,
-                  backgroundColor: 'transparent',
-                  color: COLORS.textPrimary,
+                  padding: '0.5rem 1.5rem',
+                  fontSize: '1rem',
                   cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void handleConfirmDeploy()
-                }}
-                disabled={isDeploying || !selectedFirmwareId || firmwareOptions.length === 0}
-                style={{
-                  padding: '0.55rem 1rem',
                   borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: COLORS.success,
+                  border: `1px solid ${COLORS.accentPrimary}`,
+                  backgroundColor: 'transparent',
                   color: COLORS.white,
-                  cursor: isDeploying || !selectedFirmwareId || firmwareOptions.length === 0 ? 'not-allowed' : 'pointer',
-                  opacity: isDeploying || !selectedFirmwareId || firmwareOptions.length === 0 ? 0.6 : 1,
-                  fontWeight: 600,
+                  fontWeight: 500,
                 }}
               >
-                {isDeploying ? 'Deploying...' : 'Confirm Deploy'}
+                Reset
               </button>
             </div>
+
+            {isLoading ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading shop pins...</p> : null}
+            {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
+            {!isLoading && !loadError && filteredShops.length === 0 ? (
+              <p style={{ margin: 0, color: COLORS.textMuted }}>No shops with coordinates available.</p>
+            ) : null}
+
+            <div
+              style={{
+                width: '100%',
+                minHeight: '600px',
+                border: `1px solid ${COLORS.borderPrimary}`,
+                borderRadius: '8px',
+                overflow: 'hidden',
+              }}
+            >
+              <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} style={{ height: '600px', width: '100%' }} zoomControl>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {filteredShops.map((shop) => (
+                  <Marker
+                    key={shop.id}
+                    position={[shop.latitude as number, shop.longitude as number]}
+                    icon={
+                      shop.pin_color === 'green'
+                        ? greenPinIcon
+                        : shop.pin_color === 'blue'
+                          ? bluePinIcon
+                          : blackPinIcon
+                    }
+                    eventHandlers={{
+                      click: () => setSelectedShop(shop),
+                    }}
+                  >
+                    <Tooltip direction="top" offset={[0, -10]}>
+                      {shop.location} — {shop.active_device_count} active / {shop.total_device_count} total
+                    </Tooltip>
+                  </Marker>
+                ))}
+                <ResetMapControl center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} resetSignal={resetSignal} />
+              </MapContainer>
+            </div>
           </div>
-        </div>
-      )}
+        </main>
+      </div>
     </div>
   )
 }

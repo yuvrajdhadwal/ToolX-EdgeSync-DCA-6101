@@ -24,6 +24,7 @@ export default defineConfig({
       '/field-shop-professionals': 'http://localhost:8000',
       '/shops': 'http://localhost:8000',
       '/my-assigned-devices': 'http://localhost:8000',
+      '/shop-activity-map': 'http://localhost:8000',
     }
   }
 })
