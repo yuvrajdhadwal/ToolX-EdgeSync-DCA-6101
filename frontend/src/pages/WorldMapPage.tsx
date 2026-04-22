@@ -76,7 +76,6 @@ const WorldMapPage: React.FC = () => {
   const role = getRoleFromToken()
   const [resetSignal, setResetSignal] = React.useState(0)
   const [shops, setShops] = React.useState<ShopActivity[]>([])
-  // Removed setSelectedDeviceType since device type filtering is now only in the device panel, not on the map
   const [selectedDeviceType] = React.useState('all')
   const [selectedRegion, setSelectedRegion] = React.useState('all')
   const [isLoading, setIsLoading] = React.useState(true)
@@ -169,7 +168,6 @@ const WorldMapPage: React.FC = () => {
     [shops],
   )
 
-  // Removed availity of device type filtering on the map since it is now only in the device panel, not on the map pins. The filteredShops now only filters by region.
 
 
   const filteredShops = React.useMemo(() => {
@@ -190,7 +188,6 @@ const WorldMapPage: React.FC = () => {
   const devicePanelTypes = React.useMemo(() => {
     return Array.from(new Set(shopDevices.map((d) => d.device_type).filter(Boolean))).sort()
   }, [shopDevices])
-  // Removed devicepanel activities from the filter options since we are now only filtering by active/inactive status, not by specific activity types
   const filteredShopDevices = React.useMemo(() => {
     return shopDevices.filter((d) => {
       const matchesType = devicePanelType === 'all' || d.device_type === devicePanelType
