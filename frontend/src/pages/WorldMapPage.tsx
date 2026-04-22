@@ -247,6 +247,33 @@ const WorldMapPage: React.FC = () => {
       return
     }
 
+    const selectedFirmware = deployFirmwareOptions.find(
+      (firmware) => String(firmware.id) === selectedFirmwareId,
+    )
+    if (!selectedFirmware) {
+      setFirmwareOptionError('Selected firmware is invalid. Please choose again.')
+      return
+    }
+
+    const selectedDevices = selectedSerials
+      .map((serial) => shopDevices.find((device) => device.serial_number === serial))
+      .filter(Boolean)
+
+    const devicesAlreadyOnSelectedFirmware = selectedDevices
+      .filter(
+        (device) =>
+          String(device.version_number ?? '').trim().toLowerCase() ===
+          String(selectedFirmware.version_number ?? '').trim().toLowerCase(),
+      )
+      .map((device) => String(device.serial_number))
+
+    if (devicesAlreadyOnSelectedFirmware.length > 0) {
+      setFirmwareOptionError(
+        `Cannot deploy version ${selectedFirmware.version_number} to device(s) already on that version: ${devicesAlreadyOnSelectedFirmware.join(', ')}`,
+      )
+      return
+    }
+
     const deployFirmware = async () => {
       setFirmwareOptionError('')
       setDeployStatusMessage('')
@@ -285,7 +312,7 @@ const WorldMapPage: React.FC = () => {
     }
 
     void deployFirmware()
-  }, [selectedDeviceSerials, selectedFirmwareId, showFirmwarePicker])
+  }, [selectedDeviceSerials, selectedFirmwareId, showFirmwarePicker, deployFirmwareOptions, shopDevices])
 
   const shopsWithCoordinates = React.useMemo(
     () =>
