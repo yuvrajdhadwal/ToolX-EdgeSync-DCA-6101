@@ -142,14 +142,31 @@ const WorldMapPage: React.FC = () => {
     setDevicePanelLoading(true)
     setDevicePanelError('')
     setShopDevices([])
-    fetch('/get_devices')
-      .then((res) => {
+    Promise.all([
+      fetch('/get_devices').then((res) => {
         if (!res.ok) throw new Error('Failed to load devices')
         return res.json()
-      })
-      .then((allDevices) => {
-        // Filter devices by shop id
-        const filtered = allDevices.filter((d: any) => d.shop_id === selectedShop.id)
+      }),
+      fetch('/get_online_devices').then((res) => {
+        if (!res.ok) throw new Error('Failed to load online devices')
+        return res.json()
+      }),
+    ])
+      .then(([allDevices, onlineDevices]) => {
+        const activeSerials = new Set(
+          Array.isArray(onlineDevices)
+            ? onlineDevices.map((d: any) => d.serial_number).filter(Boolean)
+            : [],
+        )
+
+        const filtered = allDevices
+          .filter((d: any) => d.shop_id === selectedShop.id)
+          .map((d: any) => ({
+            ...d,
+            is_active:
+              typeof d.is_active === 'boolean' ? d.is_active : activeSerials.has(d.serial_number),
+          }))
+
         setShopDevices(filtered)
       })
       .catch(() => setDevicePanelError('Failed to load devices for this shop.'))
@@ -191,7 +208,7 @@ const WorldMapPage: React.FC = () => {
   const filteredShopDevices = React.useMemo(() => {
     return shopDevices.filter((d) => {
       const matchesType = devicePanelType === 'all' || d.device_type === devicePanelType
-      const isActive = d.last_online !== null && d.last_online !== undefined
+      const isActive = typeof d.is_active === 'boolean' ? d.is_active : (d.last_online !== null && d.last_online !== undefined)
       const matchesActivity =
         devicePanelActivity === 'all' ||
         (devicePanelActivity === 'active' && isActive) ||
@@ -363,7 +380,7 @@ const WorldMapPage: React.FC = () => {
                         <td style={{ padding: 4 }}>{d.device_type}</td>
                         <td style={{ padding: 4 }}>{d.serial_number}</td>
                         <td style={{ padding: 4 }}>
-                          {d.last_online ? <span style={{ color: COLORS.successText }}>Active</span> : <span style={{ color: COLORS.textMuted }}>Inactive</span>}
+                          {(typeof d.is_active === 'boolean' ? d.is_active : Boolean(d.last_online)) ? <span style={{ color: COLORS.successText }}>Active</span> : <span style={{ color: COLORS.textMuted }}>Inactive</span>}
                         </td>
                       </tr>
                     ))}
