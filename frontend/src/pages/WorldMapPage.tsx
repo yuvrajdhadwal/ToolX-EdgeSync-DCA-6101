@@ -76,7 +76,7 @@ const WorldMapPage: React.FC = () => {
   const role = getRoleFromToken()
   const [resetSignal, setResetSignal] = React.useState(0)
   const [shops, setShops] = React.useState<ShopActivity[]>([])
-  const [selectedDeviceType, setSelectedDeviceType] = React.useState('all')
+  const [selectedDeviceType] = React.useState('all')
   const [selectedRegion, setSelectedRegion] = React.useState('all')
   const [isLoading, setIsLoading] = React.useState(true)
   const [loadError, setLoadError] = React.useState('')
@@ -168,19 +168,6 @@ const WorldMapPage: React.FC = () => {
     [shops],
   )
 
-  const availableDeviceTypes = React.useMemo(
-    () =>
-      Array.from(
-        new Set(
-          shopsWithCoordinates.flatMap((shop) =>
-            Array.isArray(shop.device_types)
-              ? shop.device_types.filter((deviceType) => Boolean(deviceType?.trim()))
-              : [],
-          ),
-        ),
-      ).sort((first, second) => first.localeCompare(second)),
-    [shopsWithCoordinates],
-  )
 
 
   const filteredShops = React.useMemo(() => {
@@ -201,7 +188,6 @@ const WorldMapPage: React.FC = () => {
   const devicePanelTypes = React.useMemo(() => {
     return Array.from(new Set(shopDevices.map((d) => d.device_type).filter(Boolean))).sort()
   }, [shopDevices])
-  const devicePanelActivities = ['all', 'active', 'inactive']
   const filteredShopDevices = React.useMemo(() => {
     return shopDevices.filter((d) => {
       const matchesType = devicePanelType === 'all' || d.device_type === devicePanelType
