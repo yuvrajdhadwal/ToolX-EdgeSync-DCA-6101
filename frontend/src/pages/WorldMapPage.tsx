@@ -252,6 +252,14 @@ const WorldMapPage: React.FC = () => {
     })
   }, [shopDevices, devicePanelType, devicePanelActivity])
 
+  const selectedDeployDeviceType = React.useMemo(() => {
+    const selectedSerial = Array.from(selectedDeviceSerials)[0]
+    if (!selectedSerial) return null
+
+    const selectedDevice = filteredShopDevices.find((device) => device.serial_number === selectedSerial)
+    return selectedDevice?.device_type ?? null
+  }, [filteredShopDevices, selectedDeviceSerials])
+
   if (role !== 'business_manager') {
     return null
   }
@@ -452,6 +460,13 @@ const WorldMapPage: React.FC = () => {
                             <input
                               type="checkbox"
                               checked={selectedDeviceSerials.has(d.serial_number)}
+                              disabled={
+                                !(typeof d.is_active === 'boolean' ? d.is_active : Boolean(d.last_online)) ||
+                                (selectedDeviceSerials.size > 0 &&
+                                  !selectedDeviceSerials.has(d.serial_number) &&
+                                  selectedDeployDeviceType !== null &&
+                                  d.device_type !== selectedDeployDeviceType)
+                              }
                               onChange={() => toggleDeviceSelection(d.serial_number)}
                             />
                           </td>
