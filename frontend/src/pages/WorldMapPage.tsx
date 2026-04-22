@@ -32,6 +32,15 @@ type ShopActivity = {
   pin_color: 'black' | 'blue' | 'green'
 }
 
+type DeployFirmwareOption = {
+  id: number
+  version_number: string
+  device_type: string
+  description: string | null
+  isEmergency: boolean
+  status: 'current' | 'pending' | 'rejected' | 'deployed'
+}
+
 type ResetMapControlProps = {
   center: [number, number]
   zoom: number
@@ -90,6 +99,11 @@ const WorldMapPage: React.FC = () => {
   const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
   const [isDeployModeOn, setIsDeployModeOn] = React.useState(false)
   const [selectedDeviceSerials, setSelectedDeviceSerials] = React.useState<Set<string>>(new Set())
+  const [showFirmwarePicker, setShowFirmwarePicker] = React.useState(false)
+  const [deployFirmwareOptions, setDeployFirmwareOptions] = React.useState<DeployFirmwareOption[]>([])
+  const [selectedFirmwareId, setSelectedFirmwareId] = React.useState('')
+  const [isLoadingFirmwareOptions, setIsLoadingFirmwareOptions] = React.useState(false)
+  const [firmwareOptionError, setFirmwareOptionError] = React.useState('')
 
   const blackPinIcon = React.useMemo(() => createPinIcon('#111111'), [])
   const bluePinIcon = React.useMemo(() => createPinIcon('#2f81f7'), [])
@@ -179,7 +193,20 @@ const WorldMapPage: React.FC = () => {
   React.useEffect(() => {
     setIsDeployModeOn(false)
     setSelectedDeviceSerials(new Set())
+    setShowFirmwarePicker(false)
+    setDeployFirmwareOptions([])
+    setSelectedFirmwareId('')
+    setFirmwareOptionError('')
   }, [selectedShop?.id])
+
+  React.useEffect(() => {
+    if (!isDeployModeOn) {
+      setShowFirmwarePicker(false)
+      setDeployFirmwareOptions([])
+      setSelectedFirmwareId('')
+      setFirmwareOptionError('')
+    }
+  }, [isDeployModeOn])
 
   const handleToggleDeployMode = React.useCallback(() => {
     setIsDeployModeOn((previous) => {
@@ -205,8 +232,23 @@ const WorldMapPage: React.FC = () => {
 
   const handleDeploySelected = React.useCallback(() => {
     const selectedSerials = Array.from(selectedDeviceSerials)
-    window.alert(`Deploy triggered for ${selectedSerials.length} device(s).`)
-  }, [selectedDeviceSerials])
+    if (!selectedSerials.length) return
+
+    if (!showFirmwarePicker) {
+      setShowFirmwarePicker(true)
+      return
+    }
+
+    if (!selectedFirmwareId) {
+      setFirmwareOptionError('Please choose a firmware version.')
+      return
+    }
+
+    const selectedFirmware = deployFirmwareOptions.find((firmware) => String(firmware.id) === selectedFirmwareId)
+    window.alert(
+      `Deploy ${selectedFirmware?.version_number ?? 'selected firmware'} to ${selectedSerials.length} device(s).`,
+    )
+  }, [deployFirmwareOptions, selectedDeviceSerials, selectedFirmwareId, showFirmwarePicker])
 
   const shopsWithCoordinates = React.useMemo(
     () =>
@@ -259,6 +301,50 @@ const WorldMapPage: React.FC = () => {
     const selectedDevice = filteredShopDevices.find((device) => device.serial_number === selectedSerial)
     return selectedDevice?.device_type ?? null
   }, [filteredShopDevices, selectedDeviceSerials])
+
+  React.useEffect(() => {
+    if (!showFirmwarePicker || !isDeployModeOn) return
+    if (!selectedDeployDeviceType) {
+      setFirmwareOptionError('Select at least one online device first.')
+      return
+    }
+
+    let mounted = true
+    setIsLoadingFirmwareOptions(true)
+    setFirmwareOptionError('')
+
+    const loadFirmwareOptions = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/firmware/status/current', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        if (!response.ok) throw new Error('Failed to load firmware options')
+        const payload = await response.json()
+        const currentFirmware = Array.isArray(payload) ? (payload as DeployFirmwareOption[]) : []
+        const filtered = currentFirmware.filter((firmware) => firmware.device_type === selectedDeployDeviceType)
+        if (mounted) {
+          setDeployFirmwareOptions(filtered)
+          setSelectedFirmwareId(filtered[0]?.id ? String(filtered[0].id) : '')
+        }
+      } catch {
+        if (mounted) {
+          setFirmwareOptionError('Failed to load firmware versions.')
+          setDeployFirmwareOptions([])
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingFirmwareOptions(false)
+        }
+      }
+    }
+
+    void loadFirmwareOptions()
+
+    return () => {
+      mounted = false
+    }
+  }, [showFirmwarePicker, isDeployModeOn, selectedDeployDeviceType])
 
   if (role !== 'business_manager') {
     return null
@@ -435,10 +521,35 @@ const WorldMapPage: React.FC = () => {
                       fontWeight: 600,
                     }}
                   >
-                    Deploy
+                    {showFirmwarePicker ? 'Confirm Deploy' : 'Deploy'}
                   </button>
                 ) : null}
               </div>
+              {isDeployModeOn && showFirmwarePicker ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontWeight: 500, fontSize: 13 }}>
+                    Firmware version
+                    <select
+                      value={selectedFirmwareId}
+                      onChange={(event) => setSelectedFirmwareId(event.target.value)}
+                      disabled={isLoadingFirmwareOptions || deployFirmwareOptions.length === 0}
+                      style={{ width: '100%' }}
+                    >
+                      <option value="">Select firmware</option>
+                      {deployFirmwareOptions.map((firmware) => (
+                        <option key={firmware.id} value={firmware.id}>
+                          {firmware.version_number}{firmware.isEmergency ? ' (Emergency)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {isLoadingFirmwareOptions ? <div>Loading firmware versions...</div> : null}
+                  {firmwareOptionError ? <div style={{ color: COLORS.dangerText }}>{firmwareOptionError}</div> : null}
+                  {!isLoadingFirmwareOptions && !firmwareOptionError && deployFirmwareOptions.length === 0 ? (
+                    <div>No approved firmware found for this device type.</div>
+                  ) : null}
+                </div>
+              ) : null}
               {devicePanelLoading ? <div>Loading devices...</div> : null}
               {devicePanelError ? <div style={{ color: COLORS.dangerText }}>{devicePanelError}</div> : null}
               {!devicePanelLoading && !devicePanelError && filteredShopDevices.length === 0 ? <div>No devices found.</div> : null}
