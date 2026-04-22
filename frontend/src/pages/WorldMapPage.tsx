@@ -104,6 +104,7 @@ const WorldMapPage: React.FC = () => {
   const [selectedFirmwareId, setSelectedFirmwareId] = React.useState('')
   const [isLoadingFirmwareOptions, setIsLoadingFirmwareOptions] = React.useState(false)
   const [firmwareOptionError, setFirmwareOptionError] = React.useState('')
+  const [deployStatusMessage, setDeployStatusMessage] = React.useState('')
 
   const blackPinIcon = React.useMemo(() => createPinIcon('#111111'), [])
   const bluePinIcon = React.useMemo(() => createPinIcon('#2f81f7'), [])
@@ -197,6 +198,7 @@ const WorldMapPage: React.FC = () => {
     setDeployFirmwareOptions([])
     setSelectedFirmwareId('')
     setFirmwareOptionError('')
+    setDeployStatusMessage('')
   }, [selectedShop?.id])
 
   React.useEffect(() => {
@@ -205,6 +207,7 @@ const WorldMapPage: React.FC = () => {
       setDeployFirmwareOptions([])
       setSelectedFirmwareId('')
       setFirmwareOptionError('')
+      setDeployStatusMessage('')
     }
   }, [isDeployModeOn])
 
@@ -244,11 +247,45 @@ const WorldMapPage: React.FC = () => {
       return
     }
 
-    const selectedFirmware = deployFirmwareOptions.find((firmware) => String(firmware.id) === selectedFirmwareId)
-    window.alert(
-      `Deploy ${selectedFirmware?.version_number ?? 'selected firmware'} to ${selectedSerials.length} device(s).`,
-    )
-  }, [deployFirmwareOptions, selectedDeviceSerials, selectedFirmwareId, showFirmwarePicker])
+    const deployFirmware = async () => {
+      setFirmwareOptionError('')
+      setDeployStatusMessage('')
+
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/deploy-to-many-devices', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            serial_numbers: selectedSerials,
+            firmware_id: Number(selectedFirmwareId),
+            isEmergency: false,
+          }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}))
+          if (Array.isArray(data.detail)) {
+            throw new Error(data.detail.map((e: { msg: string }) => e.msg).join(', '))
+          }
+          throw new Error(data.detail ?? 'Failed to deploy firmware')
+        }
+
+        const data = await response.json()
+        setDeployStatusMessage(data.message ?? 'Deployment started.')
+        setSelectedDeviceSerials(new Set())
+        setShowFirmwarePicker(false)
+        setSelectedFirmwareId('')
+      } catch (err) {
+        setFirmwareOptionError(err instanceof Error ? err.message : 'Deploy failed')
+      }
+    }
+
+    void deployFirmware()
+  }, [selectedDeviceSerials, selectedFirmwareId, showFirmwarePicker])
 
   const shopsWithCoordinates = React.useMemo(
     () =>
@@ -550,6 +587,7 @@ const WorldMapPage: React.FC = () => {
                   ) : null}
                 </div>
               ) : null}
+              {deployStatusMessage ? <div style={{ color: COLORS.successText, marginBottom: 8 }}>{deployStatusMessage}</div> : null}
               {devicePanelLoading ? <div>Loading devices...</div> : null}
               {devicePanelError ? <div style={{ color: COLORS.dangerText }}>{devicePanelError}</div> : null}
               {!devicePanelLoading && !devicePanelError && filteredShopDevices.length === 0 ? <div>No devices found.</div> : null}
