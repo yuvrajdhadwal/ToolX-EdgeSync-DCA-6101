@@ -86,6 +86,7 @@ const WorldMapPage: React.FC = () => {
   const [shopDevices, setShopDevices] = React.useState<any[]>([])
   const [devicePanelLoading, setDevicePanelLoading] = React.useState(false)
   const [devicePanelError, setDevicePanelError] = React.useState('')
+  const [deviceSearchQuery, setDeviceSearchQuery] = React.useState('')
   const [devicePanelType, setDevicePanelType] = React.useState('all')
   const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
 
@@ -142,6 +143,7 @@ const WorldMapPage: React.FC = () => {
     setDevicePanelLoading(true)
     setDevicePanelError('')
     setShopDevices([])
+    setDeviceSearchQuery('')
     fetch('/get_devices')
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load devices')
@@ -189,16 +191,21 @@ const WorldMapPage: React.FC = () => {
     return Array.from(new Set(shopDevices.map((d) => d.device_type).filter(Boolean))).sort()
   }, [shopDevices])
   const filteredShopDevices = React.useMemo(() => {
+    const normalizedQuery = deviceSearchQuery.trim().toLowerCase()
+
     return shopDevices.filter((d) => {
+      const matchesSearch =
+        normalizedQuery.length === 0 ||
+        String(d.serial_number ?? '').toLowerCase().includes(normalizedQuery)
       const matchesType = devicePanelType === 'all' || d.device_type === devicePanelType
       const isActive = d.last_online !== null && d.last_online !== undefined
       const matchesActivity =
         devicePanelActivity === 'all' ||
         (devicePanelActivity === 'active' && isActive) ||
         (devicePanelActivity === 'inactive' && !isActive)
-      return matchesType && matchesActivity
+      return matchesSearch && matchesType && matchesActivity
     })
-  }, [shopDevices, devicePanelType, devicePanelActivity])
+  }, [shopDevices, deviceSearchQuery, devicePanelType, devicePanelActivity])
 
   if (role !== 'business_manager') {
     return null
@@ -325,6 +332,18 @@ const WorldMapPage: React.FC = () => {
                 >
                   ×
                 </button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', width: '100%', fontWeight: 500, fontSize: 13 }}>
+                  Search device ID
+                  <input
+                    type="text"
+                    value={deviceSearchQuery}
+                    onChange={(event) => setDeviceSearchQuery(event.target.value)}
+                    placeholder="Search by serial number"
+                    style={{ width: '100%' }}
+                  />
+                </label>
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <label style={{ display: 'flex', flexDirection: 'column', flex: 1, fontWeight: 500, fontSize: 13 }}>
