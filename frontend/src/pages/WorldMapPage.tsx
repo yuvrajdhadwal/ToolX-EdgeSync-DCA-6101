@@ -29,7 +29,18 @@ type ShopActivity = {
   device_types: string[]
   active_device_count: number
   total_device_count: number
-  pin_color: 'black' | 'blue' | 'green'
+  pin_color: 'red' | 'black' | 'blue' | 'green'
+}
+
+const getShopPinColor = (activeDeviceCount: number, totalDeviceCount: number): ShopActivity['pin_color'] => {
+  if (totalDeviceCount <= 0) return 'red'
+
+  const activeRatio = activeDeviceCount / totalDeviceCount
+
+  if (activeRatio < 0.1) return 'red'
+  if (activeRatio < 0.25) return 'black'
+  if (activeRatio < 0.5) return 'blue'
+  return 'green'
 }
 
 type ResetMapControlProps = {
@@ -92,6 +103,7 @@ const WorldMapPage: React.FC = () => {
   const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
 
   const blackPinIcon = React.useMemo(() => createPinIcon('#111111'), [])
+  const redPinIcon = React.useMemo(() => createPinIcon('#d1242f'), [])
   const bluePinIcon = React.useMemo(() => createPinIcon('#2f81f7'), [])
   const greenPinIcon = React.useMemo(() => createPinIcon('#2ea043'), [])
 
@@ -436,9 +448,10 @@ const WorldMapPage: React.FC = () => {
 
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: COLORS.textPrimary }}>
                 <span>Legend:</span>
-                <span>● Black (0-5 active)</span>
-                <span>● Blue (6-25 active)</span>
-                <span>● Green ({'>'}25 active)</span>
+                <span>● Red ({'<'}10% online)</span>
+                <span>● Black ({'<'}25% online)</span>
+                <span>● Blue ({'<'}50% online)</span>
+                <span>● Green ({'>='}50% online)</span>
               </div>
               <button
                 type="button"
@@ -483,11 +496,13 @@ const WorldMapPage: React.FC = () => {
                     key={shop.id}
                     position={[shop.latitude as number, shop.longitude as number]}
                     icon={
-                      shop.pin_color === 'green'
+                      getShopPinColor(shop.active_device_count, shop.total_device_count) === 'green'
                         ? greenPinIcon
-                        : shop.pin_color === 'blue'
+                        : getShopPinColor(shop.active_device_count, shop.total_device_count) === 'blue'
                           ? bluePinIcon
-                          : blackPinIcon
+                          : getShopPinColor(shop.active_device_count, shop.total_device_count) === 'black'
+                            ? blackPinIcon
+                            : redPinIcon
                     }
                     eventHandlers={{
                       click: () => setSelectedShop(shop),
