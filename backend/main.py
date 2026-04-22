@@ -3,8 +3,11 @@ import threading
 from datetime import datetime
 from typing import List, Optional, Set
 
+from database.database import Base, SessionLocal, engine
+from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals, get_shops, get_assigned_devices
 from database.database_types import DeviceType, UserType
 from database.init_db import init_db
+from database.models import FieldShopProfessional, Device
 from devices.deployment_history import get_deploy_history
 from devices.devices import (add_device, delete_devices,
                              get_deployable_devices, get_devices)
@@ -53,7 +56,8 @@ from IoT.iot_types import DeployManyRequest
 from login.authentication import login_with_token, verify_token, get_authenticated_user
 from login.isolation import get_firmware_device_types
 from login.registration import register_user
-from map.active_devices import get_active_devices
+from map.active_devices import get_active_devices, get_shop_activity
+from sqlalchemy.orm import Session
 
 
 def get_db():
@@ -281,6 +285,11 @@ def get_compatible_devices(
 @app.get("/get_online_devices")
 def get_online_devices(db: Session = Depends(get_db)):
     return get_active_devices(db)
+
+
+@app.get("/shop-activity-map")
+def get_shop_activity_map(db: Session = Depends(get_db)):
+    return get_shop_activity(db)
 
 
 ################################################################################################################################
