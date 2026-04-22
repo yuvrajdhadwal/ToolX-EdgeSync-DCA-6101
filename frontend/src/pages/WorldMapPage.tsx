@@ -342,7 +342,7 @@ const WorldMapPage: React.FC = () => {
   React.useEffect(() => {
     if (!showFirmwarePicker || !isDeployModeOn) return
     if (!selectedDeployDeviceType) {
-      setFirmwareOptionError('Select at least one online device first.')
+      setFirmwareOptionError('Select at least one device first.')
       return
     }
 
@@ -610,7 +610,6 @@ const WorldMapPage: React.FC = () => {
                               type="checkbox"
                               checked={selectedDeviceSerials.has(d.serial_number)}
                               disabled={
-                                !(typeof d.is_active === 'boolean' ? d.is_active : Boolean(d.last_online)) ||
                                 (selectedDeviceSerials.size > 0 &&
                                   !selectedDeviceSerials.has(d.serial_number) &&
                                   selectedDeployDeviceType !== null &&
