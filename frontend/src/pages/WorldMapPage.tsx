@@ -88,6 +88,8 @@ const WorldMapPage: React.FC = () => {
   const [devicePanelError, setDevicePanelError] = React.useState('')
   const [devicePanelType, setDevicePanelType] = React.useState('all')
   const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
+  const [isDeployModeOn, setIsDeployModeOn] = React.useState(false)
+  const [selectedDeviceSerials, setSelectedDeviceSerials] = React.useState<Set<string>>(new Set())
 
   const blackPinIcon = React.useMemo(() => createPinIcon('#111111'), [])
   const bluePinIcon = React.useMemo(() => createPinIcon('#2f81f7'), [])
@@ -142,6 +144,7 @@ const WorldMapPage: React.FC = () => {
     setDevicePanelLoading(true)
     setDevicePanelError('')
     setShopDevices([])
+    setSelectedDeviceSerials(new Set())
     Promise.all([
       fetch('/get_devices').then((res) => {
         if (!res.ok) throw new Error('Failed to load devices')
@@ -172,6 +175,38 @@ const WorldMapPage: React.FC = () => {
       .catch(() => setDevicePanelError('Failed to load devices for this shop.'))
       .finally(() => setDevicePanelLoading(false))
   }, [selectedShop])
+
+  React.useEffect(() => {
+    setIsDeployModeOn(false)
+    setSelectedDeviceSerials(new Set())
+  }, [selectedShop?.id])
+
+  const handleToggleDeployMode = React.useCallback(() => {
+    setIsDeployModeOn((previous) => {
+      const next = !previous
+      if (!next) {
+        setSelectedDeviceSerials(new Set())
+      }
+      return next
+    })
+  }, [])
+
+  const toggleDeviceSelection = React.useCallback((serialNumber: string) => {
+    setSelectedDeviceSerials((previous) => {
+      const next = new Set(previous)
+      if (next.has(serialNumber)) {
+        next.delete(serialNumber)
+      } else {
+        next.add(serialNumber)
+      }
+      return next
+    })
+  }, [])
+
+  const handleDeploySelected = React.useCallback(() => {
+    const selectedSerials = Array.from(selectedDeviceSerials)
+    window.alert(`Deploy triggered for ${selectedSerials.length} device(s).`)
+  }, [selectedDeviceSerials])
 
   const shopsWithCoordinates = React.useMemo(
     () =>
@@ -362,6 +397,40 @@ const WorldMapPage: React.FC = () => {
                   </select>
                 </label>
               </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <button
+                  type="button"
+                  onClick={handleToggleDeployMode}
+                  style={{
+                    padding: '0.45rem 0.7rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.borderPrimary}`,
+                    backgroundColor: COLORS.backgroundSecondary,
+                    color: COLORS.textPrimary,
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  Deploy {isDeployModeOn ? 'On' : 'Off'}
+                </button>
+                {isDeployModeOn ? (
+                  <button
+                    type="button"
+                    onClick={handleDeploySelected}
+                    style={{
+                      padding: '0.45rem 0.7rem',
+                      borderRadius: '6px',
+                      border: `1px solid ${COLORS.accentPrimary}`,
+                      backgroundColor: COLORS.accentPrimary,
+                      color: COLORS.white,
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Deploy
+                  </button>
+                ) : null}
+              </div>
               {devicePanelLoading ? <div>Loading devices...</div> : null}
               {devicePanelError ? <div style={{ color: COLORS.dangerText }}>{devicePanelError}</div> : null}
               {!devicePanelLoading && !devicePanelError && filteredShopDevices.length === 0 ? <div>No devices found.</div> : null}
@@ -369,6 +438,7 @@ const WorldMapPage: React.FC = () => {
                 <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: COLORS.backgroundSecondary }}>
+                      {isDeployModeOn ? <th style={{ textAlign: 'left', padding: 4 }}>Select</th> : null}
                       <th style={{ textAlign: 'left', padding: 4 }}>Type</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>Serial</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>Status</th>
@@ -377,6 +447,15 @@ const WorldMapPage: React.FC = () => {
                   <tbody>
                     {filteredShopDevices.map((d, idx) => (
                       <tr key={d.serial_number || idx} style={{ borderBottom: '1px solid #eee' }}>
+                        {isDeployModeOn ? (
+                          <td style={{ padding: 4 }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedDeviceSerials.has(d.serial_number)}
+                              onChange={() => toggleDeviceSelection(d.serial_number)}
+                            />
+                          </td>
+                        ) : null}
                         <td style={{ padding: 4 }}>{d.device_type}</td>
                         <td style={{ padding: 4 }}>{d.serial_number}</td>
                         <td style={{ padding: 4 }}>
