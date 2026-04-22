@@ -87,6 +87,7 @@ const WorldMapPage: React.FC = () => {
   const [devicePanelLoading, setDevicePanelLoading] = React.useState(false)
   const [devicePanelError, setDevicePanelError] = React.useState('')
   const [deviceSearchQuery, setDeviceSearchQuery] = React.useState('')
+  const [firmwareVersionQuery, setFirmwareVersionQuery] = React.useState('')
   const [devicePanelType, setDevicePanelType] = React.useState('all')
   const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
 
@@ -144,6 +145,7 @@ const WorldMapPage: React.FC = () => {
     setDevicePanelError('')
     setShopDevices([])
     setDeviceSearchQuery('')
+    setFirmwareVersionQuery('')
     fetch('/get_devices')
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load devices')
@@ -192,20 +194,24 @@ const WorldMapPage: React.FC = () => {
   }, [shopDevices])
   const filteredShopDevices = React.useMemo(() => {
     const normalizedQuery = deviceSearchQuery.trim().toLowerCase()
+    const normalizedVersionQuery = firmwareVersionQuery.trim().toLowerCase()
 
     return shopDevices.filter((d) => {
       const matchesSearch =
         normalizedQuery.length === 0 ||
         String(d.serial_number ?? '').toLowerCase().includes(normalizedQuery)
+      const matchesFirmwareVersion =
+        normalizedVersionQuery.length === 0 ||
+        String(d.version_number ?? '').toLowerCase().includes(normalizedVersionQuery)
       const matchesType = devicePanelType === 'all' || d.device_type === devicePanelType
       const isActive = d.last_online !== null && d.last_online !== undefined
       const matchesActivity =
         devicePanelActivity === 'all' ||
         (devicePanelActivity === 'active' && isActive) ||
         (devicePanelActivity === 'inactive' && !isActive)
-      return matchesSearch && matchesType && matchesActivity
+      return matchesSearch && matchesFirmwareVersion && matchesType && matchesActivity
     })
-  }, [shopDevices, deviceSearchQuery, devicePanelType, devicePanelActivity])
+  }, [shopDevices, deviceSearchQuery, firmwareVersionQuery, devicePanelType, devicePanelActivity])
 
   if (role !== 'business_manager') {
     return null
@@ -341,6 +347,18 @@ const WorldMapPage: React.FC = () => {
                     value={deviceSearchQuery}
                     onChange={(event) => setDeviceSearchQuery(event.target.value)}
                     placeholder="Search by serial number"
+                    style={{ width: '100%' }}
+                  />
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', width: '100%', fontWeight: 500, fontSize: 13 }}>
+                  Search firmware version
+                  <input
+                    type="text"
+                    value={firmwareVersionQuery}
+                    onChange={(event) => setFirmwareVersionQuery(event.target.value)}
+                    placeholder="Search by firmware version"
                     style={{ width: '100%' }}
                   />
                 </label>
