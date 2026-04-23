@@ -774,7 +774,6 @@ const WorldMapPage: React.FC = () => {
                 </div>
               </div>
 
-              {isLoading ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading shop pins...</p> : null}
               {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
               {!isLoading && !loadError && filteredShops.length === 0 ? (
                 <p style={{ margin: 0, color: COLORS.textMuted }}>No shops with coordinates available.</p>
