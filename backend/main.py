@@ -9,8 +9,7 @@ from database.database_types import DeviceType, UserType
 from database.init_db import init_db
 from database.models import FieldShopProfessional, Device
 from devices.deployment_history import get_deploy_history
-from devices.devices import (add_device, delete_devices,
-                             get_deployable_devices, get_devices)
+
 from devices.acceptance_status import get_acceptance_status
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Header, UploadFile
@@ -28,7 +27,7 @@ from database.database_helpers import (
     get_shops,
     get_username_by_id,
 )
-from database.database_types import DeviceType, UserType
+from database.database_types import DeviceType, UserType, ShopType
 from devices.acceptance_status import get_acceptance_status
 from devices.deployment_history import get_deploy_history
 from devices.devices import (
@@ -36,6 +35,7 @@ from devices.devices import (
     delete_devices,
     get_deployable_devices,
     get_devices,
+    add_shop
 )
 from firmware.firmware import get_firmware_by_id, get_firmware_by_status
 from firmware.firmware_types import (
@@ -252,6 +252,10 @@ def get_assigned_devices_endpoint(
     authorization: Optional[str] = Header(default=None),
 ):
     return get_assigned_devices(db, authorization)
+
+@app.post("/add_shop")
+def add_shop_endpoint(shop: ShopType, db: Session = Depends(get_db)):
+    return add_shop(shop, db)
 
 
 ################################################################################################################################

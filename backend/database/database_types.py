@@ -68,3 +68,30 @@ class DeviceType(BaseModel):
         if value < -180 or value > 180:
             raise ValueError("Longitude must be between -180 and 180")
         return value
+    
+
+class ShopType(BaseModel):
+    location: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+    @field_validator("location")
+    @classmethod
+    def fields_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise ValueError("Field must not be empty")
+        return v
+
+    @field_validator("latitude", "longitude")
+    @classmethod
+    def validate_coordinates(cls, value: Optional[float], info):
+        if value is None:
+            return value
+        if info.field_name == "latitude":
+            if value < -90 or value > 90:
+                raise ValueError("Latitude must be between -90 and 90")
+        elif info.field_name == "longitude":
+            if value < -180 or value > 180:
+                raise ValueError("Longitude must be between -180 and 180")
+        return value
+            

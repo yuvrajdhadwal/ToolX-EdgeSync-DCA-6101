@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from config import ONLINE_DEVICE_TTL_SECONDS
-from database.database_types import DeviceType, UserRole
+from database.database_types import DeviceType, ShopType, UserRole
 from database.models import DeveloperManager, Device, FieldShopProfessional, FirmwareUpdate, Shop
 from fastapi import Header, HTTPException
 from login.authentication import get_authenticated_user
@@ -173,3 +173,14 @@ def delete_devices(serial_number: str, db: Session):
     db.commit()
     return {"message": "Device deleted successfully"}
 
+
+def add_shop(shop: ShopType, db: Session):
+    existing_shop = db.query(Shop).filter(Shop.latitude == shop.latitude, Shop.longitude == shop.longitude).first()
+    if existing_shop:
+        raise HTTPException(status_code=400, detail="Shop with this coordinates already exists")
+
+    shop = Shop(location=shop.location.strip(), latitude=shop.latitude, longitude=shop.longitude)
+    db.add(shop)
+    db.commit()
+    db.refresh(shop)
+    return {"message": "Shop added successfully", "shop_id": shop.id}

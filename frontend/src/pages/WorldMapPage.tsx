@@ -1,5 +1,5 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { MapContainer, Marker, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -93,6 +93,7 @@ const getRoleFromToken = (): string | null => {
 
 const WorldMapPage: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const role = getRoleFromToken()
   const [resetSignal, setResetSignal] = React.useState(0)
   const [shops, setShops] = React.useState<ShopActivity[]>([])
@@ -728,59 +729,78 @@ const WorldMapPage: React.FC = () => {
           )}
           {/* Map and controls */}
           <div style={{ flex: 1, marginLeft: selectedShop ? 350 : 0, transition: 'margin-left 0.2s' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-                <select
-                  value={selectedRegion}
-                  onChange={(event) => setSelectedRegion(event.target.value)}
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '6px',
-                    border: `1px solid ${COLORS.borderPrimary}`,
-                    backgroundColor: COLORS.backgroundPrimary,
-                    color: COLORS.textPrimary,
-                    minWidth: '220px',
-                  }}
-                >
-                  <option value="all">All regions</option>
-                  {CONTINENTS.map((continent) => (
-                    <option key={continent} value={continent}>
-                      {continent}
-                    </option>
-                  ))}
-                </select>
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+                  <select
+                    value={selectedRegion}
+                    onChange={(event) => setSelectedRegion(event.target.value)}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '6px',
+                      border: `1px solid ${COLORS.borderPrimary}`,
+                      backgroundColor: COLORS.backgroundPrimary,
+                      color: COLORS.textPrimary,
+                      minWidth: '220px',
+                    }}
+                  >
+                    <option value="all">All regions</option>
+                    {CONTINENTS.map((continent) => (
+                      <option key={continent} value={continent}>
+                        {continent}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: COLORS.textPrimary }}>
+                  <span>Legend:</span>
+                  <span>● Red ({'<'}10% online)</span>
+                  <span>● Black ({'<'}25% online)</span>
+                  <span>● Blue ({'<'}50% online)</span>
+                  <span>● Green ({'>='}50% online)</span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(ROUTES.ADD_SHOP, { state: { from: location.pathname } })}
+                    style={{
+                      padding: '0.5rem 1.5rem',
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                      borderRadius: '6px',
+                      border: `1px solid ${COLORS.accentPrimary}`,
+                      backgroundColor: 'transparent',
+                      color: COLORS.white,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Add Shop
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResetSignal((previous) => previous + 1)}
+                    style={{
+                      padding: '0.5rem 1.5rem',
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                      borderRadius: '6px',
+                      border: `1px solid ${COLORS.accentPrimary}`,
+                      backgroundColor: 'transparent',
+                      color: COLORS.white,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: COLORS.textPrimary }}>
-                <span>Legend:</span>
-                <span>● Red ({'<'}10% online)</span>
-                <span>● Black ({'<'}25% online)</span>
-                <span>● Blue ({'<'}50% online)</span>
-                <span>● Green ({'>='}50% online)</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setResetSignal((previous) => previous + 1)}
-                style={{
-                  padding: '0.5rem 1.5rem',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  borderRadius: '6px',
-                  border: `1px solid ${COLORS.accentPrimary}`,
-                  backgroundColor: 'transparent',
-                  color: COLORS.white,
-                  fontWeight: 500,
-                }}
-              >
-                Reset
-              </button>
+              {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
+              {!isLoading && !loadError && filteredShops.length === 0 ? (
+                <p style={{ margin: 0, color: COLORS.textMuted }}>No shops with coordinates available.</p>
+              ) : null}
             </div>
-
-            {isLoading ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading shop pins...</p> : null}
-            {loadError ? <p style={{ margin: 0, color: COLORS.dangerText }}>{loadError}</p> : null}
-            {!isLoading && !loadError && filteredShops.length === 0 ? (
-              <p style={{ margin: 0, color: COLORS.textMuted }}>No shops with coordinates available.</p>
-            ) : null}
 
             <div
               style={{
