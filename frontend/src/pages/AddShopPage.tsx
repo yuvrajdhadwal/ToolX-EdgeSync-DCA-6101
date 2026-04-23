@@ -13,26 +13,104 @@ type AddShopFormState = {
   longitude: string
 }
 
+
 const AddShopPage: React.FC = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const fromPath = (location.state as { from?: string } | null)?.from ?? ROUTES.WORLD_MAP
+  const navigate = useNavigate();
+  const location = useLocation();
+  const fromPath = (location.state as { from?: string } | null)?.from ?? ROUTES.WORLD_MAP;
 
   const [formState, setFormState] = React.useState<AddShopFormState>({
     shopId: '',
     location: '',
     latitude: '',
     longitude: '',
-  })
+  });
+  const [error, setError] = React.useState<string>('');
+  const [success, setSuccess] = React.useState<boolean>(false);
+  const [loading, setLoading] = React.useState<boolean>(false);
+
+  // Fetch all shops for uniqueness check
+  const [shops, setShops] = React.useState<any[]>([]);
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    fetch('/shops', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setShops(data);
+      })
+      .catch(() => setError('Failed to load shops for validation.'));
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target
-    setFormState((previous) => ({ ...previous, [name]: value }))
-  }
+    const { name, value } = event.target;
+    setFormState((previous) => ({ ...previous, [name]: value }));
+  };
 
-  const handleCreateShop = (event: React.FormEvent) => {
-    event.preventDefault()
-  }
+  const handleCreateShop = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setSuccess(false);
+    setLoading(true);
+
+    // Validate all fields are filled
+    if (!formState.shopId.trim() || !formState.location.trim() || !formState.latitude.trim() || !formState.longitude.trim()) {
+      setError('All fields are required. Please fill in every field.');
+      setLoading(false);
+      return;
+    }
+
+    // Validate latitude/longitude are numbers and in valid range
+    const lat = parseFloat(formState.latitude);
+    const lon = parseFloat(formState.longitude);
+    if (isNaN(lat) || isNaN(lon)) {
+      setError('Latitude and Longitude must be valid numbers.');
+      setLoading(false);
+      return;
+    }
+    if (lat < -90 || lat > 90) {
+      setError('Latitude must be between -90 and 90.');
+      setLoading(false);
+      return;
+    }
+    if (lon < -180 || lon > 180) {
+      setError('Longitude must be between -180 and 180.');
+      setLoading(false);
+      return;
+    }
+
+    // Uniqueness checks
+    const idExists = shops.some((shop) => String(shop.id) === formState.shopId.trim());
+    if (idExists) {
+      setError('Shop ID must be unique.');
+      setLoading(false);
+      return;
+    }
+    const locExists = shops.some((shop) => shop.location.trim().toLowerCase() === formState.location.trim().toLowerCase());
+    if (locExists) {
+      setError('Shop location must be unique.');
+      setLoading(false);
+      return;
+    }
+    const latLonExists = shops.some((shop) => {
+      // Accept both string and number for latitude/longitude
+      const shopLat = typeof shop.latitude === 'string' ? parseFloat(shop.latitude) : shop.latitude;
+      const shopLon = typeof shop.longitude === 'string' ? parseFloat(shop.longitude) : shop.longitude;
+      return shopLat === lat && shopLon === lon;
+    });
+    if (latLonExists) {
+      setError('A shop with this latitude and longitude already exists.');
+      setLoading(false);
+      return;
+    }
+
+    // No backend POST endpoint yet, so just show success
+    setSuccess(true);
+    setLoading(false);
+    // Optionally, reset form
+    setFormState({ shopId: '', location: '', latitude: '', longitude: '' });
+  };
 
   return (
     <div className="add-device-page">
@@ -153,10 +231,18 @@ const AddShopPage: React.FC = () => {
               <button
                 className="add-device-submit"
                 type="submit"
+                disabled={loading}
               >
-                Create Shop
+                {loading ? 'Creating Shop...' : 'Create Shop'}
               </button>
             </div>
+
+            {success && (
+              <p className="add-device-success">Shop created successfully! (Simulation, no backend yet)</p>
+            )}
+            {error && (
+              <p className="add-device-error">{error}</p>
+            )}
           </form>
         </section>
       </div>
