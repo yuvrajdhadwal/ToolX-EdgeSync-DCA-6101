@@ -738,22 +738,39 @@ const WorldMapPage: React.FC = () => {
                 <span>● Blue ({'<'}50% online)</span>
                 <span>● Green ({'>='}50% online)</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setResetSignal((previous) => previous + 1)}
-                style={{
-                  padding: '0.5rem 1.5rem',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  borderRadius: '6px',
-                  border: `1px solid ${COLORS.accentPrimary}`,
-                  backgroundColor: 'transparent',
-                  color: COLORS.white,
-                  fontWeight: 500,
-                }}
-              >
-                Reset
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '0.5rem 1.5rem',
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.accentPrimary}`,
+                    backgroundColor: 'transparent',
+                    color: COLORS.white,
+                    fontWeight: 500,
+                  }}
+                >
+                  Add Shop
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResetSignal((previous) => previous + 1)}
+                  style={{
+                    padding: '0.5rem 1.5rem',
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.accentPrimary}`,
+                    backgroundColor: 'transparent',
+                    color: COLORS.white,
+                    fontWeight: 500,
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
             </div>
 
             {isLoading ? <p style={{ margin: 0, color: COLORS.textMuted }}>Loading shop pins...</p> : null}
