@@ -562,7 +562,7 @@ const WorldMapPage: React.FC = () => {
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <label style={{ display: 'flex', flexDirection: 'column', width: '100%', fontWeight: 500, fontSize: 13 }}>
-                  Search device ID
+                  Search Serial Number
                   <input
                     type="text"
                     value={deviceSearchQuery}
