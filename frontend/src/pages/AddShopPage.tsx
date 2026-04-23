@@ -109,7 +109,7 @@ const AddShopPage: React.FC = () => {
       if (response.ok) {
         setSuccess(true);
         setFormData({ location: '', latitude: '', longitude: '' });
-        setTimeout(() => navigate(ROUTES.WORLD_MAP), 1200);
+        setTimeout(() => navigate(fromPath), 1200);
       } else {
         setError(data.detail || 'Failed to add new shop.');
       }
@@ -173,7 +173,7 @@ const AddShopPage: React.FC = () => {
             <button
               className="add-device-submit"
               type="button"
-              onClick={() => navigate(ROUTES.WORLD_MAP)}
+              onClick={() => navigate(fromPath)}
               style={{
                 minWidth: 'auto',
                 padding: '0.35rem 1rem',
