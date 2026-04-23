@@ -84,12 +84,14 @@ class ShopType(BaseModel):
 
     @field_validator("latitude", "longitude")
     @classmethod
-    def validate_coordinates(cls, value: Optional[float]):
+    def validate_coordinates(cls, value: Optional[float], info):
         if value is None:
             return value
-        if value < -90 or value > 90:
-            raise ValueError("Latitude must be between -90 and 90")
-        if value < -180 or value > 180:
-            raise ValueError("Longitude must be between -180 and 180")
+        if info.field_name == "latitude":
+            if value < -90 or value > 90:
+                raise ValueError("Latitude must be between -90 and 90")
+        elif info.field_name == "longitude":
+            if value < -180 or value > 180:
+                raise ValueError("Longitude must be between -180 and 180")
         return value
             
