@@ -92,7 +92,4 @@ class ShopType(BaseModel):
         if value < -180 or value > 180:
             raise ValueError("Longitude must be between -180 and 180")
         return value
-            raise ValueError("Latitude must be between -90 and 90")
-        if lon < -180 or lon > 180:
-            raise ValueError("Longitude must be between -180 and 180")
-        return values
+            
