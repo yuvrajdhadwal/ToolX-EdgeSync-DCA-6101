@@ -7,7 +7,6 @@ import Logout from '../components/Logout'
 import './styles/AddDevicePage.css'
 
 type AddShopFormState = {
-  shopId: string
   location: string
   latitude: string
   longitude: string
@@ -19,8 +18,7 @@ const AddShopPage: React.FC = () => {
   const location = useLocation();
   const fromPath = (location.state as { from?: string } | null)?.from ?? ROUTES.WORLD_MAP;
 
-  const [formState, setFormState] = React.useState<AddShopFormState>({
-    shopId: '',
+  const [formData, setFormData] = React.useState<AddShopFormState>({
     location: '',
     latitude: '',
     longitude: '',
@@ -45,7 +43,7 @@ const AddShopPage: React.FC = () => {
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-    setFormState((previous) => ({ ...previous, [name]: value }));
+    setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
   const handleCreateShop = async (event: React.FormEvent) => {
@@ -55,15 +53,15 @@ const AddShopPage: React.FC = () => {
     setLoading(true);
 
     // Validate all fields are filled
-    if (!formState.shopId.trim() || !formState.location.trim() || !formState.latitude.trim() || !formState.longitude.trim()) {
+    if (!formData.location.trim() || !formData.latitude.trim() || !formData.longitude.trim()) {
       setError('All fields are required. Please fill in every field.');
       setLoading(false);
       return;
     }
 
     // Validate latitude/longitude are numbers and in valid range
-    const lat = parseFloat(formState.latitude);
-    const lon = parseFloat(formState.longitude);
+    const lat = parseFloat(formData.latitude);
+    const lon = parseFloat(formData.longitude);
     if (isNaN(lat) || isNaN(lon)) {
       setError('Latitude and Longitude must be valid numbers.');
       setLoading(false);
@@ -79,22 +77,7 @@ const AddShopPage: React.FC = () => {
       setLoading(false);
       return;
     }
-
-    // Uniqueness checks
-    const idExists = shops.some((shop) => String(shop.id) === formState.shopId.trim());
-    if (idExists) {
-      setError('Shop ID must be unique.');
-      setLoading(false);
-      return;
-    }
-    const locExists = shops.some((shop) => shop.location.trim().toLowerCase() === formState.location.trim().toLowerCase());
-    if (locExists) {
-      setError('Shop location must be unique.');
-      setLoading(false);
-      return;
-    }
     const latLonExists = shops.some((shop) => {
-      // Accept both string and number for latitude/longitude
       const shopLat = typeof shop.latitude === 'string' ? parseFloat(shop.latitude) : shop.latitude;
       const shopLon = typeof shop.longitude === 'string' ? parseFloat(shop.longitude) : shop.longitude;
       return shopLat === lat && shopLon === lon;
@@ -105,11 +88,41 @@ const AddShopPage: React.FC = () => {
       return;
     }
 
-    // No backend POST endpoint yet, so just show success
-    setSuccess(true);
-    setLoading(false);
-    // Optionally, reset form
-    setFormState({ shopId: '', location: '', latitude: '', longitude: '' });
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/add_shop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          location: formData.location.trim(),
+          latitude: lat,
+          longitude: lon,
+        }),
+      });
+      setLoading(false);
+      const text = await response.text();
+      let data: any = {};
+      try { data = text ? JSON.parse(text) : {}; } catch {}
+      if (response.ok) {
+        setSuccess(true);
+        setFormData({ location: '', latitude: '', longitude: '' });
+        setTimeout(() => navigate(ROUTES.WORLD_MAP), 1200);
+      } else {
+        setError(data.detail || 'Failed to add new shop.');
+      }
+    } catch (err) {
+      setLoading(false);
+      if (err instanceof Error) {
+        setError(`Error: ${err.message}`);
+      } else {
+        setError('An unknown error occurred.');
+      }
+    }
+
+    // End of handleCreateShop
   };
 
   return (
@@ -160,7 +173,7 @@ const AddShopPage: React.FC = () => {
             <button
               className="add-device-submit"
               type="button"
-              onClick={() => navigate(fromPath)}
+              onClick={() => navigate(ROUTES.WORLD_MAP)}
               style={{
                 minWidth: 'auto',
                 padding: '0.35rem 1rem',
@@ -180,25 +193,13 @@ const AddShopPage: React.FC = () => {
 
           <form className="add-device-form" onSubmit={handleCreateShop}>
             <div className="add-device-row">
-              <label className="add-device-label" htmlFor="add-shop-id">Shop ID:</label>
-              <input
-                id="add-shop-id"
-                className="add-device-input"
-                type="text"
-                name="shopId"
-                value={formState.shopId}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="add-device-row">
               <label className="add-device-label" htmlFor="add-shop-location">Shop Location:</label>
               <input
                 id="add-shop-location"
                 className="add-device-input"
                 type="text"
                 name="location"
-                value={formState.location}
+                value={formData.location}
                 onChange={handleChange}
               />
             </div>
@@ -210,7 +211,7 @@ const AddShopPage: React.FC = () => {
                 className="add-device-input"
                 type="text"
                 name="latitude"
-                value={formState.latitude}
+                value={formData.latitude}
                 onChange={handleChange}
               />
             </div>
@@ -222,7 +223,7 @@ const AddShopPage: React.FC = () => {
                 className="add-device-input"
                 type="text"
                 name="longitude"
-                value={formState.longitude}
+                value={formData.longitude}
                 onChange={handleChange}
               />
             </div>
@@ -238,7 +239,7 @@ const AddShopPage: React.FC = () => {
             </div>
 
             {success && (
-              <p className="add-device-success">Shop created successfully! (Simulation, no backend yet)</p>
+              <p className="add-device-success">Shop created successfully!</p>
             )}
             {error && (
               <p className="add-device-error">{error}</p>
@@ -247,7 +248,7 @@ const AddShopPage: React.FC = () => {
         </section>
       </div>
     </div>
-  )
+  );
 }
 
 export default AddShopPage
