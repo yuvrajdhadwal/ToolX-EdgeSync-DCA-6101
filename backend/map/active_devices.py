@@ -194,10 +194,17 @@ def get_active_devices(db: Session):
     ]
 
 
-def _get_shop_pin_color(active_device_count: int) -> str:
-    if active_device_count <= 5:
+def _get_shop_pin_color(active_device_count: int, total_device_count: int) -> str:
+    if total_device_count <= 0:
+        return "red"
+
+    active_ratio = active_device_count / total_device_count
+
+    if active_ratio < 0.10:
+        return "red"
+    if active_ratio < 0.25:
         return "black"
-    if active_device_count <= 25:
+    if active_ratio < 0.50:
         return "blue"
     return "green"
 
@@ -229,7 +236,7 @@ def get_shop_activity(db: Session):
                 ),
                 "active_device_count": active_device_count,
                 "total_device_count": len(shop.devices),
-                "pin_color": _get_shop_pin_color(active_device_count),
+                "pin_color": _get_shop_pin_color(active_device_count, len(shop.devices)),
             }
         )
 
