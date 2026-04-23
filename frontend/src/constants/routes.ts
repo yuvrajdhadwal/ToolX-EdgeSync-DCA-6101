@@ -10,6 +10,7 @@ export const ROUTES = {
   DEVICES_BIZMNG: '/view_devices',
   DEVICE_DETAIL: '/view_devices/:serialNumber',
   ADD_DEVICES: '/add_device',
+  ADD_SHOP: '/add_shop',
   FIELD_SHOP_DEVICES: '/field_shop_devices',
 
 } as const;

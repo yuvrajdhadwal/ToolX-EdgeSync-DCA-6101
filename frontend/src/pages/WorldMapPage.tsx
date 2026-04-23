@@ -1,5 +1,5 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { MapContainer, Marker, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -93,6 +93,7 @@ const getRoleFromToken = (): string | null => {
 
 const WorldMapPage: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const role = getRoleFromToken()
   const [resetSignal, setResetSignal] = React.useState(0)
   const [shops, setShops] = React.useState<ShopActivity[]>([])
@@ -742,6 +743,7 @@ const WorldMapPage: React.FC = () => {
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                   <button
                     type="button"
+                    onClick={() => navigate(ROUTES.ADD_SHOP, { state: { from: location.pathname } })}
                     style={{
                       padding: '0.5rem 1.5rem',
                       fontSize: '1rem',
