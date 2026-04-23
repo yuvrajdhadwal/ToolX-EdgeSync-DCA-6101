@@ -175,8 +175,8 @@ const WorldMapPage: React.FC = () => {
     setShopDevices([])
     setDeviceSearchQuery('')
     setFirmwareVersionQuery('')
-    fetch('/get_devices')
-      .then((res) => {
+    Promise.all([
+      fetch('/get_devices').then((res) => {
         if (!res.ok) throw new Error('Failed to load devices')
         return res.json()
       }),
