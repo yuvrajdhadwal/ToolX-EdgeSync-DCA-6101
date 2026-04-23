@@ -29,7 +29,27 @@ type ShopActivity = {
   device_types: string[]
   active_device_count: number
   total_device_count: number
-  pin_color: 'black' | 'blue' | 'green'
+  pin_color: 'red' | 'black' | 'blue' | 'green'
+}
+
+const getShopPinColor = (activeDeviceCount: number, totalDeviceCount: number): ShopActivity['pin_color'] => {
+  if (totalDeviceCount <= 0) return 'red'
+
+  const activeRatio = activeDeviceCount / totalDeviceCount
+
+  if (activeRatio < 0.1) return 'red'
+  if (activeRatio < 0.25) return 'black'
+  if (activeRatio < 0.5) return 'blue'
+  return 'green'
+}
+
+type DeployFirmwareOption = {
+  id: number
+  version_number: string
+  device_type: string
+  description: string | null
+  isEmergency: boolean
+  status: 'current' | 'pending' | 'rejected' | 'deployed'
 }
 
 type ResetMapControlProps = {
@@ -86,11 +106,22 @@ const WorldMapPage: React.FC = () => {
   const [shopDevices, setShopDevices] = React.useState<any[]>([])
   const [devicePanelLoading, setDevicePanelLoading] = React.useState(false)
   const [devicePanelError, setDevicePanelError] = React.useState('')
+  const [deviceSearchQuery, setDeviceSearchQuery] = React.useState('')
+  const [firmwareVersionQuery, setFirmwareVersionQuery] = React.useState('')
   const [devicePanelType, setDevicePanelType] = React.useState('all')
   const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
   const [latestDeployStatusBySerial, setLatestDeployStatusBySerial] = React.useState<Record<string, 'Accepted' | 'Rejected' | 'Pending' | 'Null'>>({})
+  const [isDeployModeOn, setIsDeployModeOn] = React.useState(false)
+  const [selectedDeviceSerials, setSelectedDeviceSerials] = React.useState<Set<string>>(new Set())
+  const [showFirmwarePicker, setShowFirmwarePicker] = React.useState(false)
+  const [deployFirmwareOptions, setDeployFirmwareOptions] = React.useState<DeployFirmwareOption[]>([])
+  const [selectedFirmwareId, setSelectedFirmwareId] = React.useState('')
+  const [isLoadingFirmwareOptions, setIsLoadingFirmwareOptions] = React.useState(false)
+  const [firmwareOptionError, setFirmwareOptionError] = React.useState('')
+  const [deployStatusMessage, setDeployStatusMessage] = React.useState('')
 
   const blackPinIcon = React.useMemo(() => createPinIcon('#111111'), [])
+  const redPinIcon = React.useMemo(() => createPinIcon('#d1242f'), [])
   const bluePinIcon = React.useMemo(() => createPinIcon('#2f81f7'), [])
   const greenPinIcon = React.useMemo(() => createPinIcon('#2ea043'), [])
 
@@ -191,6 +222,129 @@ const WorldMapPage: React.FC = () => {
     }
   }, [selectedShop])
 
+  React.useEffect(() => {
+    setIsDeployModeOn(false)
+    setSelectedDeviceSerials(new Set())
+    setShowFirmwarePicker(false)
+    setDeployFirmwareOptions([])
+    setSelectedFirmwareId('')
+    setFirmwareOptionError('')
+    setDeployStatusMessage('')
+  }, [selectedShop?.id])
+
+  React.useEffect(() => {
+    if (!isDeployModeOn) {
+      setShowFirmwarePicker(false)
+      setDeployFirmwareOptions([])
+      setSelectedFirmwareId('')
+      setFirmwareOptionError('')
+      setDeployStatusMessage('')
+    }
+  }, [isDeployModeOn])
+
+  const handleToggleDeployMode = React.useCallback(() => {
+    setIsDeployModeOn((previous) => {
+      const next = !previous
+      if (!next) {
+        setSelectedDeviceSerials(new Set())
+      }
+      return next
+    })
+  }, [])
+
+  const toggleDeviceSelection = React.useCallback((serialNumber: string) => {
+    setSelectedDeviceSerials((previous) => {
+      const next = new Set(previous)
+      if (next.has(serialNumber)) {
+        next.delete(serialNumber)
+      } else {
+        next.add(serialNumber)
+      }
+      return next
+    })
+  }, [])
+
+  const handleDeploySelected = React.useCallback(() => {
+    const selectedSerials = Array.from(selectedDeviceSerials)
+    if (!selectedSerials.length) return
+
+    if (!showFirmwarePicker) {
+      setShowFirmwarePicker(true)
+      return
+    }
+
+    if (!selectedFirmwareId) {
+      setFirmwareOptionError('Please choose a firmware version.')
+      return
+    }
+
+    const selectedFirmware = deployFirmwareOptions.find(
+      (firmware) => String(firmware.id) === selectedFirmwareId,
+    )
+    if (!selectedFirmware) {
+      setFirmwareOptionError('Selected firmware is invalid. Please choose again.')
+      return
+    }
+
+    const selectedDevices = selectedSerials
+      .map((serial) => shopDevices.find((device) => device.serial_number === serial))
+      .filter(Boolean)
+
+    const devicesAlreadyOnSelectedFirmware = selectedDevices
+      .filter(
+        (device) =>
+          String(device.version_number ?? '').trim().toLowerCase() ===
+          String(selectedFirmware.version_number ?? '').trim().toLowerCase(),
+      )
+      .map((device) => String(device.serial_number))
+
+    if (devicesAlreadyOnSelectedFirmware.length > 0) {
+      setFirmwareOptionError(
+        `Cannot deploy version ${selectedFirmware.version_number} to device(s) already on that version: ${devicesAlreadyOnSelectedFirmware.join(', ')}`,
+      )
+      return
+    }
+
+    const deployFirmware = async () => {
+      setFirmwareOptionError('')
+      setDeployStatusMessage('')
+
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/deploy-to-many-devices', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            serial_numbers: selectedSerials,
+            firmware_id: Number(selectedFirmwareId),
+            isEmergency: false,
+          }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}))
+          if (Array.isArray(data.detail)) {
+            throw new Error(data.detail.map((e: { msg: string }) => e.msg).join(', '))
+          }
+          throw new Error(data.detail ?? 'Failed to deploy firmware')
+        }
+
+        const data = await response.json()
+        setDeployStatusMessage(data.message ?? 'Deployment started.')
+        setSelectedDeviceSerials(new Set())
+        setShowFirmwarePicker(false)
+        setSelectedFirmwareId('')
+      } catch (err) {
+        setFirmwareOptionError(err instanceof Error ? err.message : 'Deploy failed')
+      }
+    }
+
+    void deployFirmware()
+  }, [selectedDeviceSerials, selectedFirmwareId, showFirmwarePicker, deployFirmwareOptions, shopDevices])
+
   const shopsWithCoordinates = React.useMemo(
     () =>
       shops.filter(
@@ -224,16 +378,77 @@ const WorldMapPage: React.FC = () => {
     return Array.from(new Set(shopDevices.map((d) => d.device_type).filter(Boolean))).sort()
   }, [shopDevices])
   const filteredShopDevices = React.useMemo(() => {
+    const normalizedQuery = deviceSearchQuery.trim().toLowerCase()
+    const normalizedVersionQuery = firmwareVersionQuery.trim().toLowerCase()
+
     return shopDevices.filter((d) => {
+      const matchesSearch =
+        normalizedQuery.length === 0 ||
+        String(d.serial_number ?? '').toLowerCase().includes(normalizedQuery)
+      const matchesFirmwareVersion =
+        normalizedVersionQuery.length === 0 ||
+        String(d.version_number ?? '').toLowerCase().includes(normalizedVersionQuery)
       const matchesType = devicePanelType === 'all' || d.device_type === devicePanelType
-      const isActive = d.last_online !== null && d.last_online !== undefined
+      const isActive = typeof d.is_active === 'boolean' ? d.is_active : (d.last_online !== null && d.last_online !== undefined)
       const matchesActivity =
         devicePanelActivity === 'all' ||
         (devicePanelActivity === 'active' && isActive) ||
         (devicePanelActivity === 'inactive' && !isActive)
-      return matchesType && matchesActivity
+      return matchesSearch && matchesFirmwareVersion && matchesType && matchesActivity
     })
-  }, [shopDevices, devicePanelType, devicePanelActivity])
+  }, [shopDevices, deviceSearchQuery, firmwareVersionQuery, devicePanelType, devicePanelActivity])
+
+  const selectedDeployDeviceType = React.useMemo(() => {
+    const selectedSerial = Array.from(selectedDeviceSerials)[0]
+    if (!selectedSerial) return null
+
+    const selectedDevice = filteredShopDevices.find((device) => device.serial_number === selectedSerial)
+    return selectedDevice?.device_type ?? null
+  }, [filteredShopDevices, selectedDeviceSerials])
+
+  React.useEffect(() => {
+    if (!showFirmwarePicker || !isDeployModeOn) return
+    if (!selectedDeployDeviceType) {
+      setFirmwareOptionError('Select at least one device first.')
+      return
+    }
+
+    let mounted = true
+    setIsLoadingFirmwareOptions(true)
+    setFirmwareOptionError('')
+
+    const loadFirmwareOptions = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/firmware/status/current', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        if (!response.ok) throw new Error('Failed to load firmware options')
+        const payload = await response.json()
+        const currentFirmware = Array.isArray(payload) ? (payload as DeployFirmwareOption[]) : []
+        const filtered = currentFirmware.filter((firmware) => firmware.device_type === selectedDeployDeviceType)
+        if (mounted) {
+          setDeployFirmwareOptions(filtered)
+          setSelectedFirmwareId(filtered[0]?.id ? String(filtered[0].id) : '')
+        }
+      } catch {
+        if (mounted) {
+          setFirmwareOptionError('Failed to load firmware versions.')
+          setDeployFirmwareOptions([])
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingFirmwareOptions(false)
+        }
+      }
+    }
+
+    void loadFirmwareOptions()
+
+    return () => {
+      mounted = false
+    }
+  }, [showFirmwarePicker, isDeployModeOn, selectedDeployDeviceType])
 
   if (role !== 'business_manager') {
     return null
@@ -362,6 +577,30 @@ const WorldMapPage: React.FC = () => {
                 </button>
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', width: '100%', fontWeight: 500, fontSize: 13 }}>
+                  Search Serial Number
+                  <input
+                    type="text"
+                    value={deviceSearchQuery}
+                    onChange={(event) => setDeviceSearchQuery(event.target.value)}
+                    placeholder="Search by serial number"
+                    style={{ width: '100%' }}
+                  />
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', width: '100%', fontWeight: 500, fontSize: 13 }}>
+                  Search Firmware Version
+                  <input
+                    type="text"
+                    value={firmwareVersionQuery}
+                    onChange={(event) => setFirmwareVersionQuery(event.target.value)}
+                    placeholder="Search by firmware version"
+                    style={{ width: '100%' }}
+                  />
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <label style={{ display: 'flex', flexDirection: 'column', flex: 1, fontWeight: 500, fontSize: 13 }}>
                   Types
                   <select value={devicePanelType} onChange={e => setDevicePanelType(e.target.value)} style={{ width: '100%' }}>
@@ -380,6 +619,66 @@ const WorldMapPage: React.FC = () => {
                   </select>
                 </label>
               </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <button
+                  type="button"
+                  onClick={handleToggleDeployMode}
+                  style={{
+                    padding: '0.45rem 0.7rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${COLORS.borderPrimary}`,
+                    backgroundColor: COLORS.backgroundSecondary,
+                    color: COLORS.textPrimary,
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  Deploy {isDeployModeOn ? 'On' : 'Off'}
+                </button>
+                {isDeployModeOn ? (
+                  <button
+                    type="button"
+                    onClick={handleDeploySelected}
+                    style={{
+                      padding: '0.45rem 0.7rem',
+                      borderRadius: '6px',
+                      border: `1px solid ${COLORS.accentPrimary}`,
+                      backgroundColor: COLORS.accentPrimary,
+                      color: COLORS.white,
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {showFirmwarePicker ? 'Confirm Deploy' : 'Deploy'}
+                  </button>
+                ) : null}
+              </div>
+              {isDeployModeOn && showFirmwarePicker ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontWeight: 500, fontSize: 13 }}>
+                    Firmware version
+                    <select
+                      value={selectedFirmwareId}
+                      onChange={(event) => setSelectedFirmwareId(event.target.value)}
+                      disabled={isLoadingFirmwareOptions || deployFirmwareOptions.length === 0}
+                      style={{ width: '100%' }}
+                    >
+                      <option value="">Select firmware</option>
+                      {deployFirmwareOptions.map((firmware) => (
+                        <option key={firmware.id} value={firmware.id}>
+                          {firmware.version_number}{firmware.isEmergency ? ' (Emergency)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {isLoadingFirmwareOptions ? <div>Loading firmware versions...</div> : null}
+                  {firmwareOptionError ? <div style={{ color: COLORS.dangerText }}>{firmwareOptionError}</div> : null}
+                  {!isLoadingFirmwareOptions && !firmwareOptionError && deployFirmwareOptions.length === 0 ? (
+                    <div>No approved firmware found for this device type.</div>
+                  ) : null}
+                </div>
+              ) : null}
+              {deployStatusMessage ? <div style={{ color: COLORS.successText, marginBottom: 8 }}>{deployStatusMessage}</div> : null}
               {devicePanelLoading ? <div>Loading devices...</div> : null}
               {devicePanelError ? <div style={{ color: COLORS.dangerText }}>{devicePanelError}</div> : null}
               {!devicePanelLoading && !devicePanelError && filteredShopDevices.length === 0 ? <div>No devices found.</div> : null}
@@ -387,6 +686,7 @@ const WorldMapPage: React.FC = () => {
                 <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: COLORS.backgroundSecondary }}>
+                      {isDeployModeOn ? <th style={{ textAlign: 'left', padding: 4 }}>Select</th> : null}
                       <th style={{ textAlign: 'left', padding: 4 }}>Type</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>Serial</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>Status</th>
@@ -396,10 +696,25 @@ const WorldMapPage: React.FC = () => {
                   <tbody>
                     {filteredShopDevices.map((d, idx) => (
                       <tr key={d.serial_number || idx} style={{ borderBottom: '1px solid #eee' }}>
+                        {isDeployModeOn ? (
+                          <td style={{ padding: 4 }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedDeviceSerials.has(d.serial_number)}
+                              disabled={
+                                (selectedDeviceSerials.size > 0 &&
+                                  !selectedDeviceSerials.has(d.serial_number) &&
+                                  selectedDeployDeviceType !== null &&
+                                  d.device_type !== selectedDeployDeviceType)
+                              }
+                              onChange={() => toggleDeviceSelection(d.serial_number)}
+                            />
+                          </td>
+                        ) : null}
                         <td style={{ padding: 4 }}>{d.device_type}</td>
                         <td style={{ padding: 4 }}>{d.serial_number}</td>
                         <td style={{ padding: 4 }}>
-                          {d.last_online ? <span style={{ color: COLORS.successText }}>Active</span> : <span style={{ color: COLORS.textMuted }}>Inactive</span>}
+                          {(typeof d.is_active === 'boolean' ? d.is_active : Boolean(d.last_online)) ? <span style={{ color: COLORS.successText }}>Active</span> : <span style={{ color: COLORS.textMuted }}>Inactive</span>}
                         </td>
                         <td style={{ padding: 4 }}>
                           {latestDeployStatusBySerial[d.serial_number] ?? 'Null'}
@@ -438,9 +753,10 @@ const WorldMapPage: React.FC = () => {
 
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', color: COLORS.textPrimary }}>
                 <span>Legend:</span>
-                <span>● Black (0-5 active)</span>
-                <span>● Blue (6-25 active)</span>
-                <span>● Green ({'>'}25 active)</span>
+                <span>● Red ({'<'}10% online)</span>
+                <span>● Black ({'<'}25% online)</span>
+                <span>● Blue ({'<'}50% online)</span>
+                <span>● Green ({'>='}50% online)</span>
               </div>
               <button
                 type="button"
@@ -485,11 +801,13 @@ const WorldMapPage: React.FC = () => {
                     key={shop.id}
                     position={[shop.latitude as number, shop.longitude as number]}
                     icon={
-                      shop.pin_color === 'green'
+                      getShopPinColor(shop.active_device_count, shop.total_device_count) === 'green'
                         ? greenPinIcon
-                        : shop.pin_color === 'blue'
+                        : getShopPinColor(shop.active_device_count, shop.total_device_count) === 'blue'
                           ? bluePinIcon
-                          : blackPinIcon
+                          : getShopPinColor(shop.active_device_count, shop.total_device_count) === 'black'
+                            ? blackPinIcon
+                            : redPinIcon
                     }
                     eventHandlers={{
                       click: () => setSelectedShop(shop),

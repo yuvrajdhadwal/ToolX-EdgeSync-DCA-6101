@@ -48,6 +48,22 @@ def get_region_from_coordinates(
     return "Unknown"
 
 
+def _normalize_to_utc(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _is_online(last_online: Optional[datetime], cutoff: datetime) -> bool:
+    normalized_last_online = _normalize_to_utc(last_online)
+    normalized_cutoff = _normalize_to_utc(cutoff)
+    if normalized_last_online is None or normalized_cutoff is None:
+        return False
+    return normalized_last_online >= normalized_cutoff
+
+
 def _record_device_activity(device_id: str, body: str):
     if ACTIVE_DEVICE_ONLINE_MESSAGE.lower() not in body.lower():
         return
@@ -146,9 +162,11 @@ def get_active_devices(db: Session):
 
     devices = (
         db.query(Device)
-        .filter(Device.last_online.is_not(None), Device.last_online >= cutoff)
+        .filter(Device.last_online.is_not(None))
         .all()
     )
+
+    devices = [device for device in devices if _is_online(device.last_online, cutoff)]
 
     _redeploy_firmware(db)
 
@@ -176,10 +194,17 @@ def get_active_devices(db: Session):
     ]
 
 
-def _get_shop_pin_color(active_device_count: int) -> str:
-    if active_device_count <= 5:
+def _get_shop_pin_color(active_device_count: int, total_device_count: int) -> str:
+    if total_device_count <= 0:
+        return "red"
+
+    active_ratio = active_device_count / total_device_count
+
+    if active_ratio < 0.10:
+        return "red"
+    if active_ratio < 0.25:
         return "black"
-    if active_device_count <= 25:
+    if active_ratio < 0.50:
         return "blue"
     return "green"
 
@@ -193,7 +218,7 @@ def get_shop_activity(db: Session):
         active_device_count = sum(
             1
             for device in shop.devices
-            if device.last_online is not None and device.last_online >= cutoff
+            if _is_online(device.last_online, cutoff)
         )
         results.append(
             {
@@ -211,7 +236,7 @@ def get_shop_activity(db: Session):
                 ),
                 "active_device_count": active_device_count,
                 "total_device_count": len(shop.devices),
-                "pin_color": _get_shop_pin_color(active_device_count),
+                "pin_color": _get_shop_pin_color(active_device_count, len(shop.devices)),
             }
         )
 

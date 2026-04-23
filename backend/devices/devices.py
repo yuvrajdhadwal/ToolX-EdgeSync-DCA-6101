@@ -1,11 +1,12 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from config import ONLINE_DEVICE_TTL_SECONDS
 from database.database_types import DeviceType, UserRole
 from database.models import DeveloperManager, Device, FieldShopProfessional, FirmwareUpdate, Shop
 from fastapi import Header, HTTPException
 from login.authentication import get_authenticated_user
-from map.active_devices import get_region_from_coordinates
+from map.active_devices import get_region_from_coordinates, _is_online
 from sqlalchemy.orm import Session
 
 
@@ -122,6 +123,7 @@ def add_device(device: DeviceType, db: Session):
 
 
 def get_devices(db: Session):
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_DEVICE_TTL_SECONDS)
     manager_lookup = {
         manager.id: manager.username for manager in db.query(DeveloperManager).all()
     }
@@ -152,6 +154,8 @@ def get_devices(db: Session):
             "developer_manager": resolve_manager_name(d.developer_manager),  # type: ignore
             "latitude": d.shop.latitude if d.shop else d.latitude,
             "longitude": d.shop.longitude if d.shop else d.longitude,
+            "last_online": d.last_online.isoformat() if d.last_online else None,
+            "is_active": _is_online(d.last_online, cutoff),
             "region": get_region_from_coordinates(
                 d.shop.latitude if d.shop else d.latitude,
                 d.shop.longitude if d.shop else d.longitude,
