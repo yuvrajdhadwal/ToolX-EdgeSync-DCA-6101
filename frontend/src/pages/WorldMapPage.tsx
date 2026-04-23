@@ -110,6 +110,7 @@ const WorldMapPage: React.FC = () => {
   const [firmwareVersionQuery, setFirmwareVersionQuery] = React.useState('')
   const [devicePanelType, setDevicePanelType] = React.useState('all')
   const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
+  const [latestDeployStatusBySerial, setLatestDeployStatusBySerial] = React.useState<Record<string, 'Accepted' | 'Rejected' | 'Pending' | 'Null'>>({})
   const [isDeployModeOn, setIsDeployModeOn] = React.useState(false)
   const [selectedDeviceSerials, setSelectedDeviceSerials] = React.useState<Set<string>>(new Set())
   const [showFirmwarePicker, setShowFirmwarePicker] = React.useState(false)
@@ -170,40 +171,55 @@ const WorldMapPage: React.FC = () => {
   // Fetch devices for selected shop
   React.useEffect(() => {
     if (!selectedShop) return
+    let cancelled = false
+
     setDevicePanelLoading(true)
     setDevicePanelError('')
     setShopDevices([])
-    setDeviceSearchQuery('')
-    setFirmwareVersionQuery('')
-    Promise.all([
-      fetch('/get_devices').then((res) => {
+    setLatestDeployStatusBySerial({})
+    fetch('/get_devices')
+      .then((res) => {
         if (!res.ok) throw new Error('Failed to load devices')
         return res.json()
-      }),
-      fetch('/get_online_devices').then((res) => {
-        if (!res.ok) throw new Error('Failed to load online devices')
-        return res.json()
-      }),
-    ])
-      .then(([allDevices, onlineDevices]) => {
-        const activeSerials = new Set(
-          Array.isArray(onlineDevices)
-            ? onlineDevices.map((d: any) => d.serial_number).filter(Boolean)
-            : [],
+      })
+      .then(async (allDevices) => {
+        // Filter devices by shop id
+        const filtered = allDevices.filter((d: any) => d.shop_id === selectedShop.id)
+        if (!cancelled) {
+          setShopDevices(filtered)
+        }
+
+        const statusEntries = await Promise.all(
+          filtered.map(async (device: any) => {
+            try {
+              const response = await fetch(`/device/${encodeURIComponent(device.serial_number)}/acceptance-status`)
+              if (response.status === 404) {
+                return [device.serial_number, 'Null'] as const
+              }
+              if (!response.ok) {
+                return [device.serial_number, 'Null'] as const
+              }
+
+              const payload = await response.json() as { isAccepted: boolean | null }
+              if (payload.isAccepted === true) return [device.serial_number, 'Accepted'] as const
+              if (payload.isAccepted === false) return [device.serial_number, 'Rejected'] as const
+              return [device.serial_number, 'Pending'] as const
+            } catch {
+              return [device.serial_number, 'Null'] as const
+            }
+          }),
         )
 
-        const filtered = allDevices
-          .filter((d: any) => d.shop_id === selectedShop.id)
-          .map((d: any) => ({
-            ...d,
-            is_active:
-              typeof d.is_active === 'boolean' ? d.is_active : activeSerials.has(d.serial_number),
-          }))
-
-        setShopDevices(filtered)
+        if (!cancelled) {
+          setLatestDeployStatusBySerial(Object.fromEntries(statusEntries))
+        }
       })
       .catch(() => setDevicePanelError('Failed to load devices for this shop.'))
       .finally(() => setDevicePanelLoading(false))
+
+    return () => {
+      cancelled = true
+    }
   }, [selectedShop])
 
   React.useEffect(() => {
@@ -674,6 +690,7 @@ const WorldMapPage: React.FC = () => {
                       <th style={{ textAlign: 'left', padding: 4 }}>Type</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>Serial</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>Status</th>
+                      <th style={{ textAlign: 'left', padding: 4 }}>History</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -698,6 +715,9 @@ const WorldMapPage: React.FC = () => {
                         <td style={{ padding: 4 }}>{d.serial_number}</td>
                         <td style={{ padding: 4 }}>
                           {(typeof d.is_active === 'boolean' ? d.is_active : Boolean(d.last_online)) ? <span style={{ color: COLORS.successText }}>Active</span> : <span style={{ color: COLORS.textMuted }}>Inactive</span>}
+                        </td>
+                        <td style={{ padding: 4 }}>
+                          {latestDeployStatusBySerial[d.serial_number] ?? 'Null'}
                         </td>
                       </tr>
                     ))}
