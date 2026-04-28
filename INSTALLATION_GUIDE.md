@@ -19,6 +19,8 @@ docker run --rm -it \
   edge-device:v1
 ```
 
+**Sample Firmwares** - Sample Firmwares and their Source Code provided in `edge_device/sample_firmware/` for convenience
+
 ---
 
 ## Prerequisites
@@ -79,6 +81,8 @@ docker run --rm -it \
      -e CONFIRMATION_HEARTBEATS="NUMBER_OF_SUCCESSFUL_HEARTBEATS_FOR_TRANSITION_BETWEEN_BLUEGREEN_DURING_DEPLOYMENT" \
      edge-device:v1
    ```
+
+4. **Sample Firmwares** - Sample Firmwares and their Source Code provided in `edge_device/sample_firmware/` for convenience
 
 ---
 
