@@ -16,7 +16,7 @@ ToolX-EdgeSync-DCA-6101 is a scalable software infrastructure for managing over-
 - Logout
 
 ### Developer
-- Upload new Firmware to database
+- Upload new Firmware to database (Note: Sample Firmware in `edge_device/sample_firmware/`)
 - View existing firmware and their detail page (Accepted, Pending, Rejected)
 - Download existing firmware from the firmware detail page
 
