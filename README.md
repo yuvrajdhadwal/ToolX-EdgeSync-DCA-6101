@@ -16,7 +16,7 @@ See the existing detailed design document here:
 ## Installation Guide
 
 See the existing installation guide here:
-[Installation Guide](https://github.com/yuvrajdhadwal/ToolX-EdgeSync-DCA-6101/blob/Update-README/INSTALLATION_GUIDE.md)
+[Installation Guide](https://github.com/yuvrajdhadwal/ToolX-EdgeSync-DCA-6101/blob/main/INSTALLATION_GUIDE.md)
 
 ---
 
