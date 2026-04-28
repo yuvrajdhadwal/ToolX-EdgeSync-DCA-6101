@@ -9,7 +9,7 @@ ToolX-EdgeSync-DCA-6101 is a scalable software infrastructure for managing over-
 ## Detailed Design Documentation
 
 See the existing detailed design document here:
-[Detailed Design Document](https://github.com/yuvrajdhadwal/ToolX-EdgeSync-DCA-6101/blob/Update-README/INSTALLATION_GUIDE.md)
+[Detailed Design Document](https://github.com/yuvrajdhadwal/ToolX-EdgeSync-DCA-6101/blob/main/DETAILED_DESIGN_DOCUMENT.pdf)
 
 ---
 
@@ -22,8 +22,8 @@ See the existing installation guide here:
 
 ## Release Notes
 
-See the release notes here for Version 1.0:
-[Installation Guide](https://github.com/yuvrajdhadwal/ToolX-EdgeSync-DCA-6101/blob/Update-README/INSTALLATION_GUIDE.md)
+See the release notes for Version 1.0 details:
+[Release Notes](https://github.com/yuvrajdhadwal/ToolX-EdgeSync-DCA-6101/blob/main/RELEASE_NOTES.md)
 
 ---
 
