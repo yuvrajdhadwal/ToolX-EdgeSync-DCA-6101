@@ -72,7 +72,7 @@ ToolX-EdgeSync-DCA-6101 is a scalable software infrastructure for managing over-
 
 ---
 
-## Existing Bugs
+## Known Issues
 
 - Developer Manager not being sent to pending table after confirming firmware
 - Inaccurate region bounding parameters
