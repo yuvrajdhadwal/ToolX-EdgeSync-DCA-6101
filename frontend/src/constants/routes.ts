@@ -17,13 +17,15 @@ export const ROUTES = {
 
 export const AUTH_ROUTES = [ROUTES.WELCOME, ROUTES.LOGIN, ROUTES.REGISTER] as const;
 
-type UserRole = 'developer' | 'developer_manager' | 'business_manager' | 'field_shop_professional' | null;
+type UserRole = 'developer' | 'developer_manager' | 'business_manager' | 'field_shop_professional' | 'super_user' | null;
 
 export const getHomeRouteForRole = (role: UserRole): string => {
   if (role === 'business_manager') {
     return ROUTES.BIZMNGPAGE;
   } else if (role === 'field_shop_professional') {
     return ROUTES.FIELD_SHOP_DEVICES;
+  } else if (role === 'super_user') {
+    return ROUTES.REGISTER;
   } else {
     return ROUTES.HOME;
   }

@@ -6,6 +6,7 @@ from database.models import (
     Developer,
     DeveloperManager,
     FieldShopProfessional,
+    SuperUser,
 )
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -45,6 +46,8 @@ def create_user(db: Session, user: UserType):
         db_user = FieldShopProfessional(
             username=user.username, hashed_password=hashed_password
         )
+    elif user.role == UserRole.super_user:
+        db_user = SuperUser(username=user.username, hashed_password=hashed_password)
     else:
         raise HTTPException(status_code=400, detail="Invalid role type")
 

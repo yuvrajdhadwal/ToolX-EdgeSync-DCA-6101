@@ -34,6 +34,19 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string };
+        if (payload.role && payload.role !== 'super_user') {
+          navigate(ROUTES.HOME, { replace: true });
+        }
+      } catch {
+      }
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     if (role === 'developer') {
       fetch('/devmng')
         .then((res) => res.json())

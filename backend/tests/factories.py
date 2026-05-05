@@ -17,6 +17,7 @@ from backend.database.models import (
     Install,
     Rejection,
     Shop,
+    SuperUser,
 )
 
 

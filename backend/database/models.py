@@ -101,6 +101,13 @@ class FieldShopProfessional(User):
     download_firmware = relationship("FirmwareUpdate", secondary=downloads_table)
 
 
+class SuperUser(User):
+    __tablename__ = "super_users"
+    id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+
+    __mapper_args__ = {"polymorphic_identity": "super_user"}
+
+
 # ==========================
 #       Other Entities
 # ==========================

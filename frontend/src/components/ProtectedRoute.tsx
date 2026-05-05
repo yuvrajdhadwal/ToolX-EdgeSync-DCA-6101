@@ -12,12 +12,23 @@ type Props = {
 export default function ProtectedRoute({ children }: Props) {
   const token = localStorage.getItem("token");
   const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [redirectToRegister, setRedirectToRegister] = useState(false);
 
   useEffect(() => {
     // No token => definitely not logged in
     if (!token) {
       setAllowed(false);
       return;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1])) as { role?: string };
+      if (payload.role === 'super_user') {
+        setRedirectToRegister(true);
+        return;
+      }
+    } catch {
+      // Fall through to token verification.
     }
 
     //  verify token via the endpoint
@@ -34,6 +45,8 @@ export default function ProtectedRoute({ children }: Props) {
   }, [token]);
 
   // While verifying, avoid flashing protected page
+  if (redirectToRegister) return <Navigate to={ROUTES.REGISTER} replace />;
+
   if (allowed === null) return <div>Loading...</div>;
 
   if (!allowed) return <Navigate to={ROUTES.LOGIN} replace />;

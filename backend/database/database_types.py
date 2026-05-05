@@ -8,6 +8,7 @@ class UserRole(str, Enum):
     developer_manager = "developer_manager"
     business_manager = "business_manager"
     field_shop_professional = "field_shop_professional"
+    super_user = "super_user"
 
 
 class UserType(BaseModel):
