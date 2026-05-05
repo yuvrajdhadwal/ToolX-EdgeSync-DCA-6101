@@ -19,6 +19,8 @@ interface ItemInfo {
     declined_by: number | null;
     declined_comment: string |null;
 }
+
+const MAX_FIRMWARE_UPLOAD_BYTES = 25 * 1024 * 1024;
     
 
 
@@ -86,6 +88,13 @@ const UploadPage: React.FC = () => {
     if (type === 'file') {
       const fileInput = event.target as HTMLInputElement;
       value = fileInput.files ? fileInput.files[0] : null;
+      if (value && value.size > MAX_FIRMWARE_UPLOAD_BYTES) {
+        setError('Firmware file too large. Maximum upload size is 25 MB.');
+        fileInput.value = '';
+        value = null;
+      } else {
+        setError('');
+      }
     } else if (type === 'checkbox') {
       value = (event.target as HTMLInputElement).checked;
     } else {
@@ -111,7 +120,13 @@ const UploadPage: React.FC = () => {
 
     if (!formData.file) {
       setLoading(false);
-      console.error('Firmware file is required');
+      setError('Firmware file is required.');
+      return;
+    }
+
+    if (formData.file.size > MAX_FIRMWARE_UPLOAD_BYTES) {
+      setLoading(false);
+      setError('Firmware file too large. Maximum upload size is 25 MB.');
       return;
     }
 
@@ -142,6 +157,10 @@ const UploadPage: React.FC = () => {
         navigate(getHomeRouteFromToken());
       } else {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 413) {
+          setError('Firmware file too large. Maximum upload size is 25 MB.');
+          return;
+        }
         setError(errorData.detail || 'Failed to upload data');
       }
       

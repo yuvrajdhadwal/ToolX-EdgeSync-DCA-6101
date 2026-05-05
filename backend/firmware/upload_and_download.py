@@ -8,6 +8,7 @@ from login.authentication import get_authenticated_user
 from sqlalchemy.orm import Session
 
 ELF = b"\x7fELF"  # actual binary elf magic key
+MAX_FIRMWARE_UPLOAD_BYTES = 25 * 1024 * 1024
 
 
 async def upload_firmware(
@@ -60,6 +61,12 @@ async def upload_firmware(
         )
 
     file_content = await file.read()
+    if len(file_content) > MAX_FIRMWARE_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="Firmware file too large. Maximum upload size is 25 MB",
+        )
+
     firmware = FirmwareUpdate(
         objectBinary=file_content,
         version_number=version_number,
