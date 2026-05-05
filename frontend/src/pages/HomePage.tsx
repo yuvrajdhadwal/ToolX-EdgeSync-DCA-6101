@@ -184,7 +184,7 @@ const HomePage: React.FC = () => {
             onClick={() => navigate(getHomeRouteFromToken())}
             style = {{
               padding: '0 0.85rem',
-              backgroundColor: COLORS.accentPrimary,
+              background: COLORS.accentPrimary,
               border: 'none',
               borderRight: `1px solid ${COLORS.white}`,
               height: '100%',
@@ -215,7 +215,7 @@ const HomePage: React.FC = () => {
                 cursor: 'pointer',
                 border: 'none',
                 borderLeft: `1px solid ${COLORS.white}`,
-                backgroundColor: isUploadHovering ? COLORS.accentHover : COLORS.accentPrimary,
+                background: isUploadHovering ? COLORS.accentHover : COLORS.accentPrimary,
                 color: COLORS.white,
                 fontWeight: 500,
                 transition: 'background-color 0.2s',
@@ -255,7 +255,7 @@ const HomePage: React.FC = () => {
                   border: `2px solid ${COLORS.borderPrimary}`,
                   borderBottom: 'none',
                   borderRadius: '8px 8px 0 0',
-                  backgroundColor: activeTab === index ? COLORS.backgroundPrimary : COLORS.accentPrimary,
+                  background: activeTab === index ? COLORS.accentPrimary : COLORS.accentPrimary,
                   color: activeTab === index ? COLORS.whiteMuted : COLORS.white,
                   fontWeight: activeTab === index ? 600 : 400,
                   position: 'relative',

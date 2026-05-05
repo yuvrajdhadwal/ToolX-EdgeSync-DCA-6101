@@ -423,7 +423,7 @@ const FirmwareDetailPage: React.FC = () => {
                   }
                 }}
                 style={{
-                  padding: '0.5rem 1rem', backgroundColor: COLORS.success,
+                  padding: '0.5rem 1rem', background: COLORS.accentPrimary,
                   border: 'none', color: COLORS.white, borderRadius: '6px',
                   cursor: 'pointer', fontWeight: 500,
                 }}
@@ -436,7 +436,7 @@ const FirmwareDetailPage: React.FC = () => {
                 type="button"
                 onClick={handleDownload}
                 style={{
-                  padding: '0.5rem 1rem', backgroundColor: COLORS.backgroundTertiary,
+                  padding: '0.5rem 1rem', background: COLORS.accentPrimary,
                   border: `1px solid ${COLORS.borderPrimary}`, color: COLORS.white,
                   borderRadius: '6px', cursor: 'pointer', fontWeight: 500,
                 }}
@@ -448,7 +448,7 @@ const FirmwareDetailPage: React.FC = () => {
               type="button"
               onClick={() => navigate(getReturnRoute(), { state: { activeTab: returnTab } })}
               style={{
-                padding: '0.5rem 1rem', backgroundColor: 'transparent',
+                padding: '0.5rem 1rem', background: COLORS.danger,
                 border: `1px solid ${COLORS.borderPrimary}`, color: COLORS.white,
                 borderRadius: '6px', cursor: 'pointer',
               }}
@@ -513,7 +513,7 @@ const FirmwareDetailPage: React.FC = () => {
                     padding: '0.65rem 1.25rem', borderRadius: '6px', border: 'none',
                     cursor: isSubmitting || firmware.status !== 'pending' ? 'not-allowed' : 'pointer',
                     opacity: isSubmitting || firmware.status !== 'pending' ? 0.6 : 1,
-                    backgroundColor: COLORS.success, color: COLORS.white, fontWeight: 600,
+                    background: COLORS.success, color: COLORS.white, fontWeight: 600,
                   }}
                 >
                   Accept
@@ -526,7 +526,7 @@ const FirmwareDetailPage: React.FC = () => {
                     padding: '0.65rem 1.25rem', borderRadius: '6px', border: 'none',
                     cursor: isSubmitting || firmware.status !== 'pending' ? 'not-allowed' : 'pointer',
                     opacity: isSubmitting || firmware.status !== 'pending' ? 0.6 : 1,
-                    backgroundColor: COLORS.danger, color: COLORS.white, fontWeight: 600,
+                    background: COLORS.danger, color: COLORS.white, fontWeight: 600,
                   }}
                 >
                   Reject
@@ -575,7 +575,7 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: 'transparent', color: COLORS.white,
+                        background: COLORS.danger, color: COLORS.white,
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
                       }}
                     >
@@ -587,7 +587,7 @@ const FirmwareDetailPage: React.FC = () => {
                       onClick={handleApproveConfirm}
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
-                        backgroundColor: COLORS.success, color: COLORS.white,
+                        background: COLORS.success, color: COLORS.white,
                         cursor: isSubmitting ? 'not-allowed' : 'pointer', fontWeight: 600,
                       }}
                     >
@@ -672,7 +672,7 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: 'transparent', color: COLORS.white,
+                        background: COLORS.success, color: COLORS.white,
                         cursor: isSubmitting ? 'not-allowed' : 'pointer',
                       }}
                     >
@@ -684,7 +684,7 @@ const FirmwareDetailPage: React.FC = () => {
                       onClick={handleRejectConfirm}
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
-                        backgroundColor: COLORS.danger, color: COLORS.white,
+                        background: COLORS.danger, color: COLORS.white,
                         cursor: isSubmitting ? 'not-allowed' : 'pointer', fontWeight: 600,
                       }}
                     >
@@ -793,7 +793,7 @@ const FirmwareDetailPage: React.FC = () => {
                             style={{
                               padding: '0.3rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
                               borderRadius: '4px', border: `1px solid ${COLORS.accentPrimary}`,
-                              backgroundColor: 'transparent', color: COLORS.accentPrimary,
+                              background: 'transparent', color: COLORS.accentPrimary,
                             }}
                           >
                             {selectedSerials.length === filteredDevices.length && filteredDevices.length > 0
@@ -867,7 +867,7 @@ const FirmwareDetailPage: React.FC = () => {
                       }}
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
-                        backgroundColor: COLORS.success, color: COLORS.white,
+                        background: COLORS.success, color: COLORS.white,
                         cursor: isDeploying || selectedSerials.length === 0 ? 'not-allowed' : 'pointer',
                         fontWeight: 600,
                         opacity: isDeploying || selectedSerials.length === 0 ? 0.6 : 1,
@@ -888,7 +888,7 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: 'transparent', color: COLORS.textPrimary, cursor: 'pointer',
+                        background: COLORS.danger, color: COLORS.white, cursor: 'pointer',
                       }}
                     >
                       Close
@@ -939,7 +939,7 @@ const FirmwareDetailPage: React.FC = () => {
                       }}
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px', border: 'none',
-                        backgroundColor: COLORS.danger, color: COLORS.white,
+                        background: COLORS.danger, color: COLORS.white,
                         cursor: isDeploying ? 'not-allowed' : 'pointer', fontWeight: 600,
                       }}
                     >
@@ -951,7 +951,7 @@ const FirmwareDetailPage: React.FC = () => {
                       style={{
                         padding: '0.55rem 1rem', borderRadius: '6px',
                         border: `1px solid ${COLORS.borderPrimary}`,
-                        backgroundColor: 'transparent', color: COLORS.textPrimary, cursor: 'pointer',
+                        background: COLORS.accentPrimary, color: COLORS.white, cursor: 'pointer',
                       }}
                     >
                       Cancel

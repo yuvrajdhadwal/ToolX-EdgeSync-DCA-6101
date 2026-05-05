@@ -25,7 +25,7 @@ const Logout = () => {
             cursor: 'pointer',
             border: 'none',
             borderLeft: `1px solid ${COLORS.white}`,
-            backgroundColor: isHovering ? COLORS.accentHover : COLORS.accentPrimary,
+            background: isHovering ? COLORS.accentHover : COLORS.accentPrimary,
             color: COLORS.white,
             fontWeight: 500,
             transition: 'background-color 0.2s',

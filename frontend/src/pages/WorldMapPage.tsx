@@ -484,7 +484,7 @@ const WorldMapPage: React.FC = () => {
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
             style={{
               padding: '0 0.85rem',
-              backgroundColor: COLORS.accentPrimary,
+              background: COLORS.accentPrimary,
               border: 'none',
               borderRight: `1px solid ${COLORS.white}`,
               height: '100%',
@@ -628,8 +628,8 @@ const WorldMapPage: React.FC = () => {
                     padding: '0.45rem 0.7rem',
                     borderRadius: '6px',
                     border: `1px solid ${COLORS.borderPrimary}`,
-                    backgroundColor: COLORS.backgroundSecondary,
-                    color: COLORS.textPrimary,
+                    background: COLORS.accentPrimary,
+                    color: COLORS.white,
                     cursor: 'pointer',
                     fontWeight: 600,
                   }}
@@ -643,8 +643,7 @@ const WorldMapPage: React.FC = () => {
                     style={{
                       padding: '0.45rem 0.7rem',
                       borderRadius: '6px',
-                      border: `1px solid ${COLORS.accentPrimary}`,
-                      backgroundColor: COLORS.accentPrimary,
+                      background: COLORS.success,
                       color: COLORS.white,
                       cursor: 'pointer',
                       fontWeight: 600,
@@ -770,7 +769,7 @@ const WorldMapPage: React.FC = () => {
                       cursor: 'pointer',
                       borderRadius: '6px',
                       border: `1px solid ${COLORS.accentPrimary}`,
-                      backgroundColor: 'transparent',
+                      background: COLORS.accentPrimary,
                       color: COLORS.white,
                       fontWeight: 500,
                     }}
@@ -786,7 +785,7 @@ const WorldMapPage: React.FC = () => {
                       cursor: 'pointer',
                       borderRadius: '6px',
                       border: `1px solid ${COLORS.accentPrimary}`,
-                      backgroundColor: 'transparent',
+                      background: COLORS.accentPrimary,
                       color: COLORS.white,
                       fontWeight: 500,
                     }}

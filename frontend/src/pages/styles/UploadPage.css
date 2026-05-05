@@ -84,7 +84,7 @@
 .upload-submit {
   min-width: 180px;
   border: none;
-  background: var(--color-brand-700);
+  background: #0014DC;
   color: #fff;
   padding: 0.65rem 1rem;
   font-weight: 600;

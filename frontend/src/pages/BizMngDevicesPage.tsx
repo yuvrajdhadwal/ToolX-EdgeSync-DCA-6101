@@ -92,7 +92,7 @@ const BizMngDevicesPage: React.FC = () => {
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
-            style={{ padding: '0 0.85rem', backgroundColor: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
+            style={{ padding: '0 0.85rem', background: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
           >
             <img 
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"
@@ -112,7 +112,7 @@ const BizMngDevicesPage: React.FC = () => {
               padding: '0 1.5rem', fontSize: '1rem', cursor: 'pointer',
               border: 'none',
               borderLeft: `1px solid ${COLORS.white}`,
-              backgroundColor: isAddButtonHovering ? COLORS.accentHover : COLORS.accentPrimary,
+              background: isAddButtonHovering ? COLORS.accentHover : COLORS.accentPrimary,
               color: COLORS.white, fontWeight: 500,
               height: '100%',
               transition: 'background-color 0.2s',
@@ -179,7 +179,7 @@ const BizMngDevicesPage: React.FC = () => {
                           style={{
                             padding: '0.25rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer',
                             borderRadius: '4px', border: `1px solid ${COLORS.white}`,
-                            backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
+                            background: COLORS.danger, color: COLORS.white, fontWeight: 500,
                           }}
                         >
                           X
@@ -232,7 +232,7 @@ const BizMngDevicesPage: React.FC = () => {
                 style={{
                   padding: '0.5rem 1.5rem', borderRadius: '6px', cursor: 'pointer',
                   border: `1px solid ${COLORS.white}`,
-                  backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
+                  background: COLORS.danger, color: COLORS.white, fontWeight: 500,
                 }}
               >
                 Remove
@@ -243,7 +243,7 @@ const BizMngDevicesPage: React.FC = () => {
                 style={{
                   padding: '0.5rem 1.5rem', borderRadius: '6px', cursor: 'pointer',
                   border: `1px solid ${COLORS.white}`,
-                  backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
+                  background: COLORS.accentPrimary, color: COLORS.white, fontWeight: 500,
                 }}
               >
                 Cancel
