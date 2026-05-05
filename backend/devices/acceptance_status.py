@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
@@ -7,11 +8,39 @@ from database.database import SessionLocal
 from database.models import Deploy, Device
 
 
+_pending_rejection_comments: set[str] = set()
+_pending_rejection_comments_lock = threading.Lock()
+
+
+def _wait_for_rejection_comment(device_id: str) -> None:
+    with _pending_rejection_comments_lock:
+        _pending_rejection_comments.add(device_id)
+
+
+def _consume_rejection_wait(device_id: str) -> bool:
+    with _pending_rejection_comments_lock:
+        if device_id in _pending_rejection_comments:
+            _pending_rejection_comments.remove(device_id)
+            return True
+        return False
+
+
 def update_acceptance_status(device_id: str, body: str):
-    if "Success" in body:
+    normalized_body = body.strip()
+    if not normalized_body:
+        return
+
+    if "Success" in normalized_body:
         accepted = True
-    elif "Rejected" in body:
+    elif normalized_body == "Firmware Deployment Rejection":
+        _wait_for_rejection_comment(device_id)
+        return
+    elif "Rejected" in normalized_body:
         accepted = False
+        rejection_comment = None
+    elif _consume_rejection_wait(device_id):
+        accepted = False
+        rejection_comment = normalized_body
     else:
         return
 
@@ -21,7 +50,7 @@ def update_acceptance_status(device_id: str, body: str):
             db.query(Deploy)
             .filter(
                 Deploy.device_serial == device_id,
-                Deploy.isAccepted == None,
+                Deploy.isAccepted.is_(None),
             )
             .order_by(Deploy.timestamp.desc())
             .first()
@@ -32,13 +61,15 @@ def update_acceptance_status(device_id: str, body: str):
             return
 
         deploy.isAccepted = accepted  # type: ignore
+        if not accepted:
+            deploy.rejection_comment = rejection_comment  # type: ignore
 
         if accepted:
             previous = (
                 db.query(Deploy)
                 .filter(
                     Deploy.device_serial == device_id,
-                    Deploy.isActive == True,
+                    Deploy.isActive.is_(True),
                 )
                 .first()
             )
