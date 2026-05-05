@@ -145,7 +145,7 @@ const AddShopPage: React.FC = () => {
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
             style={{
               padding: '0 0.85rem',
-              backgroundColor: COLORS.accentPrimary,
+              background: COLORS.accentPrimary,
               border: 'none',
               borderRight: `1px solid ${COLORS.white}`,
               height: '100%',
@@ -181,7 +181,7 @@ const AddShopPage: React.FC = () => {
                 fontWeight: 500,
                 borderRadius: 6,
                 marginLeft: '1.5rem',
-                background: 'var(--color-brand-700)',
+                background: COLORS.danger,
                 color: '#fff',
                 border: 'none',
                 cursor: 'pointer',

@@ -55,7 +55,7 @@ const DeployHistory: React.FC<Props> = ({ serialNumber }) => {
         style={{
           padding: '0.5rem 1rem', cursor: 'pointer',
           borderRadius: '6px', border: `1px solid ${COLORS.borderPrimary}`,
-          backgroundColor: 'transparent', color: COLORS.white
+          background: COLORS.accentPrimary, color: COLORS.white
         }}
       >
         History
@@ -81,7 +81,7 @@ const DeployHistory: React.FC<Props> = ({ serialNumber }) => {
               style={{
                 padding: '0.5rem 1.5rem', borderRadius: '6px',
                 cursor: 'pointer', border: `1px solid ${COLORS.white}`,
-                backgroundColor: 'transparent', color: COLORS.white, fontWeight: 500,
+                background: COLORS.danger, color: COLORS.white, fontWeight: 500,
               }}
             >
               Close

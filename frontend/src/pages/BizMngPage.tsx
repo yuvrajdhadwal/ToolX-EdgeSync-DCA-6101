@@ -33,7 +33,7 @@ const BizMngPage: React.FC = () => {
           <button 
             type="button" 
             onClick={() => navigate(ROUTES.BIZMNGPAGE)}
-            style={{ padding: '0 0.85rem', backgroundColor: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
+            style={{ padding: '0 0.85rem', background: COLORS.accentPrimary, border: 'none', borderRight: `1px solid ${COLORS.white}`, height: '100%', display: 'flex', alignItems: 'center' }}
           >
             <img 
               src="https://careers.slb.com/-/media/images/logo/rgb_slb_100_logo_tm_reduced_white.svg"

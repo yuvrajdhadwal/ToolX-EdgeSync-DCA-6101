@@ -244,7 +244,7 @@ const DeviceDetailPage: React.FC = () => {
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
                     border: `1px solid ${COLORS.accentPrimary}`,
-                    backgroundColor: 'transparent',
+                    background: COLORS.accentPrimary,
                     color: COLORS.white,
                     cursor: 'pointer',
                   }}
@@ -261,8 +261,7 @@ const DeviceDetailPage: React.FC = () => {
                   style={{
                     padding: '0.5rem 1rem',
                     borderRadius: '6px',
-                    border: `1px solid ${COLORS.accentPrimary}`,
-                    backgroundColor: 'transparent',
+                    background: COLORS.danger,
                     color: COLORS.white,
                     cursor: isRemoving ? 'not-allowed' : 'pointer',
                   }}
@@ -278,8 +277,7 @@ const DeviceDetailPage: React.FC = () => {
               style={{
                 padding: '0.5rem 1rem',
                 borderRadius: '6px',
-                border: `1px solid ${COLORS.accentPrimary}`,
-                backgroundColor: 'transparent',
+                background: COLORS.danger,
                 color: COLORS.white,
                 cursor: 'pointer',
               }}
@@ -368,7 +366,7 @@ const DeviceDetailPage: React.FC = () => {
                   borderRadius: '6px',
                   cursor: isRemoving ? 'not-allowed' : 'pointer',
                   border: `1px solid ${COLORS.white}`,
-                  backgroundColor: 'transparent',
+                  background: COLORS.danger,
                   color: COLORS.white,
                   fontWeight: 500,
                 }}
@@ -384,7 +382,7 @@ const DeviceDetailPage: React.FC = () => {
                   borderRadius: '6px',
                   cursor: isRemoving ? 'not-allowed' : 'pointer',
                   border: `1px solid ${COLORS.white}`,
-                  backgroundColor: 'transparent',
+                  background: COLORS.accentPrimary,
                   color: COLORS.white,
                   fontWeight: 500,
                 }}
