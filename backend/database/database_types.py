@@ -102,6 +102,6 @@ class ChangePasswordRequest(BaseModel):
     @field_validator("new_password")
     @classmethod
     def new_password_must_be_strong(cls, v):
-        if len(v) < 8:
-            raise ValueError("New password must be at least 8 characters")
+        if len(v) < 6:
+            raise ValueError("New password must be at least 6 characters")
         return v
