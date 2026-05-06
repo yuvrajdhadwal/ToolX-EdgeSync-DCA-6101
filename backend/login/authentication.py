@@ -82,3 +82,16 @@ def login_with_token(form_data: OAuth2PasswordRequestForm, db: Session):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+
+def change_password(current_password: str, new_password: str, authorization: Optional[str], db: Session):
+    user = get_authenticated_user(authorization, db)
+
+    if not bcrypt.checkpw(current_password.encode("utf-8"), user.hashed_password.encode("utf-8")):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    user.hashed_password = bcrypt.hashpw(
+        new_password.encode("utf-8"), bcrypt.gensalt()
+    ).decode("utf-8")
+
+    db.commit()
+    return {"message": "Password changed successfully"}
