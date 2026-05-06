@@ -76,6 +76,32 @@ const createPinIcon = (color: string) =>
     iconAnchor: [8, 8],
   })
 
+  const PING_STYLE = `
+  @keyframes shop-ping {
+    0%   { transform: scale(1);   opacity: 0.8; }
+    70%  { transform: scale(2.8); opacity: 0;   }
+    100% { transform: scale(2.8); opacity: 0;   }
+  }
+  .shop-ping-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    animation: shop-ping 1s cubic-bezier(0,0,0.2,1) infinite;
+  }
+  `
+
+const createPingIcon = (color: string) =>
+  L.divIcon({
+    className: '',
+    html: `
+      <div style="position:relative;width:15px;height:15px;">
+        <span class="shop-ping-ring" style="background:${color};"></span>
+        <div style="position:relative;width:15px;height:15px;border-radius:9999px;background:${color};border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></div>
+      </div>`,
+    iconSize: [15, 15],
+    iconAnchor: [8, 8],
+  })
+
 const getRoleFromToken = (): string | null => {
   const token = localStorage.getItem('token')
   if (!token) {
@@ -97,6 +123,7 @@ const WorldMapPage: React.FC = () => {
   const role = getRoleFromToken()
   const [resetSignal, setResetSignal] = React.useState(0)
   const [shops, setShops] = React.useState<ShopActivity[]>([])
+  const [newShopCoords, setNewShopCoords] = React.useState<{ lat: number; lon: number } | null>(null)
   const [selectedDeviceType] = React.useState('all')
   const [selectedRegion, setSelectedRegion] = React.useState('all')
   const [isLoading, setIsLoading] = React.useState(true)
@@ -125,7 +152,25 @@ const WorldMapPage: React.FC = () => {
   const redPinIcon = React.useMemo(() => createPinIcon('#d1242f'), [])
   const bluePinIcon = React.useMemo(() => createPinIcon('#2f81f7'), [])
   const greenPinIcon = React.useMemo(() => createPinIcon('#2ea043'), [])
+  const pingIcon = React.useMemo(() => {
+    if (!newShopCoords) return null
+    const matchingShop = shops.find(
+      (shop) => shop.latitude === newShopCoords.lat && shop.longitude === newShopCoords.lon
+    )
+    const colorMap = { green: '#2ea043', blue: '#2f81f7', black: '#111111', red: '#d1242f' }
+    const pinColor = matchingShop
+      ? getShopPinColor(matchingShop.active_device_count, matchingShop.total_device_count)
+      : 'red'
+    return createPingIcon(colorMap[pinColor])
+  }, [newShopCoords, shops])
 
+  React.useEffect(() => {
+    const style = document.createElement('style')
+    style.textContent = PING_STYLE
+    document.head.appendChild(style)
+    return () => { document.head.removeChild(style) }
+  }, [])
+  
   React.useEffect(() => {
     let mounted = true
 
@@ -169,6 +214,15 @@ const WorldMapPage: React.FC = () => {
     }
   }, [])
 
+  React.useEffect(() => {
+    const state = location.state as { newShopLat?: number; newShopLon?: number } | null
+    if (state?.newShopLat !== undefined && state?.newShopLon !== undefined) {
+      setNewShopCoords({ lat: state.newShopLat, lon: state.newShopLon })
+      const timer = setTimeout(() => setNewShopCoords(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [location.state])
+  
   // Fetch devices for selected shop
   React.useEffect(() => {
     if (!selectedShop) return
@@ -815,28 +869,30 @@ const WorldMapPage: React.FC = () => {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {filteredShops.map((shop) => (
-                  <Marker
-                    key={shop.id}
-                    position={[shop.latitude as number, shop.longitude as number]}
-                    icon={
-                      getShopPinColor(shop.active_device_count, shop.total_device_count) === 'green'
-                        ? greenPinIcon
-                        : getShopPinColor(shop.active_device_count, shop.total_device_count) === 'blue'
-                          ? bluePinIcon
-                          : getShopPinColor(shop.active_device_count, shop.total_device_count) === 'black'
-                            ? blackPinIcon
-                            : redPinIcon
-                    }
-                    eventHandlers={{
-                      click: () => setSelectedShop(shop),
-                    }}
-                  >
-                    <Tooltip direction="top" offset={[0, -10]}>
-                      {shop.location} — {shop.active_device_count} active / {shop.total_device_count} total
-                    </Tooltip>
-                  </Marker>
-                ))}
+                {filteredShops.map((shop) => {
+                    const isNew = newShopCoords !== null &&
+                      shop.latitude === newShopCoords.lat &&
+                      shop.longitude === newShopCoords.lon
+                    const pinColor = getShopPinColor(shop.active_device_count, shop.total_device_count)
+                    const icon = isNew && pingIcon
+                      ? pingIcon
+                      : pinColor === 'green' ? greenPinIcon
+                      : pinColor === 'blue'  ? bluePinIcon
+                      : pinColor === 'black' ? blackPinIcon
+                      : redPinIcon
+                    return (
+                      <Marker
+                        key={shop.id}
+                        position={[shop.latitude as number, shop.longitude as number]}
+                        icon={icon}
+                        eventHandlers={{ click: () => setSelectedShop(shop) }}
+                      >
+                        <Tooltip direction="top" offset={[0, -10]}>
+                          {shop.location} — {shop.active_device_count} active / {shop.total_device_count} total
+                        </Tooltip>
+                      </Marker>
+                    )
+                  })}
                 <ResetMapControl center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} resetSignal={resetSignal} />
               </MapContainer>
             </div>
