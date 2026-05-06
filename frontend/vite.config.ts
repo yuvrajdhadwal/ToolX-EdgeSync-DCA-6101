@@ -26,6 +26,7 @@ export default defineConfig({
       '/my-assigned-devices': 'http://localhost:8000',
       '/shop-activity-map': 'http://localhost:8000',
       '/add_shop': 'http://localhost:8000',
+      '/change-password': 'http://localhost:8000',
     }
   }
 })
