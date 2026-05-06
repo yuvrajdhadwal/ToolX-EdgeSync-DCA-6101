@@ -109,7 +109,7 @@ const AddShopPage: React.FC = () => {
       if (response.ok) {
         setSuccess(true);
         setFormData({ location: '', latitude: '', longitude: '' });
-        setTimeout(() => navigate(fromPath), 1200);
+        setTimeout(() => navigate(fromPath, { state: { newShopLat: lat, newShopLon: lon } }), 1200);
       } else {
         setError(data.detail || 'Failed to add new shop.');
       }
