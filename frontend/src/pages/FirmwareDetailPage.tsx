@@ -345,7 +345,7 @@ const FirmwareDetailPage: React.FC = () => {
     setError('');
     try {
       await approveUpload(firmware.id, { confirmation_text: approveConfirmationText.trim() });
-      navigate(getReturnRoute(), { state: { activeTab: 0 } });
+      navigate(getReturnRoute(), { state: { activeTab: 1 } });
     } catch (approveError) {
       setError(approveError instanceof Error ? approveError.message : 'Failed to approve firmware');
     } finally {
