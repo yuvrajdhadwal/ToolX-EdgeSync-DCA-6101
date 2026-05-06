@@ -194,6 +194,7 @@ class Deploy(Base):
     isActive = Column(Boolean, default=False)
     isEmergency = Column(Boolean, default=False)
     isAccepted = Column(Boolean)
+    rejection_comment = Column(String(255))
 
 
 class Install(Base):

@@ -112,6 +112,7 @@ const WorldMapPage: React.FC = () => {
   const [devicePanelType, setDevicePanelType] = React.useState('all')
   const [devicePanelActivity, setDevicePanelActivity] = React.useState('all')
   const [latestDeployStatusBySerial, setLatestDeployStatusBySerial] = React.useState<Record<string, 'Accepted' | 'Rejected' | 'Pending' | 'Null'>>({})
+  const [latestDeployRejectionBySerial, setLatestDeployRejectionBySerial] = React.useState<Record<string, string>>({})
   const [isDeployModeOn, setIsDeployModeOn] = React.useState(false)
   const [selectedDeviceSerials, setSelectedDeviceSerials] = React.useState<Set<string>>(new Set())
   const [showFirmwarePicker, setShowFirmwarePicker] = React.useState(false)
@@ -190,29 +191,39 @@ const WorldMapPage: React.FC = () => {
           setShopDevices(filtered)
         }
 
-        const statusEntries = await Promise.all(
+        const entries = await Promise.all(
           filtered.map(async (device: any) => {
             try {
-              const response = await fetch(`/device/${encodeURIComponent(device.serial_number)}/acceptance-status`)
+              const response = await fetch(`/device/${encodeURIComponent(device.serial_number)}/deploy-history`)
               if (response.status === 404) {
-                return [device.serial_number, 'Null'] as const
+                return [device.serial_number, { status: 'Null', comment: '-' }] as const
               }
               if (!response.ok) {
-                return [device.serial_number, 'Null'] as const
+                return [device.serial_number, { status: 'Null', comment: '-' }] as const
               }
 
-              const payload = await response.json() as { isAccepted: boolean | null }
-              if (payload.isAccepted === true) return [device.serial_number, 'Accepted'] as const
-              if (payload.isAccepted === false) return [device.serial_number, 'Rejected'] as const
-              return [device.serial_number, 'Pending'] as const
+              const payload = (await response.json()) as any[]
+              if (!Array.isArray(payload) || payload.length === 0) {
+                return [device.serial_number, { status: 'Null', comment: '-' }] as const
+              }
+
+              const latest = payload[0]
+              let status: 'Accepted' | 'Rejected' | 'Pending' | 'Null' = 'Null'
+              if (latest.isAccepted === true) status = 'Accepted'
+              else if (latest.isAccepted === false) status = 'Rejected'
+              else if (latest.isAccepted === null) status = 'Pending'
+
+              const comment = latest.rejection_comment ?? '-'
+              return [device.serial_number, { status, comment }] as const
             } catch {
-              return [device.serial_number, 'Null'] as const
+              return [device.serial_number, { status: 'Null', comment: '-' }] as const
             }
           }),
         )
 
         if (!cancelled) {
-          setLatestDeployStatusBySerial(Object.fromEntries(statusEntries))
+          setLatestDeployStatusBySerial(Object.fromEntries(entries.map(([s, v]) => [s, v.status])))
+          setLatestDeployRejectionBySerial(Object.fromEntries(entries.map(([s, v]) => [s, v.comment])))
         }
       })
       .catch(() => setDevicePanelError('Failed to load devices for this shop.'))
@@ -685,12 +696,13 @@ const WorldMapPage: React.FC = () => {
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: COLORS.backgroundSecondary }}>
+                      <tr style={{ background: COLORS.backgroundSecondary }}>
                       {isDeployModeOn ? <th style={{ textAlign: 'left', padding: 4 }}>Select</th> : null}
                       <th style={{ textAlign: 'left', padding: 4 }}>Type</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>Serial</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>Status</th>
                       <th style={{ textAlign: 'left', padding: 4 }}>History</th>
+                      <th style={{ textAlign: 'left', padding: 4 }}>Comments</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -718,6 +730,9 @@ const WorldMapPage: React.FC = () => {
                         </td>
                         <td style={{ padding: 4 }}>
                           {latestDeployStatusBySerial[d.serial_number] ?? 'Null'}
+                        </td>
+                        <td style={{ padding: 4 }}>
+                          {latestDeployRejectionBySerial[d.serial_number] ?? '-'}
                         </td>
                       </tr>
                     ))}

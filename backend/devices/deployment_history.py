@@ -25,6 +25,7 @@ def get_deploy_history(serial_number: str, db: Session):
             "timestamp": d.timestamp.strftime("%Y-%m-%d %H:%M"),
             "isActive": d.isActive,
             "isAccepted": d.isAccepted,
+            "rejection_comment": d.rejection_comment,
         }
         for d in deploys
     ]
