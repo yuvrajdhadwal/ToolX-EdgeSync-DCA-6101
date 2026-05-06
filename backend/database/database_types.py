@@ -95,3 +95,13 @@ class ShopType(BaseModel):
                 raise ValueError("Longitude must be between -180 and 180")
         return value
             
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_must_be_strong(cls, v):
+        if len(v) < 8:
+            raise ValueError("New password must be at least 8 characters")
+        return v

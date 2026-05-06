@@ -5,7 +5,6 @@ from typing import List, Optional, Set
 
 from database.database import Base, SessionLocal, engine
 from database.database_helpers import get_developer_manager, get_username_by_id, get_field_shop_professionals, get_shops, get_assigned_devices
-from database.database_types import DeviceType, UserType
 from database.init_db import init_db
 from database.models import FieldShopProfessional, Device
 from devices.deployment_history import get_deploy_history
@@ -27,7 +26,7 @@ from database.database_helpers import (
     get_shops,
     get_username_by_id,
 )
-from database.database_types import DeviceType, UserType, ShopType
+from database.database_types import DeviceType, UserType, ShopType, ChangePasswordRequest
 from devices.acceptance_status import get_acceptance_status
 from devices.deployment_history import get_deploy_history
 from devices.devices import (
@@ -53,7 +52,7 @@ from firmware.upload_and_download import (
 from IoT.deployment import deploy_to_devices
 from IoT.device_to_cloud import telemetry_activity_worker
 from IoT.iot_types import DeployManyRequest
-from login.authentication import login_with_token, verify_token, get_authenticated_user
+from login.authentication import login_with_token, verify_token, get_authenticated_user, change_password
 from login.isolation import get_firmware_device_types
 from login.registration import register_user
 from map.active_devices import get_active_devices, get_shop_activity
@@ -122,6 +121,15 @@ async def verify_user_token(token: str):
         "user": payload.get("sub"),
         "role": payload.get("role"),
     }
+
+
+@app.post("/change-password")
+def change_password_endpoint(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    return change_password(payload.current_password, payload.new_password, authorization, db)
 
 
 @app.get("/firmware-device-types", response_model=List[str])
