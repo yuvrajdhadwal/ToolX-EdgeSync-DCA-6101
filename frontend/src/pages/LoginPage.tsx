@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { getHomeRouteForRole, ROUTES } from '../constants/routes';
+import { useNavigate } from 'react-router-dom'
+import { getHomeRouteForRole } from '../constants/routes';
 import './styles/AuthPages.css'
 import './styles/LoginPage.css';
 
