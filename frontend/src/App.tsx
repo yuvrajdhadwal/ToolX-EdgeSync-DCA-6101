@@ -1,6 +1,6 @@
 // import { useState } from 'react'
 import './App.css'
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import WelcomePage from './pages/WelcomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -20,6 +20,18 @@ import AddShopPage from './pages/AddShopPage';
 function AppLayout() {
   const location = useLocation();
   const showAuthNav = AUTH_ROUTES.includes(location.pathname as (typeof AUTH_ROUTES)[number]);
+  const token = localStorage.getItem('token');
+
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string };
+      if (payload.role === 'super_user' && location.pathname !== ROUTES.REGISTER) {
+        return <Navigate to={ROUTES.REGISTER} replace />;
+      }
+    } catch {
+      // Ignore malformed tokens and fall through to the normal route handling.
+    }
+  }
 
   return (
     <>

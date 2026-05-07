@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/routes';
 import './styles/AuthPages.css'
 import './styles/RegisterPage.css';
+import Logout from '../components/Logout'
 
 type roleOption = {
   role: string;
@@ -32,6 +33,19 @@ const RegisterPage: React.FC = () => {
   const [developerManagerID, setDeveloperManagerID] = useState('');
   const [developerManagers, setDeveloperManagers] = useState<devmngOption[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1])) as { role?: string };
+        if (payload.role && payload.role !== 'super_user') {
+          navigate(ROUTES.HOME, { replace: true });
+        }
+      } catch {
+      }
+    }
+  }, [navigate]);
 
   useEffect(() => {
     if (role === 'developer') {
@@ -70,12 +84,14 @@ const RegisterPage: React.FC = () => {
     event.preventDefault();
     if (!validateForm()) return;
     setLoading(true);
+    const token = localStorage.getItem('token');
 
     try {
       const response = await fetch('/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           role: role,
@@ -117,7 +133,7 @@ const RegisterPage: React.FC = () => {
 
         <h1 className="register-title">Register</h1>
         <p className="register-subtitle">Create an account to get started</p>
-        {success && <p className="register-success">Registration successful! Redirecting to login...</p>}
+        {success && <p className="register-success">Registration successful!</p>}
 
         <form className="register-form" onSubmit={handleSubmit}>
           <div className="register-field">
@@ -192,9 +208,9 @@ const RegisterPage: React.FC = () => {
 
           {error && <p className="register-error">{error}</p>}
 
-          <Link className="register-login" to={ROUTES.LOGIN}>
-            Already have an account? Login here
-          </Link>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 0, alignItems: 'stretch', padding: 0 }}>
+            <Logout />
+          </div>
         </form>
       </div>
     </div>

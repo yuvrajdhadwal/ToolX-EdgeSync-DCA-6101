@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ROUTES } from '../constants/routes';
+import { getHomeRouteForRole, ROUTES } from '../constants/routes';
 import './styles/AuthPages.css'
 import './styles/LoginPage.css';
 
@@ -46,18 +46,9 @@ const LoginPage: React.FC = () => {
         localStorage.setItem('token', data.access_token);
 
         // Decode JWT to check for role before routing
-        const payload = JSON.parse(atob(data.access_token.split('.')[1]));
-        
-        // Check and route based on role
-        if (payload.role == 'developer') {
-          navigate(ROUTES.HOME);
-        } else if (payload.role == 'business_manager') {
-          navigate(ROUTES.BIZMNGPAGE);
-        } else if (payload.role == 'field_shop_professional') {
-          navigate(ROUTES.FIELD_SHOP_DEVICES);
-        } else {
-          navigate(ROUTES.HOME);
-        }
+        const payload = JSON.parse(atob(data.access_token.split('.')[1])) as { role?: string };
+
+        navigate(getHomeRouteForRole(payload.role as Parameters<typeof getHomeRouteForRole>[0]));
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Authentication Failed');
@@ -110,10 +101,7 @@ const LoginPage: React.FC = () => {
           </button>
 
           {error && <p className="login-error">{error}</p>}
-
-          <Link className="login-register" to={ROUTES.REGISTER}>
-            Don&apos;t have an account? Register here
-          </Link>
+      
         </form>
       </div>
     </div>
