@@ -131,7 +131,7 @@ const RegisterPage: React.FC = () => {
 
         <h1 className="register-title">Register</h1>
         <p className="register-subtitle">Create an account to get started</p>
-        {success && <p className="register-success">Registration successful! Redirecting to login...</p>}
+        {success && <p className="register-success">Registration successful!</p>}
 
         <form className="register-form" onSubmit={handleSubmit}>
           <div className="register-field">
