@@ -30,8 +30,6 @@ const WelcomePage: React.FC = () => {
         }}
         >
           <Link className="welcome-link" to={ROUTES.LOGIN}>Login</Link>
-          <p>or</p>
-          <Link className="welcome-link" to={ROUTES.REGISTER}>Register</Link>
         </div>
       </div>
     </div>
