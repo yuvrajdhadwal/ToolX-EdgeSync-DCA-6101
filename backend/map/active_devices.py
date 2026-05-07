@@ -5,6 +5,7 @@ from typing import Optional
 from azure.iot.hub import IoTHubRegistryManager
 from sqlalchemy import desc, or_
 from sqlalchemy.orm import Session
+from geonamescache import GeonamesCache
 
 from config import ACTIVE_DEVICE_ONLINE_MESSAGE, ONLINE_DEVICE_TTL_SECONDS
 from database.database import SessionLocal
@@ -13,39 +14,82 @@ from firmware.firmware_types import FirmwareOverview
 from IoT.deployment import deploy_cloud_to_device
 from sqlalchemy.orm import Session
 
+# Cache for geonames data
+_GN_CACHE = None
+
+# Mapping of continent codes to names
+CONTINENT_CODE_MAP = {
+    'AF': 'Africa',
+    'AN': 'Antarctica',
+    'AS': 'Asia',
+    'EU': 'Europe',
+    'NA': 'North America',
+    'SA': 'South America',
+    'OC': 'Oceania',
+}
+
+
+def _get_geonames_cache():
+    """Get or initialize the geonames cache."""
+    global _GN_CACHE
+    if _GN_CACHE is None:
+        _GN_CACHE = GeonamesCache()
+    return _GN_CACHE
+
 
 def get_region_from_coordinates(
     latitude: Optional[float],
     longitude: Optional[float],
 ) -> str:
+    """Determine continent from coordinates using geonames data."""
     if latitude is None or longitude is None:
         return "Unknown"
 
     if latitude < -90 or latitude > 90 or longitude < -180 or longitude > 180:
         return "Unknown"
 
-    if latitude <= -60:
-        return "Antarctica"
-
-    if -35 <= latitude <= 37 and -20 <= longitude <= 55:
-        return "Africa"
-
-    if 5 <= latitude <= 83 and -170 <= longitude <= -52:
-        return "North America"
-
-    if -55 <= latitude <= 7 and -85 <= longitude <= -35:
-        return "South America"
-
-    if 34 <= latitude <= 82 and -31 <= longitude <= 60:
-        return "Europe"
-
-    if -50 <= latitude <= 10 and 110 <= longitude <= 180:
-        return "Oceania"
-
-    if -10 <= latitude <= 81 and 26 <= longitude <= 180:
-        return "Asia"
-
-    return "Unknown"
+    try:
+        gc = _get_geonames_cache()
+        cities = gc.get_cities()
+        countries = gc.get_countries()
+        
+        # Find the closest city to the given coordinates
+        min_distance = float('inf')
+        closest_city = None
+        
+        for city_id, city in cities.items():
+            # Skip cities without valid coordinates
+            city_lat = city.get('latitude')
+            city_lon = city.get('longitude')
+            if city_lat is None or city_lon is None:
+                continue
+            
+            try:
+                city_lat = float(city_lat)
+                city_lon = float(city_lon)
+            except (ValueError, TypeError):
+                continue
+            
+            # Simple squared distance (no need for sqrt since we're just comparing)
+            distance = (latitude - city_lat) ** 2 + (longitude - city_lon) ** 2
+            
+            if distance < min_distance:
+                min_distance = distance
+                closest_city = city
+        
+        if closest_city:
+            country_code = closest_city.get('countrycode')
+            if country_code:
+                country = countries.get(country_code)
+                if country:
+                    continent_code = country.get('continentcode')
+                    continent = CONTINENT_CODE_MAP.get(continent_code, "Unknown")
+                    return continent
+        
+        return "Unknown"
+    except Exception as e:
+        print(f"Error determining continent: {e}")
+        return "Unknown"
 
 
 def _normalize_to_utc(value: Optional[datetime]) -> Optional[datetime]:
