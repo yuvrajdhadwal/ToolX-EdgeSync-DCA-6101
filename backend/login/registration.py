@@ -85,11 +85,5 @@ def register_user(user: UserType, db: Session, authorization: str | None = None)
             detail="Only a super user can register a user",
         )
 
-    if user.role == UserRole.super_user:
-        raise HTTPException(
-            status_code=403,
-            detail="Only one super user can exist",
-        )
-
     return create_user(db=db, user=user)
 
