@@ -6,9 +6,9 @@ from database.database import SessionLocal, engine, Base
 from database.models import SuperUser
 
 
-INITIAL_SUPER_USER_USERNAME = os.getenv("INITIAL_SUPER_USER_USERNAME", "admin")
+INITIAL_SUPER_USER_USERNAME = os.getenv("INITIAL_SUPER_USER_USERNAME", "root")
 INITIAL_SUPER_USER_PASSWORD = os.getenv(
-    "INITIAL_SUPER_USER_PASSWORD", "superuser"
+    "INITIAL_SUPER_USER_PASSWORD", "admin"
 )
 
 
