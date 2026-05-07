@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/routes';
 import './styles/AuthPages.css'
 import './styles/RegisterPage.css';
@@ -84,12 +84,14 @@ const RegisterPage: React.FC = () => {
     event.preventDefault();
     if (!validateForm()) return;
     setLoading(true);
+    const token = localStorage.getItem('token');
 
     try {
       const response = await fetch('/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           role: role,
