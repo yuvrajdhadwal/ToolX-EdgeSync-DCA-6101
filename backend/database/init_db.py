@@ -29,9 +29,6 @@ def super_user() -> None:
         )
         db.add(super_user)
         db.commit()
-        print(
-            f"Seeded initial super user '{INITIAL_SUPER_USER_USERNAME}' during database initialization"
-        )
     finally:
         db.close()
 
