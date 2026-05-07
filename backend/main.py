@@ -103,8 +103,12 @@ def start_active_device_worker():
 
 
 @app.post("/register")
-def register_user_endpoint(user: UserType, db: Session = Depends(get_db)):
-    return register_user(user, db)
+def register_user_endpoint(
+    user: UserType,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(default=None),
+):
+    return register_user(user, db, authorization)
 
 
 @app.post("/token")
