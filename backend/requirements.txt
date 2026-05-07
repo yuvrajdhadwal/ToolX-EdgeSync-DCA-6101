@@ -12,3 +12,4 @@ dotenv
 azure-iot-hub
 azure-eventhub
 pytest
+geonamescache
