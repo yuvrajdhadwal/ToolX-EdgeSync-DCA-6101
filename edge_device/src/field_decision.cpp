@@ -10,7 +10,7 @@
 void deploymentRejection(IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle) {
   std::string rejectionComment;
   std::cout << "CONTROL PLANE - Enter a Rejection Comment:\n\t";
-  std::cin >> rejectionComment;
+  std::getline(std::cin >> std::ws, rejectionComment);
 
   publishMessage("Firmware Deployment Rejection", device_ll_handle);
   publishMessage(rejectionComment, device_ll_handle);
