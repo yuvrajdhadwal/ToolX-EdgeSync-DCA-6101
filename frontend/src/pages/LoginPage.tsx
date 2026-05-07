@@ -102,9 +102,6 @@ const LoginPage: React.FC = () => {
 
           {error && <p className="login-error">{error}</p>}
       
-          <Link className="login-register" to={ROUTES.REGISTER}>
-            Register An Account
-          </Link>
         </form>
       </div>
     </div>

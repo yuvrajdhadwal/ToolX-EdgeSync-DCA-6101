@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '../constants/routes';
 import './styles/AuthPages.css'
 import './styles/RegisterPage.css';
+import Logout from '../components/Logout'
 
 type roleOption = {
   role: string;
@@ -205,9 +206,9 @@ const RegisterPage: React.FC = () => {
 
           {error && <p className="register-error">{error}</p>}
 
-          <Link className="register-login" to={ROUTES.LOGIN}>
-            Already have an account? Login here
-          </Link>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 0, alignItems: 'stretch', padding: 0 }}>
+            <Logout />
+          </div>
         </form>
       </div>
     </div>
