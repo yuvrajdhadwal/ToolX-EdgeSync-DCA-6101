@@ -16,7 +16,7 @@ const WelcomePage: React.FC = () => {
           />
         </div>
         <h1 className="welcome-title">ToolX Edgesync</h1>
-        <p className="welcome-text">Login or create an account to continue.</p>
+        <p className="welcome-text">Login or Contact an Admin for an Account.</p>
 
         <div className="welcome-actions"
         style={{
